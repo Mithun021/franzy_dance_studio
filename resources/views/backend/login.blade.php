@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <meta charset="utf-8" />
+        <title>Log In | Roles & Permission</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Dcode Materials"/>
+        <meta name="author" content="Dcode Materials"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+        <!-- App favicon -->
+        <link rel="shortcut icon" href="{{ asset('assets/images/favicon.ico') }}">
+
+        <!-- App css -->
+        <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" id="app-style" />
+
+        <!-- Icons -->
+        <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css" />
+
+        <script src="{{ asset('assets/js/head.js') }}"></script>
+
+
+    </head>
+
+    <body>
+        <!-- Begin page -->
+        <div class="account-page">
+            <div class="container-fluid p-0">
+                <div class="row align-items-center g-0 px-3 py-3 vh-100">
+
+                    <div class="col-xl-6">
+                        <div class="row">
+                            <div class="col-md-8 mx-auto">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="mb-0 p-0 p-lg-3">
+                                            <div class="mb-0 border-0 p-md-4 p-lg-0">
+                                                <div class="mb-4 p-0 text-lg-start text-center">
+                                                    <div class="auth-brand">
+                                                        <a href="{{ url('/') }}" class="logo logo-light">
+                                                            <span class="logo-lg">
+                                                                <img src="{{ asset('assets/images/logo-light-3.png') }}" alt="" height="24">
+                                                            </span>
+                                                        </a>
+                                                        <a href="{{ url('/') }}" class="logo logo-dark">
+                                                            <span class="logo-lg">
+                                                                <img src="{{ asset('assets/images/logo-dark-3.png') }}" alt="" height="24">
+                                                            </span>
+                                                        </a>
+                                                    </div>
+                                                </div>
+        
+                                                <div class="auth-title-section mb-4 text-lg-start text-center"> 
+                                                    <h3 class="text-dark fw-semibold mb-3">Welcome back! Please Sign in to continue.</h3>
+                                                </div>
+        
+                                                <div class="pt-0">
+                                                    <form method="post" action="{{ route('adminlogin.post') }}" class="my-4">
+                                                      @csrf
+                                                        <div class="form-group mb-3">
+                                                            <label for="emailaddress" class="form-label">Email address</label>
+                                                            <input class="form-control" type="email" name="email" id="emailaddress" value="{{ old('email') }}" placeholder="Enter your email">
+                                                        </div>
+                            
+                                                        <div class="form-group mb-3">
+                                                            <label for="password" class="form-label">Password</label>
+                                                            <input type="password" class="form-control" name="password" id="password" placeholder="Enter your password">
+                                                        </div>
+                            
+                                                        <div class="form-group d-flex mb-3">
+                                                            <div class="col-sm-6">
+                                                                <div class="form-check">
+                                                                    <input type="checkbox" class="form-check-input" id="checkbox-signin" checked>
+                                                                    <label class="form-check-label" for="checkbox-signin">Remember me</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-6 text-end">
+                                                                <a class='text-muted fs-14' href='auth-recoverpw.html'>Forgot password?</a>                             
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="form-group mb-0 row">
+                                                            <div class="col-12">
+                                                                <div class="d-grid">
+                                                                    <button class="btn btn-primary fw-semibold" type="submit"> Log In </button>
+                                                                </div>
+                                                            </div>
+
+                                                            @if ($errors->any())
+                                                                <div class="alert alert-primary mt-3" role="alert">{{ $errors->first() }}</div>
+                                                            @endif
+                                                        </div>
+                                                    </form>
+                                                    
+                                                </div>
+                                            </div>
+                                        </div> 
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <!-- END wrapper -->
+
+        <!-- Vendor -->
+        <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/waypoints/lib/jquery.waypoints.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/jquery.counterup/jquery.counterup.min.js') }}"></script>
+        <script src="{{ asset('assets/libs/feather-icons/feather.min.js') }}"></script>
+
+        <!-- App js-->
+        <script src="{{ asset('assets/js/app.js') }}"></script>
+        
+    </body>
+</html>
