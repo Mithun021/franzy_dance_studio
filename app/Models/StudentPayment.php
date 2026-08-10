@@ -24,9 +24,19 @@ class StudentPayment extends Model
 
         'payment_mode',
 
+        'payment_type',
+
         'amount',
 
+        'platform_fee_percentage',
+
+        'platform_fee_amount',
+
+        'total_amount',
+
         'transaction_id',
+
+        'payment_proof',
 
         'remarks',
 
@@ -34,17 +44,18 @@ class StudentPayment extends Model
 
     ];
 
+
     protected $casts = [
 
         'payment_date' => 'date',
 
-        'registration_fee' => 'decimal:2',
-
-        'admission_fee' => 'decimal:2',
-
-        'course_fee' => 'decimal:2',
-
         'amount' => 'decimal:2',
+
+        'platform_fee_percentage' => 'decimal:2',
+
+        'platform_fee_amount' => 'decimal:2',
+
+        'total_amount' => 'decimal:2',
 
     ];
 

@@ -534,6 +534,60 @@ class BillingController extends Controller
         }
     }
 
+    public function confirmPayment(Request $request, $paymentId)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $payment = StudentPayment::findOrFail($paymentId);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Check Payment Status
+            |--------------------------------------------------------------------------
+            */
+
+            if ($payment->status !== 'pending') {
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Only pending payments can be confirmed.'
+                ], 422);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Confirm Payment
+            |--------------------------------------------------------------------------
+            */
+
+            $payment->update([
+                'status' => 'success',
+            ]);
+
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment confirmed successfully.',
+                'payment_id' => $payment->id,
+                'payment_status' => $payment->status,
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Payment confirmation failed.'
+            ], 500);
+        }
+    }
+
     public function invoice(StudentPayment $payment)
     {
         $payment->load([

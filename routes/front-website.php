@@ -19,5 +19,7 @@ Route::get('/studio-booking/{payment}/invoice',[WebsiteController::class,'downlo
 Route::post('/save-admission-form', [WebsiteController::class, 'save_admission_form']) ->name('student.save-admission-form');
 Route::get('/payment-page/{studentCourse}', [WebsiteController::class, 'payment_page'])
     ->name('student.payment-page');
+Route::post( '/student/payment/{studentCourse}', [WebsiteController::class, 'saveStudentPayment'] )->name('student.payment.store');
+Route::get( '/student/offline-payment-success/{payment}', [WebsiteController::class, 'offlinePaymentSuccess'] )->name('student.offline-payment-success');
 ?>
 

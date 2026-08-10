@@ -159,7 +159,7 @@ class UsersController extends Controller
 
                 $signature = $request
                     ->file('signature')
-                    ->store('students/signature','public');
+                    ->store('students/signatures','public');
 
             }
 
@@ -442,7 +442,7 @@ class UsersController extends Controller
 
             $signature = $request
                 ->file('signature')
-                ->store('students/signature', 'public');
+                ->store('students/signatures', 'public');
         }
 
         /*

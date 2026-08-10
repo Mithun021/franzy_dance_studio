@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
+use App\Models\StudioBooking;
+use App\Models\StudioCategory;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -16,163 +18,211 @@ class AdminController extends Controller
     {
         $user = Auth::user();
 
-        $todayUsers = User::where('user_type', 'student')
-            ->whereDate('created_at', Carbon::today())
-            ->count();
-
-        $monthlyUsers = User::where('user_type', 'student')
-            ->whereYear('created_at', Carbon::now()->year)
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->count();
-
-        $yearlyUsers = User::where('user_type', 'student')
-            ->whereYear('created_at', Carbon::now()->year)
-            ->count();
-
-        $totalUsers = User::where('user_type', 'student')
-            ->count();
+        $today = Carbon::today();
+        $monthStart = Carbon::now()->startOfMonth();
+        $monthEnd = Carbon::now()->endOfMonth();
+        $yearStart = Carbon::now()->startOfYear();
+        $yearEnd = Carbon::now()->endOfYear();
 
         /*
         |--------------------------------------------------------------------------
-        | Student Enrollment (student_course table)
+        | Course + Level Wise Enrollment Statistics
         |--------------------------------------------------------------------------
         */
 
-        $todayEnroll = StudentCourse::activeEnroll()
-            ->whereDate('admission_date', Carbon::today())
-            ->count();
+        $courseLevelStats = StudentCourse::with([
+            'course:id,course_name',
+            'level:id,name',
+        ])
+        ->select(
+            'course_id',
+            'level_id'
+        )
+        ->selectRaw("
+            SUM(
+                CASE
+                    WHEN is_enroll = 1
+                    THEN 1
+                    ELSE 0
+                END
+            ) as total_enroll
+        ")
+        ->selectRaw("
+            SUM(
+                CASE
+                    WHEN is_enroll = 1
+                    AND DATE(admission_date) = ?
+                    THEN 1
+                    ELSE 0
+                END
+            ) as today_enroll
+        ", [Carbon::today()->toDateString()])
+        ->selectRaw("
+            SUM(
+                CASE
+                    WHEN is_enroll = 1
+                    AND MONTH(admission_date) = ?
+                    AND YEAR(admission_date) = ?
+                    THEN 1
+                    ELSE 0
+                END
+            ) as monthly_enroll
+        ", [
+            Carbon::now()->month,
+            Carbon::now()->year
+        ])
+        ->selectRaw("
+            SUM(
+                CASE
+                    WHEN is_enroll = 1
+                    AND YEAR(admission_date) = ?
+                    THEN 1
+                    ELSE 0
+                END
+            ) as yearly_enroll
+        ", [
+            Carbon::now()->year
+        ])
+        ->selectRaw("
+            SUM(
+                CASE
+                    WHEN is_enroll = 0
+                    THEN 1
+                    ELSE 0
+                END
+            ) as enroll_pending
+        ")
+        ->groupBy(
+            'course_id',
+            'level_id'
+        )
+        ->orderBy('course_id')
+        ->orderBy('level_id')
+        ->get();
 
-        $monthlyEnroll = StudentCourse::activeEnroll()
-            ->whereYear('admission_date', Carbon::now()->year)
-            ->whereMonth('admission_date', Carbon::now()->month)
-            ->count();
 
-        $yearlyEnroll = StudentCourse::activeEnroll()
-            ->whereYear('admission_date', Carbon::now()->year)
-            ->count();
+        //  Studio Stats -------------------------------------------
+         $studioCategories = StudioCategory::with('studios')->get();
 
-        $totalEnroll = StudentCourse::activeEnroll()
-            ->count();
+        $studioStats = $studioCategories->map(function ($category) use (
+            $today,
+            $monthStart,
+            $monthEnd,
+            $yearStart,
+            $yearEnd
+        ) {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Studios under this Category
+            |--------------------------------------------------------------------------
+            */
 
-        $todayOngoing = StudentCourse::where('status', 'ongoing')
-            ->whereDate('admission_date', Carbon::today())
-            ->count();
+            $studioIds = $category->studios->pluck('id');
 
-        $monthlyOngoing = StudentCourse::where('status', 'ongoing')
-            ->whereYear('admission_date', Carbon::now()->year)
-            ->whereMonth('admission_date', Carbon::now()->month)
-            ->count();
+            /*
+            |--------------------------------------------------------------------------
+            | Confirmed / Completed Booking Base Query
+            |--------------------------------------------------------------------------
+            */
 
-        $yearlyOngoing = StudentCourse::where('status', 'ongoing')
-            ->whereYear('admission_date', Carbon::now()->year)
-            ->count();
-
-        $totalOngoing = StudentCourse::where('status', 'ongoing')
-            ->count();
-
-        $todayCompleted = StudentCourse::where('status', 'completed')
-            ->whereDate('admission_date', Carbon::today())
-            ->count();
-
-        $monthlyCompleted = StudentCourse::where('status', 'completed')
-            ->whereYear('admission_date', Carbon::now()->year)
-            ->whereMonth('admission_date', Carbon::now()->month)
-            ->count();
-
-        $yearlyCompleted = StudentCourse::where('status', 'completed')
-            ->whereYear('admission_date', Carbon::now()->year)
-            ->count();
-
-        $totalCompleted = StudentCourse::where('status', 'completed')
-            ->count();
+            $confirmedBookings = StudioBooking::whereIn(
+                    'studio_id',
+                    $studioIds
+                )
+                ->whereIn('enquiry_status', [
+                    'Confirmed',
+                    'Completed'
+                ]);
 
 
-        $dailyPayment = StudentPayment::where('status', 'success')
-            ->whereDate('payment_date', Carbon::today())
-            ->sum('amount');
+            /*
+            |--------------------------------------------------------------------------
+            | Today's Booking
+            |--------------------------------------------------------------------------
+            */
 
-        $monthlyPayment = StudentPayment::where('status', 'success')
-            ->whereYear('payment_date', Carbon::now()->year)
-            ->whereMonth('payment_date', Carbon::now()->month)
-            ->sum('amount');
+            $todayBooking = (clone $confirmedBookings)
+                ->whereDate('booking_from_date', $today)
+                ->count();
 
-        $yearlyPayment = StudentPayment::where('status', 'success')
-            ->whereYear('payment_date', Carbon::now()->year)
-            ->sum('amount');
 
-        $totalPayment = StudentPayment::where('status', 'success')
-            ->sum('amount');
+            /*
+            |--------------------------------------------------------------------------
+            | Monthly Booking
+            |--------------------------------------------------------------------------
+            */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Monthly Payment (Current Year)
-        |--------------------------------------------------------------------------
-        */
+            $monthlyBooking = (clone $confirmedBookings)
+                ->whereBetween('booking_from_date', [
+                    $monthStart,
+                    $monthEnd
+                ])
+                ->count();
 
-        $monthlyPaymentChart = StudentPayment::select(
-                DB::raw('MONTH(payment_date) as month'),
-                DB::raw('SUM(amount) as total')
-            )
-            ->where('status', 'success')
-            ->whereYear('payment_date', Carbon::now()->year)
-            ->groupBy(DB::raw('MONTH(payment_date)'))
-            ->orderBy(DB::raw('MONTH(payment_date)'))
-            ->pluck('total', 'month')
-            ->toArray();
 
-        $monthlyData = [];
+            /*
+            |--------------------------------------------------------------------------
+            | Yearly Booking
+            |--------------------------------------------------------------------------
+            */
 
-        for ($i = 1; $i <= 12; $i++) {
-            $monthlyData[] = $monthlyPaymentChart[$i] ?? 0;
-        }
+            $yearlyBooking = (clone $confirmedBookings)
+                ->whereBetween('booking_from_date', [
+                    $yearStart,
+                    $yearEnd
+                ])
+                ->count();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Yearly Payment
-        |--------------------------------------------------------------------------
-        */
 
-        $yearlyPaymentChart = StudentPayment::select(
-                DB::raw('YEAR(payment_date) as year'),
-                DB::raw('SUM(amount) as total')
-            )
-            ->where('status', 'success')
-            ->groupBy(DB::raw('YEAR(payment_date)'))
-            ->orderBy(DB::raw('YEAR(payment_date)'))
-            ->get();
+            /*
+            |--------------------------------------------------------------------------
+            | Total Booking
+            |--------------------------------------------------------------------------
+            */
 
-        $yearLabels = $yearlyPaymentChart->pluck('year');
-        $yearData   = $yearlyPaymentChart->pluck('total');
+            $totalBooking = (clone $confirmedBookings)
+                ->count();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Pending / Other Status
+            |--------------------------------------------------------------------------
+            */
+
+            $pendingBooking = StudioBooking::whereIn(
+                    'studio_id',
+                    $studioIds
+                )
+                ->whereNotIn('enquiry_status', [
+                    'Confirmed',
+                    'Completed'
+                ])
+                ->count();
+
+
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+
+                'today' => $todayBooking,
+
+                'monthly' => $monthlyBooking,
+
+                'yearly' => $yearlyBooking,
+
+                'total' => $totalBooking,
+
+                'pending' => $pendingBooking,
+            ];
+        });
+
 
         return view('backend.index', compact(
             'user',
-            'todayUsers',
-            'monthlyUsers',
-            'yearlyUsers',
-            'totalUsers',
-            'todayEnroll',
-            'monthlyEnroll',
-            'yearlyEnroll',
-            'totalEnroll',
-
-            'todayOngoing',
-            'monthlyOngoing',
-            'yearlyOngoing',
-            'totalOngoing',
-
-            'todayCompleted',
-            'monthlyCompleted',
-            'yearlyCompleted',
-            'totalCompleted',
-
-            'dailyPayment',
-            'monthlyPayment',
-            'yearlyPayment',
-            'totalPayment',
-            'monthlyData',
-            'yearLabels',
-            'yearData'
+            'courseLevelStats',
+            'studioStats',
         ));
     }
 

@@ -11,4 +11,12 @@ class StudioCategory extends Model
         'name',
 
     ];
+
+    public function studios()
+    {
+        return $this->hasMany(
+            Studio::class,
+            'studio_category_id'
+        );
+    }
 }

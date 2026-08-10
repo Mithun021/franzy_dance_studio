@@ -11,12 +11,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\StudentCourse;
+use App\Models\StudentPayment;
 use App\Models\Studio;
 use App\Models\StudioBooking;
 use App\Models\StudioPayment;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class WebsiteController extends Controller
 {
@@ -285,6 +287,14 @@ class WebsiteController extends Controller
 
             }
 
+            $course = Course::findOrFail($request->course_id);
+
+            $totalMonthlyFee = $request->monthly_fee * $course->duration;
+
+            $grandTotal =
+                $totalMonthlyFee +
+                $request->admission_fee +
+                $request->registration_fee;
 
             /*
             |--------------------------------------------------------------------------
@@ -315,6 +325,10 @@ class WebsiteController extends Controller
                 'admission_fee' => $request->admission_fee,
 
                 'course_fee' => $request->monthly_fee,
+
+                'total_monthly_fee' => $totalMonthlyFee,
+
+                'grand_total' => $grandTotal,
 
                 'is_enroll' => 0,
 
@@ -362,6 +376,636 @@ class WebsiteController extends Controller
         return view(
             'pages.payment-page',
             compact('studentCourse')
+        );
+    }
+
+    // public function saveStudentPayment(
+    //     Request $request,
+    //     StudentCourse $studentCourse
+    // ) {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Validation
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $request->validate([
+
+    //         'payment_method' => 'required|in:online,qr,bank_transfer',
+
+    //         'payment_proof' => [
+    //             'nullable',
+    //             'required_if:payment_method,qr,bank_transfer',
+    //             'file',
+    //             'mimes:jpg,jpeg,png,pdf',
+    //             'max:5120',
+    //         ],
+
+    //         'transaction_id' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'remarks' => [
+    //             'nullable',
+    //             'string',
+    //         ],
+
+    //     ]);
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Online Payment
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if ($request->payment_method === 'online') {
+
+    //         return back()
+    //             ->with('error', 'Work in Process / Try After Sometimes.');
+    //     }
+
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Payment Date
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $paymentDate = Carbon::today();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Payment Type
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | 1 - 10  = Full
+    //         | 11 - 25 = Half
+    //         | 26 - End = Next Month
+    //         |
+    //         */
+
+    //         $day = $paymentDate->day;
+
+    //         if ($day >= 1 && $day <= 10) {
+
+    //             $paymentType = 'full';
+
+    //         } elseif ($day >= 11 && $day <= 25) {
+
+    //             $paymentType = 'half';
+
+    //         } else {
+
+    //             $paymentType = 'next_month';
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Calculate Monthly Fee
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $monthlyFee = (float) $studentCourse->course_fee;
+
+
+    //         if ($paymentType === 'half') {
+
+    //             $monthlyPayable = $monthlyFee / 2;
+
+    //         } else {
+
+    //             $monthlyPayable = $monthlyFee;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Registration + Admission Fee
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $registrationFee = (float) $studentCourse->registration_fee;
+
+    //         $admissionFee = (float) $studentCourse->admission_fee;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Total Payment Amount
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $amount =
+    //             $registrationFee +
+    //             $admissionFee +
+    //             $monthlyPayable;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Platform Fee
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Currently 0.
+    //         | Gateway integration ke time percentage yahan calculate kar sakte ho.
+    //         |
+    //         */
+
+    //         $platformFeePercentage = 2;
+
+    //         $platformFeeAmount = ($amount * $platformFeePercentage) / 100;
+
+    //         $totalAmount = $amount + $platformFeeAmount;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Payment Mode
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($request->payment_method === 'qr') {
+
+    //             $paymentMode = 'UPI';
+
+    //         } else {
+
+    //             $paymentMode = 'Bank Transfer';
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Payment Proof Upload
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $paymentProof = null;
+
+    //         if ($request->hasFile('payment_proof')) {
+
+    //             $paymentProof = $request
+    //                 ->file('payment_proof')
+    //                 ->store(
+    //                     'student-payments',
+    //                     'public'
+    //                 );
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Save Payment
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $payment = StudentPayment::create([
+
+    //             'student_course_id' => $studentCourse->id,
+
+    //             'user_id' => $studentCourse->user_id,
+
+    //             'payment_date' => $paymentDate,
+
+    //             'payment_mode' => $paymentMode,
+
+    //             'payment_type' => $paymentType,
+
+    //             'amount' => $amount,
+
+    //             'platform_fee_percentage' => $platformFeePercentage,
+
+    //             'platform_fee_amount' => $platformFeeAmount,
+
+    //             'total_amount' => $totalAmount,
+
+    //             'payment_proof' => $paymentProof,
+
+    //             'transaction_id' => $request->transaction_id,
+
+    //             'remarks' => $request->remarks,
+
+    //             'status' => 'pending',
+
+    //         ]);
+
+
+    //         DB::commit();
+
+
+    //         // return redirect()
+    //         //     ->route(
+    //         //         'student.payment-page',
+    //         //         $studentCourse->id
+    //         //     )
+    //         //     ->with(
+    //         //         'success',
+    //         //         'Payment submitted successfully. Your payment is pending verification.'
+    //         //     );
+
+    //         return redirect()
+    //         ->route(
+    //             'student.offline-payment-success',
+    //             $payment->id
+    //         );
+
+
+    //     } catch (\Exception $e) {
+
+    //         DB::rollBack();
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Remove Uploaded File If Database Failed
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if (!empty($paymentProof)) {
+
+    //             Storage::disk('public')->delete($paymentProof);
+    //         }
+
+
+    //         return back()
+    //             ->withInput()
+    //             ->with(
+    //                 'error',
+    //                 'Payment could not be processed. Please try again.'
+    //             );
+    //     }
+    // }
+
+    public function saveStudentPayment(
+        Request $request,
+        StudentCourse $studentCourse
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
+        $request->validate([
+
+            'payment_method' => 'required|in:online,qr,bank_transfer',
+
+            'payment_proof' => [
+                'nullable',
+                'required_if:payment_method,qr,bank_transfer',
+                'file',
+                'mimes:jpg,jpeg,png,pdf',
+                'max:5120',
+            ],
+
+            'transaction_id' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'remarks' => [
+                'nullable',
+                'string',
+            ],
+
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Online Payment
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->payment_method === 'online') {
+
+            return back()
+                ->with(
+                    'error',
+                    'Work in Process / Try After Sometimes.'
+                );
+        }
+
+
+        DB::beginTransaction();
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Date
+            |--------------------------------------------------------------------------
+            */
+
+            $paymentDate = Carbon::today();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Check First Payment
+            |--------------------------------------------------------------------------
+            |
+            | Agar is admission ka ek bhi SUCCESS payment nahi hai,
+            | to current payment first payment maana jayega.
+            |
+            */
+
+            $hasSuccessfulPayment = StudentPayment::where(
+                'student_course_id',
+                $studentCourse->id
+            )
+            ->where('status', 'success')
+            ->exists();
+
+
+            $isFirstPayment = !$hasSuccessfulPayment;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | First Payment Fee Snapshot
+            |--------------------------------------------------------------------------
+            */
+
+            $registrationFee = 0;
+            $admissionFee = 0;
+            $courseFee = 0;
+
+
+            if ($isFirstPayment) {
+
+                $registrationFee = (float) $studentCourse->registration_fee;
+
+                $admissionFee = (float) $studentCourse->admission_fee;
+
+                $courseFee = (float) $studentCourse->course_fee;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Type
+            |--------------------------------------------------------------------------
+            |
+            | 1 - 10  = Full
+            | 11 - 25 = Half
+            | 26 - End = Next Month
+            |
+            */
+
+            $day = $paymentDate->day;
+
+
+            if ($day >= 1 && $day <= 10) {
+
+                $paymentType = 'full';
+
+            } elseif ($day >= 11 && $day <= 25) {
+
+                $paymentType = 'half';
+
+            } else {
+
+                $paymentType = 'next_month';
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Calculate Monthly Fee
+            |--------------------------------------------------------------------------
+            */
+
+            $monthlyFee = (float) $studentCourse->course_fee;
+
+
+            if ($paymentType === 'half') {
+
+                $monthlyPayable = $monthlyFee / 2;
+
+            } else {
+
+                $monthlyPayable = $monthlyFee;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Total Payment Amount
+            |--------------------------------------------------------------------------
+            |
+            | First payment:
+            | Registration + Admission + Monthly
+            |
+            | Next payments:
+            | Only Monthly
+            |
+            */
+
+            $amount =
+                $registrationFee +
+                $admissionFee +
+                $monthlyPayable;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Platform Fee
+            |--------------------------------------------------------------------------
+            */
+
+            $platformFeePercentage = 2;
+
+            $platformFeeAmount =
+                ($amount * $platformFeePercentage) / 100;
+
+            $totalAmount =
+                $amount + $platformFeeAmount;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Mode
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->payment_method === 'qr') {
+
+                $paymentMode = 'UPI';
+
+            } else {
+
+                $paymentMode = 'Bank Transfer';
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Proof Upload
+            |--------------------------------------------------------------------------
+            */
+
+            $paymentProof = null;
+
+
+            if ($request->hasFile('payment_proof')) {
+
+                $paymentProof = $request
+                    ->file('payment_proof')
+                    ->store(
+                        'student-payments',
+                        'public'
+                    );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Save Payment
+            |--------------------------------------------------------------------------
+            */
+
+            $payment = StudentPayment::create([
+
+                'student_course_id' => $studentCourse->id,
+
+                'user_id' => $studentCourse->user_id,
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | First Payment Fee Snapshot
+                |--------------------------------------------------------------------------
+                */
+
+                'registration_fee' => $registrationFee,
+
+                'admission_fee' => $admissionFee,
+
+                'course_fee' => $courseFee,
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Payment Details
+                |--------------------------------------------------------------------------
+                */
+
+                'payment_date' => $paymentDate,
+
+                'payment_mode' => $paymentMode,
+
+                'payment_type' => $paymentType,
+
+                'amount' => $amount,
+
+                'platform_fee_percentage' =>
+                    $platformFeePercentage,
+
+                'platform_fee_amount' =>
+                    $platformFeeAmount,
+
+                'total_amount' =>
+                    $totalAmount,
+
+                'payment_proof' =>
+                    $paymentProof,
+
+                'transaction_id' =>
+                    $request->transaction_id,
+
+                'remarks' =>
+                    $request->remarks,
+
+                'status' => 'pending',
+
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Commit
+            |--------------------------------------------------------------------------
+            */
+
+            DB::commit();
+
+
+            return redirect()
+                ->route(
+                    'student.offline-payment-success',
+                    $payment->id
+                );
+
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Remove Uploaded File If Database Failed
+            |--------------------------------------------------------------------------
+            */
+
+            if (!empty($paymentProof)) {
+
+                Storage::disk('public')
+                    ->delete($paymentProof);
+            }
+
+
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Payment could not be processed. Please try again.'
+                );
+        }
+    }
+
+    public function offlinePaymentSuccess(StudentPayment $payment)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Security Check
+        |--------------------------------------------------------------------------
+        */
+
+        if ($payment->user_id !== Auth::id()) {
+
+            abort(403);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Load Required Relationships
+        |--------------------------------------------------------------------------
+        */
+
+        $payment->load([
+            'studentCourse.course',
+            'studentCourse.level',
+            'studentCourse.category',
+            'studentCourse.batch',
+            'student',
+        ]);
+
+
+        return view(
+            'pages.course-offline-payment-success',
+            compact('payment')
         );
     }
 

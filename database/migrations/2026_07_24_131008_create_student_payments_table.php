@@ -43,7 +43,21 @@ return new class extends Migration
                 'Cheque'
             ]);
 
+            $table->enum('payment_type', [
+                'full',
+                'half',
+                'next_month'
+            ])->nullable();
+
             $table->decimal('amount',10,2);
+
+            $table->decimal('platform_fee_percentage', 5, 2)->nullable();
+
+            $table->decimal('platform_fee_amount', 10, 2)->nullable();
+
+            $table->decimal('total_amount', 10, 2)->nullable();
+
+            $table->string('payment_proof')->nullable();
 
             $table->string('transaction_id')->nullable();
 

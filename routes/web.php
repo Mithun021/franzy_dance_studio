@@ -83,6 +83,7 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::get('/billing/manage/{student_course}',[BillingController::class,'manage'])->name('billing.manage');
     Route::post('/billing/update/{student_course}',[BillingController::class,'update'])->name('billing.update');
     Route::delete('/billing/delete-payment/{payment}',[BillingController::class,'deletePayment'])->name('billing.delete-payment');
+    Route::post( '/billing/payment/{payment}/confirm', [BillingController::class, 'confirmPayment'] )->name('billing.payment.confirm');
     Route::get('/billing/invoice/{payment}',[BillingController::class,'invoice'])->name('billing.invoice');
 
     Route::prefix('holidays')->name('holidays.')->group(function () {

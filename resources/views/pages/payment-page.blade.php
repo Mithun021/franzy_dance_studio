@@ -16,6 +16,8 @@
     */
 
     $paymentDate = Carbon::today();
+    // dump($paymentDate);
+    // $paymentDate = Carbon::parse('2026-08-16');
 
     $day = $paymentDate->day;
 
@@ -867,10 +869,222 @@
 
                         </div>
 
+                        <form action="{{ route('student.payment.store', $studentCourse->id) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+
+                            {{-- Existing admission/fee summary --}}
+
+                            {{-- Payment Method --}}
+                            <div class="mt-10">
+
+                                <h3 class="text-xl font-bold text-pink-500 mb-5">
+                                    Select Payment Method
+                                </h3>
+
+                                <div class="space-y-4">
+
+                                    {{-- Online Payment --}}
+                                    <label class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 cursor-pointer hover:border-pink-500 transition">
+
+                                        <input
+                                            type="radio"
+                                            name="payment_method"
+                                            value="online"
+                                            class="paymentMethod w-5 h-5 accent-pink-500"
+                                            checked>
+
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">
+                                                Online Payment
+                                            </h4>
+
+                                            <p class="text-gray-500 text-sm">
+                                                Secure payment using Payment Gateway
+                                            </p>
+                                        </div>
+
+                                    </label>
+
+
+                                    {{-- QR Payment --}}
+                                    <label class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 cursor-pointer hover:border-pink-500 transition">
+
+                                        <input
+                                            type="radio"
+                                            name="payment_method"
+                                            value="qr"
+                                            class="paymentMethod w-5 h-5 accent-pink-500">
+
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">
+                                                QR Payment
+                                            </h4>
+
+                                            <p class="text-gray-500 text-sm">
+                                                Scan QR Code and upload payment proof
+                                            </p>
+                                        </div>
+
+                                    </label>
+
+
+                                    {{-- Direct Bank Transfer --}}
+                                    <label class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 cursor-pointer hover:border-pink-500 transition">
+
+                                        <input
+                                            type="radio"
+                                            name="payment_method"
+                                            value="bank_transfer"
+                                            class="paymentMethod w-5 h-5 accent-pink-500">
+
+                                        <div>
+                                            <h4 class="font-semibold text-gray-800">
+                                                Direct Bank Transfer
+                                            </h4>
+
+                                            <p class="text-gray-500 text-sm">
+                                                Transfer directly to our bank account
+                                            </p>
+                                        </div>
+
+                                    </label>
+
+                                </div>
+
+
+                                {{-- QR Section --}}
+                                <div id="qrSection" class="hidden mt-6">
+
+                                    <div class="rounded-2xl border border-pink-100 bg-pink-50 p-6">
+
+                                        <h4 class="text-xl font-semibold text-gray-800 mb-5">
+                                            Scan QR Code
+                                        </h4>
+
+                                        <div class="text-center">
+
+                                            <img
+                                                src="{{ asset('images/qr.jpg') }}"
+                                                alt="Payment QR Code"
+                                                class="w-56 h-56 object-contain mx-auto rounded-xl bg-white p-3 shadow">
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                {{-- Bank Transfer Section --}}
+                                <div id="bankSection" class="hidden mt-6">
+
+                                    <div class="rounded-2xl border border-blue-100 bg-blue-50 p-6">
+
+                                        <h4 class="text-xl font-semibold text-gray-800 mb-4">
+                                            Bank Transfer Details
+                                        </h4>
+
+                                        <div class="space-y-2 text-gray-700">
+
+                                            <p>
+                                                <strong>Bank Name:</strong>
+                                                Your Bank Name
+                                            </p>
+
+                                            <p>
+                                                <strong>Account Name:</strong>
+                                                Your Account Name
+                                            </p>
+
+                                            <p>
+                                                <strong>Account Number:</strong>
+                                                XXXXXXXX
+                                            </p>
+
+                                            <p>
+                                                <strong>IFSC Code:</strong>
+                                                XXXXXXXX
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                {{-- Payment Proof --}}
+                                <div id="paymentProofSection" class="hidden mt-6">
+
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Payment Proof
+                                        <span class="text-red-500">*</span>
+                                    </label>
+
+                                    <input
+                                        type="file"
+                                        name="payment_proof"
+                                        accept="image/*,.pdf"
+                                        class="w-full rounded-xl border border-gray-300 px-4 py-3">
+
+                                    <p class="text-sm text-gray-500 mt-2">
+                                        Upload screenshot, receipt or transaction proof.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            {{-- Submit --}}
+
+                            <div class="mt-6">
+
+                                <button
+                                    id="paymentBtn"
+                                    type="submit"
+                                    class="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-pink-600 via-fuchsia-600 to-blue-600 px-6 py-4 text-base font-extrabold text-white shadow-lg shadow-pink-200 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pink-300 focus:outline-none focus:ring-4 focus:ring-pink-200">
+
+                                    <span>
+                                        Proceed To Checkout
+                                    </span>
+
+                                    <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
+                                        ₹ {{ number_format($finalTotalPayable, 2) }}
+                                    </span>
+
+                                    <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
+
+                                </button>
+
+                            </div>
+
+                            {{-- <div class="mt-10">
+
+                                <button
+                                    id="paymentBtn"
+                                    type="submit"
+                                    class="px-8 py-3 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-700 transition">
+
+                                    Proceed To Secure Payment
+                                    <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
+                                        ₹ {{ number_format($finalTotalPayable, 2) }}
+                                    </span>
+
+                                    <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
+
+                                </button>
+
+
+
+                            </div> --}}
+
+                        </form>
+
 
                         {{-- Proceed Button --}}
 
-                        <div class="mt-6">
+                        {{-- <div class="mt-6">
 
                             <button
                                 type="button"
@@ -888,7 +1102,7 @@
 
                             </button>
 
-                        </div>
+                        </div> --}}
 
 
                         {{-- Secure Payment Text --}}
@@ -945,5 +1159,81 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const paymentMethods = document.querySelectorAll('.paymentMethod');
+
+        const qrSection = document.getElementById('qrSection');
+        const bankSection = document.getElementById('bankSection');
+        const paymentProofSection = document.getElementById('paymentProofSection');
+
+        const paymentBtn = document.getElementById('paymentBtn');
+        const paymentProof = document.querySelector('input[name="payment_proof"]');
+
+
+        function togglePaymentSection() {
+
+            const selected = document.querySelector('.paymentMethod:checked').value;
+
+
+            // Reset
+            qrSection.classList.add('hidden');
+            bankSection.classList.add('hidden');
+            paymentProofSection.classList.add('hidden');
+
+            paymentProof.removeAttribute('required');
+
+
+            // Online Payment
+            if (selected === 'online') {
+
+                paymentBtn.innerHTML = 'Proceed To Secure Payment';
+
+            }
+
+
+            // QR Payment
+            else if (selected === 'qr') {
+
+                qrSection.classList.remove('hidden');
+
+                paymentProofSection.classList.remove('hidden');
+
+                paymentProof.setAttribute('required', true);
+
+                paymentBtn.innerHTML = 'Submit Payment Proof';
+
+            }
+
+
+            // Direct Bank Transfer
+            else if (selected === 'bank_transfer') {
+
+                bankSection.classList.remove('hidden');
+
+                paymentProofSection.classList.remove('hidden');
+
+                paymentProof.setAttribute('required', true);
+
+                paymentBtn.innerHTML = 'Submit Payment Proof';
+
+            }
+
+        }
+
+
+        paymentMethods.forEach(function (item) {
+
+            item.addEventListener('change', togglePaymentSection);
+
+        });
+
+
+        togglePaymentSection();
+
+    });
+</script>
 
 @endsection

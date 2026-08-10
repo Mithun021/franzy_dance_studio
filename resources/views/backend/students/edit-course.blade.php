@@ -663,7 +663,8 @@ $(function () {
                 name="batch_radio"
                 value="${batch.id}"
                 ${checked}
-                ${disabled}>
+                // ${disabled}
+                >
 
             <label class="form-check-label w-100">
 
@@ -771,7 +772,7 @@ $(function () {
 
         let levelId = $("#level_id").val();
 
-        let categoryId = $("#category_id").val();
+        // let categoryId = $("#category_id").val();
 
         let regFee = $("#registration_fee");
 
@@ -811,7 +812,7 @@ $(function () {
 
         $("#grand_total").val("");
 
-        if (!courseId || !levelId || !categoryId) {
+        if (!courseId || !levelId) {
 
             return;
 
@@ -835,7 +836,7 @@ $(function () {
 
                 level_id: levelId,
 
-                category_id: categoryId
+                // category_id: categoryId
 
             },
 
@@ -962,11 +963,11 @@ $(function () {
 
     });
 
-    $('#category_id').on('change',function(){
+    // $('#category_id').on('change',function(){
 
-        fetchFeeStructure();
+    //     fetchFeeStructure();
 
-    });
+    // });
 
     /*
     |--------------------------------------------------------------------------

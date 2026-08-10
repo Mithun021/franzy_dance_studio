@@ -4,327 +4,468 @@
 
 @section('backend-content')
 
-<style>
-    tr th, tr td{
-        font-size: 12px;
-    }
-    table table tr th, table table tr td{
-        font-size: 10px;
-    }
-</style>
+<div class="card-header d-flex justify-content-between align-items-center">
 
-<div class="container-fluid">
+    <h4 class="mb-0">
+        Billing List
+    </h4>
 
-<div class="card">
+    <a href="{{ route('billing.create') }}"
+       class="btn btn-primary">
 
-    <div class="card-header d-flex justify-content-between align-items-center">
+        <i class="mdi mdi-plus"></i>
 
-        <h4 class="mb-0">
-            Billing List
-        </h4>
+        New Billing
 
-        <a href="{{ route('billing.create') }}"
-           class="btn btn-primary">
+    </a>
 
-            <i class="mdi mdi-plus"></i>
+</div>
 
-            New Billing
+<div class="card-body">
 
-        </a>
+    <div class="table-responsive">
 
-    </div>
+        <table class="table table-bordered table-hover align-middle" id="datatable-buttons">
 
-    <div class="card-body">
+            <thead class="table-dark">
 
-        <div class="table-responsive">
+            <tr>
 
-            <table class="table table-bordered table-hover align-middle" id="datatable-buttons">
+                <th>#</th>
 
-                <thead class="table-dark">
+                <th>Student</th>
+
+                <th>Course</th>
+
+                {{-- <th>Duration</th> --}}
+
+                <th>Batch</th>
+
+                <th>Course Amount</th>
+
+                <th>Monthly Fee</th>
+
+                <th>Total Received</th>
+
+                <th>Due Amount</th>
+
+                <th>Payment History</th>
+
+                <th>Status</th>
+
+                <th width="120" id="no-export">Action</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            @forelse($billings as $key=>$row)
+
+                @php
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | All Payments
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $payments = \App\Models\StudentPayment::where(
+                        'student_course_id',
+                        $row->id
+                    )
+                    ->orderBy('payment_date')
+                    ->get();
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Total Received
+                    |--------------------------------------------------------------------------
+                    | Only SUCCESS payments will be counted
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $received = \App\Models\StudentPayment::where(
+                        'student_course_id',
+                        $row->id
+                    )
+                    ->where('status', 'success')
+                    ->sum('amount');
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Due Amount
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $due = $row->grand_total - $received;
+
+                @endphp
 
                 <tr>
 
-                    <th>#</th>
+                    <td>
 
-                    <th>Student</th>
+                        {{ $key+1 }}
 
-                    <th>Course</th>
+                    </td>
 
-                    {{-- <th>Duration</th> --}}
+                    <td>
 
-                    <th>Batch</th>
+                        <strong>
 
-                    <th>Course Amount</th>
+                            {{ $row->student->name }}
 
-                    <th>Monthly Fee</th>
+                        </strong>
 
-                    <th>Total Received</th>
+                        <br>
 
-                    <th>Due Amount</th>
+                        <small>
 
-                    <th>Payment History</th>
+                            {{ $row->admission_no }}
 
-                    <th>Status</th>
+                        </small>
 
-                    <th width="120" id="no-export">Action</th>
+                    </td>
 
-                </tr>
+                    <td>
 
-                </thead>
+                        <p class="m-0">
+                            {{ $row->course->course_name }}
+                        </p>
 
-                <tbody>
+                        <small class="text-primary">
 
-                @forelse($billings as $key=>$row)
+                            {{ $row->course_duration }}
 
-                    @php
+                            {{ $row->duration_type }}
 
-                        $received = \App\Models\StudentPayment::where(
-                            'student_course_id',
-                            $row->id
-                        )->sum('amount');
+                        </small>
 
-                        $due = $row->grand_total - $received;
+                    </td>
 
-                        $payments = \App\Models\StudentPayment::where(
-                            'student_course_id',
-                            $row->id
-                        )->orderBy('payment_date')
-                        ->get();
+                    <td>
 
-                    @endphp
+                        {{ $row->batch->batch_name ?? '-' }}
 
-                    <tr>
+                    </td>
 
-                        <td>
+                    <td>
 
-                            {{ $key+1 }}
+                        ₹ {{ number_format($row->grand_total,2) }}
 
-                        </td>
+                    </td>
 
-                        <td>
+                    <td>
 
-                            <strong>
+                        ₹ {{ number_format($row->course_fee,2) }}
 
-                                {{ $row->student->name }}
+                    </td>
 
-                            </strong>
+                    {{-- ================================================= --}}
+                    {{-- Total Received - SUCCESS ONLY --}}
+                    {{-- ================================================= --}}
 
-                            <br>
+                    <td class="text-success fw-bold">
 
-                            <small>
+                        ₹ {{ number_format($received,2) }}
 
-                                {{ $row->admission_no }}
+                    </td>
 
-                            </small>
+                    {{-- ================================================= --}}
+                    {{-- Due Amount --}}
+                    {{-- ================================================= --}}
 
-                        </td>
+                    <td>
 
-                        <td>
+                        @if($due <= 0)
 
-                            <p class="m-0">{{ $row->course->course_name }}</p>
+                            <span class="badge bg-success">
 
-                            <small class="text-primary">
-                                {{ $row->course_duration }}
+                                Complete
 
-                                {{ $row->duration_type }}
-                            </small>
+                            </span>
 
-                        </td>
+                        @else
 
-                        <td>
+                            <span class="badge bg-danger">
 
-                            {{ $row->batch->batch_name ?? '-' }}
+                                ₹ {{ number_format($due,2) }}
 
-                        </td>
+                            </span>
 
-                        <td>
+                        @endif
 
-                            ₹ {{ number_format($row->grand_total,2) }}
+                    </td>
 
-                        </td>
+                    {{-- ================================================= --}}
+                    {{-- Payment History --}}
+                    {{-- ================================================= --}}
 
-                        <td>
+                    <td>
 
-                            ₹ {{ number_format($row->course_fee,2) }}
+                        @if($payments->count())
 
-                        </td>
+                            <table class="table table-sm table-bordered mb-0">
 
-                        <td class="text-success fw-bold">
+                                <thead>
 
-                            ₹ {{ number_format($received,2) }}
+                                <tr>
 
-                        </td>
+                                    <th>Date</th>
 
-                        <td>
+                                    <th>Mode</th>
 
-                            @if($due<=0)
+                                    <th>Amount</th>
 
-                                <span class="badge bg-success">
+                                    <th>Status</th>
 
-                                    Complete
+                                    <th>Inv</th>
 
-                                </span>
+                                </tr>
 
-                            @else
+                                </thead>
 
-                                <span class="badge bg-danger">
+                                <tbody>
 
-                                    ₹ {{ number_format($due,2) }}
-
-                                </span>
-
-                            @endif
-
-                        </td>
-
-                        <td>
-
-                            @if($payments->count())
-
-                                <table class="table table-sm table-bordered mb-0">
-
-                                    <thead>
+                                @foreach($payments as $payment)
 
                                     <tr>
 
-                                        <th>Date</th>
+                                        {{-- Date --}}
 
-                                        <th>Mode</th>
+                                        <td>
 
-                                        <th>Amount</th>
-                                        <th>Inv</th>
+                                            {{ $payment->payment_date->format('d M Y') }}
 
-                                    </tr>
+                                        </td>
 
-                                    </thead>
 
-                                    <tbody>
+                                        {{-- Payment Mode --}}
 
-                                    @foreach($payments as $payment)
+                                        <td>
 
-                                        <tr>
+                                            {{ $payment->payment_mode }}
 
-                                            <td>
+                                        </td>
 
-                                                {{ $payment->payment_date->format('d M Y') }}
 
-                                            </td>
+                                        {{-- Amount --}}
 
-                                            <td>
+                                        <td>
 
-                                                {{ $payment->payment_mode }}
+                                            ₹ {{ number_format($payment->amount,2) }}
 
-                                            </td>
+                                        </td>
 
-                                            <td>
 
-                                                ₹ {{ number_format($payment->amount,2) }}
+                                        {{-- Status --}}
 
-                                            </td>
-                                            <td class="text-center">
+                                        <td>
 
-                                                <a href="{{ route('billing.invoice',$payment->id) }}"
-                                                class="btn btn-sm btn-primary"
-                                                target="_blank"
-                                                title="View Invoice">
+                                            @if($payment->status === 'success')
+
+                                                <span class="badge bg-success">
+
+                                                    Success
+
+                                                </span>
+
+                                            @elseif($payment->status === 'pending')
+
+                                                <span class="badge bg-warning text-dark">
+
+                                                    Pending
+
+                                                </span>
+
+                                            @elseif($payment->status === 'failed')
+
+                                                <span class="badge bg-danger">
+
+                                                    Failed
+
+                                                </span>
+
+                                            @elseif($payment->status === 'cancelled')
+
+                                                <span class="badge bg-secondary">
+
+                                                    Cancelled
+
+                                                </span>
+
+                                            @elseif($payment->status === 'refunded')
+
+                                                <span class="badge bg-info">
+
+                                                    Refunded
+
+                                                </span>
+
+                                            @else
+
+                                                <span class="badge bg-dark">
+
+                                                    {{ ucfirst($payment->status) }}
+
+                                                </span>
+
+                                            @endif
+
+                                             @if(
+                                                $payment->payment_mode !== 'Online Payment'
+                                                && !empty($payment->payment_proof)
+                                            )
+
+                                                <a
+                                                    href="{{ asset('storage/' . $payment->payment_proof) }}"
+                                                    target="_blank"
+                                                    class="btn btn-sm btn-secondary"
+                                                    title="View Payment Proof">
+
+                                                    <i class="mdi mdi-file-image"></i>
+
+                                                </a>
+
+                                            @else
+
+                                                <span class="text-muted">-</span>
+
+                                            @endif
+
+                                        </td>
+
+
+                                        {{-- Invoice --}}
+                                        {{-- Invoice ONLY for SUCCESS payment --}}
+
+                                        <td class="text-center">
+
+                                            @if($payment->status === 'success')
+
+                                                <a
+                                                    href="{{ route('billing.invoice',$payment->id) }}"
+                                                    class="btn btn-sm btn-primary"
+                                                    target="_blank"
+                                                    title="View Invoice">
 
                                                     <i class="mdi mdi-file-document"></i>
 
                                                 </a>
 
-                                            </td>
+                                            @else
 
-                                        </tr>
+                                                <span class="text-muted">
 
-                                    @endforeach
+                                                    -
 
-                                    </tbody>
+                                                </span>
 
-                                </table>
+                                            @endif
 
-                            @else
+                                        </td>
 
-                                -
+                                    </tr>
 
-                            @endif
+                                @endforeach
 
-                        </td>
+                                </tbody>
 
-                        <td>
+                            </table>
 
-                            @if($due<=0)
+                        @else
 
-                                <span class="badge bg-success">
+                            -
 
-                                    Completed
+                        @endif
 
-                                </span>
+                    </td>
 
-                            @else
+                    {{-- ================================================= --}}
+                    {{-- Overall Billing Status --}}
+                    {{-- ================================================= --}}
 
-                                <span class="badge bg-warning">
+                    <td>
 
-                                    Pending
+                        @if($due <= 0)
 
-                                </span>
+                            <span class="badge bg-success">
 
-                            @endif
+                                Completed
 
-                        </td>
+                            </span>
 
-                        <td>
+                        @else
 
-                            @if($due>0)
+                            <span class="badge bg-warning">
 
-                                <a href="{{ route('billing.manage',$row->id) }}"
-                                    class="btn btn-primary btn-sm">
+                                Pending
 
-                                    <i class="fa fa-credit-card"></i>
+                            </span>
 
-                                    Manage Payment
+                        @endif
 
-                                </a>
+                    </td>
 
-                            @else
+                    {{-- ================================================= --}}
+                    {{-- Action --}}
+                    {{-- ================================================= --}}
 
-                                <button
-                                    class="btn btn-success btn-sm"
-                                    disabled>
+                    <td>
 
-                                    Paid
+                        @if($due > 0)
 
-                                </button>
+                            <a
+                                href="{{ route('billing.manage',$row->id) }}"
+                                class="btn btn-primary btn-sm">
 
-                            @endif
+                                <i class="fa fa-credit-card"></i>
 
-                        </td>
+                                Manage Payment
 
-                    </tr>
+                            </a>
 
-                @empty
+                        @else
 
-                    <tr>
+                            <button
+                                class="btn btn-success btn-sm"
+                                disabled>
 
-                        <td colspan="12"
-                            class="text-center">
+                                Paid
 
-                            No Billing Found
+                            </button>
 
-                        </td>
+                        @endif
 
-                    </tr>
+                    </td>
 
-                @endforelse
+                </tr>
 
-                </tbody>
+            @empty
 
-            </table>
+                <tr>
 
-        </div>
+                    <td
+                        colspan="12"
+                        class="text-center">
+
+                        No Billing Found
+
+                    </td>
+
+                </tr>
+
+            @endforelse
+
+            </tbody>
+
+        </table>
 
     </div>
-
-</div>
 
 </div>
 

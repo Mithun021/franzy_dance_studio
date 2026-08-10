@@ -237,7 +237,7 @@
                                     type="text"
                                     class="form-control bg-light"
                                     readonly
-                                    value="{{ $student_course->level->level_name ?? '' }}">
+                                    value="{{ $student_course->level->name ?? '' }}">
 
                             </div>
 
@@ -253,7 +253,7 @@
                                     type="text"
                                     class="form-control bg-light"
                                     readonly
-                                    value="{{ $student_course->category->category_name ?? '' }}">
+                                    value="{{ $student_course->category->name ?? '' }}">
 
                             </div>
 
@@ -520,7 +520,7 @@
 
                                         <th>Remarks</th>
 
-                                        <th width="8%">Action</th>
+                                        <th>Action</th>
 
                                     </tr>
 
@@ -672,6 +672,7 @@
 
                                         <td class="text-center">
 
+                                            <div class="d-flex gap-2">
                                             <button
                                                 type="button"
                                                 class="btn btn-danger btn-sm delete-payment"
@@ -680,6 +681,21 @@
                                                 <i class="mdi mdi-delete"></i>
 
                                             </button>
+
+                                            @if($payment->status === 'pending')
+
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-success btn-sm confirm-payment"
+                                                    data-id="{{ $payment->id }}"
+                                                    title="Confirm Payment">
+
+                                                    <i class="mdi mdi-check-circle"></i>
+
+                                                </button>
+
+                                            @endif
+                                            </div>
 
                                         </td>
 
@@ -1526,6 +1542,119 @@ $(document).ready(function(){
     calculatePayment();
 
     });
+
+</script>
+
+<script>
+
+$(document).on('click', '.confirm-payment', function () {
+
+    let button = $(this);
+
+    let paymentId = button.data('id');
+
+
+    if (!confirm('Are you sure you want to confirm this payment?')) {
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Disable Button
+    |--------------------------------------------------------------------------
+    */
+
+    button.prop('disabled', true);
+
+    button.html(
+        '<i class="fa fa-spinner fa-spin"></i>'
+    );
+
+
+    $.ajax({
+
+        url: "{{ route('billing.payment.confirm', ':id') }}".replace(':id', paymentId),
+
+        type: "POST",
+
+        data: {
+            _token: "{{ csrf_token() }}"
+        },
+
+
+        success: function (response) {
+
+            if (response.status) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update Status Without Page Reload
+                |--------------------------------------------------------------------------
+                */
+
+                button
+                    .removeClass('btn-success')
+                    .addClass('btn-secondary')
+                    .prop('disabled', true)
+                    .html('<i class="mdi mdi-check-circle"></i>');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Remove Pending State
+                |--------------------------------------------------------------------------
+                */
+
+                button.attr('title', 'Payment Confirmed');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Optional Success Message
+                |--------------------------------------------------------------------------
+                */
+
+                alert(response.message);
+
+            }
+
+        },
+
+
+        error: function (xhr) {
+
+            let message = 'Something went wrong.';
+
+            if (
+                xhr.responseJSON &&
+                xhr.responseJSON.message
+            ) {
+
+                message = xhr.responseJSON.message;
+
+            }
+
+            alert(message);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Restore Button
+            |--------------------------------------------------------------------------
+            */
+
+            button.prop('disabled', false);
+
+            button.html(
+                '<i class="mdi mdi-check-circle"></i>'
+            );
+
+        }
+
+    });
+
+});
 
 </script>
 

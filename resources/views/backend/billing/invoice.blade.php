@@ -147,9 +147,9 @@ body{
 
             {{-- Uncomment if logo available --}}
 
-            {{--
-            <img src="{{ asset(setting('logo')) }}" class="logo">
-            --}}
+
+            <img src="{{ asset('images/logo.png') }}" class="logo">
+
 
         </div>
 
