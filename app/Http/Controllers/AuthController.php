@@ -51,57 +51,195 @@ class AuthController extends Controller
     //     return back()->withErrors(['email' => 'Invalid email or password.']);
     // }
 
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'email'    => 'required|email',
+    //         'password' => 'required|min:6',
+    //     ]);
+
+    //     $remember = $request->has('remember');
+
+    //     $credentials = $request->only('email', 'password');
+
+    //     if (Auth::attempt($credentials, $remember)) {
+
+    //         $request->session()->regenerate();
+
+    //         $user = Auth::user();
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Check Account Status
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($user->is_active != 'yes') {
+
+    //             Auth::logout();
+
+    //             $request->session()->invalidate();
+    //             $request->session()->regenerateToken();
+
+    //             return back()->withErrors([
+    //                 'email' => 'Your account has been deactivated. Please contact the administrator.'
+    //             ])->onlyInput('email');
+    //         }
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Redirect According to User Type
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($user->user_type == 'student') {
+    //             return redirect()->route('student.admission-form');
+    //         }
+
+    //         return redirect()->intended(route('admindashboard.get'));
+    //     }
+
+    //     return back()->withErrors([
+    //         'email' => 'Invalid email or password.'
+    //     ])->onlyInput('email');
+    // }
+
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
+            'email'    => 'required|string',
             'password' => 'required|min:6',
         ]);
 
+        $loginInput = trim($request->email);
+
         $remember = $request->has('remember');
 
-        $credentials = $request->only('email', 'password');
+        /*
+        |--------------------------------------------------------------------------
+        | Find User
+        |--------------------------------------------------------------------------
+        */
 
-        if (Auth::attempt($credentials, $remember)) {
+        $user = User::where(function ($query) use ($loginInput) {
 
-            $request->session()->regenerate();
+            // Email
+            $query->where('email', $loginInput)
 
-            $user = Auth::user();
+                // Phone
+                ->orWhere('phone', $loginInput)
 
-            /*
-            |--------------------------------------------------------------------------
-            | Check Account Status
-            |--------------------------------------------------------------------------
-            */
+                // User ID
+                ->orWhere('user_id', $loginInput);
 
-            if ($user->is_active != 'yes') {
+        })->first();
 
-                Auth::logout();
 
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
+        /*
+        |--------------------------------------------------------------------------
+        | User Not Found
+        |--------------------------------------------------------------------------
+        */
 
-                return back()->withErrors([
-                    'email' => 'Your account has been deactivated. Please contact the administrator.'
-                ])->onlyInput('email');
-            }
+        if (!$user) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Redirect According to User Type
-            |--------------------------------------------------------------------------
-            */
-
-            if ($user->user_type == 'student') {
-                return redirect()->route('student.admission-form');
-            }
-
-            return redirect()->intended(route('admindashboard.get'));
+            return back()
+                ->withErrors([
+                    'email' => 'Invalid email, phone, user ID or password.'
+                ])
+                ->onlyInput('email');
         }
 
-        return back()->withErrors([
-            'email' => 'Invalid email or password.'
-        ])->onlyInput('email');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Only Student Can Login Using Phone / User ID
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user->user_type !== 'student') {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Other Users
+            | Only Email + Password
+            |--------------------------------------------------------------------------
+            */
+
+            if ($user->email !== $loginInput) {
+
+                return back()
+                    ->withErrors([
+                        'email' => 'Please login using your registered email address.'
+                    ])
+                    ->onlyInput('email');
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check Password
+        |--------------------------------------------------------------------------
+        */
+
+        if (!Hash::check($request->password, $user->password)) {
+
+            return back()
+                ->withErrors([
+                    'email' => 'Invalid email, phone, user ID or password.'
+                ])
+                ->onlyInput('email');
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Login
+        |--------------------------------------------------------------------------
+        */
+
+        Auth::login($user, $remember);
+
+        $request->session()->regenerate();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check Account Status
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user->is_active != 'yes') {
+
+            Auth::logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors([
+                    'email' => 'Your account has been deactivated. Please contact the administrator.'
+                ])
+                ->onlyInput('email');
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Redirect According to User Type
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user->user_type === 'student') {
+
+            return redirect()->route('student.admission-form');
+        }
+
+
+        return redirect()->intended(
+            route('admindashboard.get')
+        );
     }
 
 
@@ -154,12 +292,34 @@ class AuthController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Generate User ID According to User Type
+        |--------------------------------------------------------------------------
+        */
+
+        $userType = 'student'; // faculty, student, admin/staff
+
+        $lastUser = User::where('user_type', $userType)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastUser && !empty($lastUser->user_id)) {
+
+            $userId = $lastUser->user_id + 1;
+
+        } else {
+
+            $userId = 1001;
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Create Student
         |--------------------------------------------------------------------------
         */
 
         $user = User::create([
-
+            'user_id'           => $userId,
             'name'              => $request->name,
             'email'             => $request->email,
             'password'          => Hash::make($request->password),

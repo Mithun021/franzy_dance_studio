@@ -142,3 +142,7 @@
 </div>
 
 @include('backend.stats.studio')
+@include('backend.stats.expense')
+@include('backend.stats.salary')
+@include('backend.stats.course-billing-stats')
+@include('backend.stats.chart-data')

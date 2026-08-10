@@ -68,7 +68,7 @@ class EmployeeController extends Controller implements HasMiddleware
 
             $userId = $lastUser
                 ? ((int) $lastUser->user_id + 1)
-                : 1001;
+                : 10001;
 
             $user = User::create([
                 'user_id'     => $userId,

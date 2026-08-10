@@ -3,9 +3,9 @@
     <head>
 
         <meta charset="utf-8" />
-        <title>Log In | Roles & Permission</title>
+        <title>Log In | Franzy Dance Studio</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Dcode Materials"/>
+        <meta name="description" content="Franzy Dance Studio"/>
         <meta name="author" content="Dcode Materials"/>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
@@ -50,24 +50,24 @@
                                                         </a>
                                                     </div>
                                                 </div>
-        
-                                                <div class="auth-title-section mb-4 text-lg-start text-center"> 
+
+                                                <div class="auth-title-section mb-4 text-lg-start text-center">
                                                     <h3 class="text-dark fw-semibold mb-3">Welcome back! Please Sign in to continue.</h3>
                                                 </div>
-        
+
                                                 <div class="pt-0">
                                                     <form method="post" action="{{ route('adminlogin.post') }}" class="my-4">
                                                       @csrf
                                                         <div class="form-group mb-3">
-                                                            <label for="emailaddress" class="form-label">Email address</label>
-                                                            <input class="form-control" type="email" name="email" id="emailaddress" value="{{ old('email') }}" placeholder="Enter your email">
+                                                            <label for="emailaddress" class="form-label">User id/ Phone / Email</label>
+                                                            <input class="form-control" type="text" name="email" id="emailaddress" value="{{ old('email') }}" placeholder="Enter your email">
                                                         </div>
-                            
+
                                                         <div class="form-group mb-3">
                                                             <label for="password" class="form-label">Password</label>
                                                             <input type="password" class="form-control" name="password" id="password" placeholder="Enter your password">
                                                         </div>
-                            
+
                                                         <div class="form-group d-flex mb-3">
                                                             <div class="col-sm-6">
                                                                 <div class="form-check">
@@ -76,10 +76,10 @@
                                                                 </div>
                                                             </div>
                                                             <div class="col-sm-6 text-end">
-                                                                <a class='text-muted fs-14' href='auth-recoverpw.html'>Forgot password?</a>                             
+                                                                <a class='text-muted fs-14' href='auth-recoverpw.html'>Forgot password?</a>
                                                             </div>
                                                         </div>
-                                                        
+
                                                         <div class="form-group mb-0 row">
                                                             <div class="col-12">
                                                                 <div class="d-grid">
@@ -92,13 +92,13 @@
                                                             @endif
                                                         </div>
                                                     </form>
-                                                    
+
                                                 </div>
                                             </div>
-                                        </div> 
+                                        </div>
                                     </div>
                                 </div>
-                                
+
                             </div>
                         </div>
                     </div>
@@ -106,7 +106,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- END wrapper -->
 
         <!-- Vendor -->
@@ -120,6 +120,6 @@
 
         <!-- App js-->
         <script src="{{ asset('assets/js/app.js') }}"></script>
-        
+
     </body>
 </html>
