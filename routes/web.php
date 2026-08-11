@@ -24,6 +24,7 @@ use App\Http\Controllers\StudioCategoryController;
 use App\Http\Controllers\StudioController;
 use App\Http\Controllers\SyllabusController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\WebsiteController;
 use Illuminate\Support\Facades\Route;
 
 // Global route for the website
@@ -86,6 +87,7 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::delete('/billing/delete-payment/{payment}',[BillingController::class,'deletePayment'])->name('billing.delete-payment');
     Route::post( '/billing/payment/{payment}/confirm', [BillingController::class, 'confirmPayment'] )->name('billing.payment.confirm');
     Route::get('/billing/invoice/{payment}',[BillingController::class,'invoice'])->name('billing.invoice');
+    Route::get('/course-payment', [ BillingController::class, 'paymentHistory' ])->name('course.payment.index');
 
     Route::prefix('holidays')->name('holidays.')->group(function () {
 
@@ -194,6 +196,9 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
             ->name('payment-history');
 
     });
+
+    Route::get('/payment-history/studio-payment', [StudioBookedController::class, 'studioPaymentHistory'])
+    ->name('studio-payment.history');
 
     Route::get('rules', [RulesController::class, 'index'])
     ->name('rules.index');

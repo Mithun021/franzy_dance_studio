@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Course;
 use App\Models\LateFine;
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
@@ -2060,5 +2061,190 @@ class BillingController extends Controller
             'message' =>
                 'Unexpected late fine calculation condition.',
         ]);
+    }
+
+    public function paymentHistory(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Filters
+        |--------------------------------------------------------------------------
+        */
+
+        $studentId = $request->student_id;
+        $courseId  = $request->course_id;
+        $status    = $request->status;
+        $fromDate  = $request->from_date;
+        $toDate    = $request->to_date;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Query
+        |--------------------------------------------------------------------------
+        |
+        | Every StudentPayment record will be shown separately.
+        |
+        */
+
+        $payments = StudentPayment::with([
+            'student:id,name,email,phone',
+            'studentCourse:id,user_id,course_id,level_id,category_id,batch_id,admission_no,course_duration,duration_type',
+            'studentCourse.course:id,course_name,duration,duration_type',
+            'studentCourse.level:id,name',
+            'studentCourse.category:id,name',
+            'studentCourse.batch:id,batch_name',
+        ])
+        /*
+        |--------------------------------------------------------------------------
+        | Student Filter
+        |--------------------------------------------------------------------------
+        */
+
+        ->when($studentId, function ($query) use ($studentId) {
+
+            $query->where('user_id', $studentId);
+
+        })
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Course Filter
+        |--------------------------------------------------------------------------
+        */
+
+        ->when($courseId, function ($query) use ($courseId) {
+
+            $query->whereHas('studentCourse', function ($q) use ($courseId) {
+
+                $q->where('course_id', $courseId);
+
+            });
+
+        })
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        ->when($status, function ($query) use ($status) {
+
+            $query->where('status', $status);
+
+        })
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | From Date
+        |--------------------------------------------------------------------------
+        */
+
+        ->when($fromDate, function ($query) use ($fromDate) {
+
+            $query->whereDate('payment_date', '>=', $fromDate);
+
+        })
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | To Date
+        |--------------------------------------------------------------------------
+        */
+
+        ->when($toDate, function ($query) use ($toDate) {
+
+            $query->whereDate('payment_date', '<=', $toDate);
+
+        })
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Latest Payment First
+        |--------------------------------------------------------------------------
+        */
+
+        ->orderByDesc('payment_date')
+        ->orderByDesc('id')
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        ->paginate(25)
+
+        ->withQueryString();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Students
+        |--------------------------------------------------------------------------
+        |
+        | Only users whose use_type is student.
+        |
+        */
+
+        $students = User::where('user_type', 'student')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'email',
+                'phone',
+            ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Courses
+        |--------------------------------------------------------------------------
+        */
+
+        $courses = Course::orderBy('course_name')
+            ->get([
+                'id',
+                'course_name',
+            ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Statuses
+        |--------------------------------------------------------------------------
+        */
+
+        $statuses = StudentPayment::query()
+            ->whereNotNull('status')
+            ->where('status', '!=', '')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return View
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.payment-history.course-payment',
+            compact(
+                'payments',
+                'students',
+                'courses',
+                'statuses'
+            )
+        );
     }
 }
