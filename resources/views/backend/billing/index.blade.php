@@ -4,6 +4,7 @@
 
 @section('backend-content')
 
+<div class="card">
 <div class="card-header d-flex justify-content-between align-items-center">
 
     <h4 class="mb-0">
@@ -83,8 +84,9 @@
                     |--------------------------------------------------------------------------
                     | Total Received
                     |--------------------------------------------------------------------------
-                    | Only SUCCESS payments will be counted
-                    |--------------------------------------------------------------------------
+                    |
+                    | SUCCESS payments only
+                    |
                     */
 
                     $received = \App\Models\StudentPayment::where(
@@ -97,11 +99,47 @@
 
                     /*
                     |--------------------------------------------------------------------------
+                    | Total Late Fine
+                    |--------------------------------------------------------------------------
+                    |
+                    | SUCCESS payments ke andar stored late fine
+                    |
+                    */
+
+                    $totalLateFine = \App\Models\StudentPayment::where(
+                        'student_course_id',
+                        $row->id
+                    )
+                    ->where('status', 'success')
+                    ->sum('late_fine');
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Actual Course Received
+                    |--------------------------------------------------------------------------
+                    |
+                    | Payment amount me late fine included hai.
+                    | Isliye course ke against actual received:
+                    |
+                    | Total Received - Late Fine
+                    |
+                    */
+
+                    $courseReceived = $received - $totalLateFine;
+
+                    $courseReceived = max($courseReceived, 0);
+
+
+                    /*
+                    |--------------------------------------------------------------------------
                     | Due Amount
                     |--------------------------------------------------------------------------
                     */
 
-                    $due = $row->grand_total - $received;
+                    $due = $row->grand_total - $courseReceived;
+
+                    $due = max($due, 0);
 
                 @endphp
 
@@ -171,7 +209,30 @@
 
                     <td class="text-success fw-bold">
 
-                        ₹ {{ number_format($received,2) }}
+                        <div>
+                            ₹ {{ number_format($received, 2) }}
+                        </div>
+
+                        @if($totalLateFine > 0)
+
+                            <small class="text-danger d-block mt-1">
+
+                                <i class="mdi mdi-clock-alert-outline"></i>
+
+                                Late Fine:
+                                ₹ {{ number_format($totalLateFine, 2) }}
+
+                            </small>
+
+                        @else
+
+                            <small class="text-muted d-block mt-1">
+
+                                Late Fine: ₹ 0.00
+
+                            </small>
+
+                        @endif
 
                     </td>
 
@@ -189,13 +250,35 @@
 
                             </span>
 
+                            @if($totalLateFine > 0)
+
+                                <small class="d-block text-muted mt-1">
+
+                                    Course Paid:
+                                    ₹ {{ number_format($courseReceived, 2) }}
+
+                                </small>
+
+                            @endif
+
                         @else
 
                             <span class="badge bg-danger">
 
-                                ₹ {{ number_format($due,2) }}
+                                ₹ {{ number_format($due, 2) }}
 
                             </span>
+
+                            @if($totalLateFine > 0)
+
+                                <small class="d-block text-muted mt-1">
+
+                                    Course Paid:
+                                    ₹ {{ number_format($courseReceived, 2) }}
+
+                                </small>
+
+                            @endif
 
                         @endif
 
@@ -257,7 +340,20 @@
 
                                         <td>
 
-                                            ₹ {{ number_format($payment->amount,2) }}
+                                            <div>
+                                                ₹ {{ number_format($payment->amount, 2) }}
+                                            </div>
+
+                                            @if($payment->late_fine > 0)
+
+                                                <small class="text-danger d-block">
+
+                                                    Late Fine:
+                                                    ₹ {{ number_format($payment->late_fine, 2) }}
+
+                                                </small>
+
+                                            @endif
 
                                         </td>
 
@@ -467,6 +563,7 @@
 
     </div>
 
+</div>
 </div>
 
 @endsection

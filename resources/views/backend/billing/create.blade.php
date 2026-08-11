@@ -6,7 +6,9 @@
 
 <div class="container-fluid">
 
+    {{-- ========================================================= --}}
     {{-- Alerts --}}
+    {{-- ========================================================= --}}
 
     @if(session('success'))
 
@@ -14,11 +16,16 @@
 
             {{ session('success') }}
 
-            <button class="btn-close" data-bs-dismiss="alert"></button>
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
 
         </div>
 
     @endif
+
 
     @if(session('error'))
 
@@ -26,11 +33,16 @@
 
             {{ session('error') }}
 
-            <button class="btn-close" data-bs-dismiss="alert"></button>
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
 
         </div>
 
     @endif
+
 
     @if($errors->any())
 
@@ -50,33 +62,43 @@
 
     @endif
 
-    <form action="{{ route('billing.store') }}"
-          method="POST"
-          id="billingForm">
+
+
+    {{-- ========================================================= --}}
+    {{-- Billing Form --}}
+    {{-- ========================================================= --}}
+
+    <form
+        action="{{ route('billing.store') }}"
+        method="POST"
+        id="billingForm">
 
         @csrf
 
+
         <div class="card shadow">
+
+            {{-- ================================================= --}}
+            {{-- Header --}}
+            {{-- ================================================= --}}
 
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
 
                 <div>
 
                     <h4 class="mb-0">
-
                         Student Billing
-
                     </h4>
 
                     <small>
-
                         Collect Monthly / Admission Fees
-
                     </small>
 
                 </div>
 
-                <a href="{{ route('billing.index') }}"
+
+                <a
+                    href="{{ route('billing.index') }}"
                     class="btn btn-light">
 
                     <i class="fa fa-arrow-left me-1"></i>
@@ -87,7 +109,17 @@
 
             </div>
 
+
+            {{-- ================================================= --}}
+            {{-- Body --}}
+            {{-- ================================================= --}}
+
             <div class="card-body">
+
+
+                {{-- ================================================= --}}
+                {{-- Student & Course --}}
+                {{-- ================================================= --}}
 
                 <div class="row">
 
@@ -95,13 +127,16 @@
 
                     <div class="col-md-6 mb-3">
 
-                        <label class="form-label">
+                        <label
+                            for="student_id"
+                            class="form-label">
 
                             Student
 
                             <span class="text-danger">*</span>
 
                         </label>
+
 
                         <select
                             name="student_id"
@@ -110,10 +145,9 @@
                             required>
 
                             <option value="">
-
                                 Select Student
-
                             </option>
+
 
                             @foreach($students as $student)
 
@@ -131,17 +165,21 @@
 
                     </div>
 
-                    {{-- Course --}}
+
+                    {{-- Student Course --}}
 
                     <div class="col-md-6 mb-3">
 
-                        <label class="form-label">
+                        <label
+                            for="student_course_id"
+                            class="form-label">
 
                             Course
 
                             <span class="text-danger">*</span>
 
                         </label>
+
 
                         <select
                             name="student_course_id"
@@ -150,9 +188,7 @@
                             required>
 
                             <option value="">
-
                                 Select Student First
-
                             </option>
 
                         </select>
@@ -161,13 +197,19 @@
 
                 </div>
 
+
                 <hr>
 
+
+
+                {{-- ================================================= --}}
+                {{-- Course Information --}}
+                {{-- ================================================= --}}
+
                 <h5 class="mb-3">
-
                     Course Information
-
                 </h5>
+
 
                 <div class="card border">
 
@@ -175,13 +217,19 @@
 
                         <div class="row">
 
+
+                            {{-- Admission No --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="admission_no"
+                                    class="fw-bold">
 
                                     Admission No
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -191,13 +239,19 @@
 
                             </div>
 
+
+                            {{-- Admission Date --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="admission_date"
+                                    class="fw-bold">
 
                                     Admission Date
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -207,13 +261,19 @@
 
                             </div>
 
+
+                            {{-- Course Duration --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="course_duration"
+                                    class="fw-bold">
 
                                     Course Duration
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -223,13 +283,19 @@
 
                             </div>
 
+
+                            {{-- Batch --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="batch_name"
+                                    class="fw-bold">
 
                                     Batch
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -241,15 +307,22 @@
 
                         </div>
 
+
                         <div class="row">
+
+
+                            {{-- Level --}}
 
                             <div class="col-md-4 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="level_name"
+                                    class="fw-bold">
 
                                     Level
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -259,13 +332,19 @@
 
                             </div>
 
+
+                            {{-- Category --}}
+
                             <div class="col-md-4 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="category_name"
+                                    class="fw-bold">
 
                                     Category
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -275,13 +354,19 @@
 
                             </div>
 
+
+                            {{-- Course --}}
+
                             <div class="col-md-4 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="course_name"
+                                    class="fw-bold">
 
                                     Course
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -297,13 +382,19 @@
 
                 </div>
 
+
                 <br>
 
+
+
+                {{-- ================================================= --}}
+                {{-- Fee Summary --}}
+                {{-- ================================================= --}}
+
                 <h5 class="mb-3">
-
                     Fee Summary
-
                 </h5>
+
 
                 <div class="card border">
 
@@ -311,13 +402,19 @@
 
                         <div class="row">
 
+
+                            {{-- Registration Fee --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="registration_fee"
+                                    class="fw-bold">
 
                                     Registration Fee
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -327,13 +424,19 @@
 
                             </div>
 
+
+                            {{-- Admission Fee --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="admission_fee"
+                                    class="fw-bold">
 
                                     Admission Fee
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -343,13 +446,19 @@
 
                             </div>
 
+
+                            {{-- Monthly Fee --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="course_fee"
+                                    class="fw-bold">
 
                                     Monthly Fee
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -359,13 +468,19 @@
 
                             </div>
 
+
+                            {{-- Grand Total --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="grand_total"
+                                    class="fw-bold">
 
                                     Grand Total
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -377,59 +492,310 @@
 
                         </div>
 
-                        {{-- Hidden Values --}}
+
+                        {{-- Hidden Calculation Values --}}
 
                         <input
                             type="hidden"
-                            id="payment_count">
+                            id="payment_count"
+                            value="0">
+
 
                         <input
                             type="hidden"
-                            id="next_payable">
+                            id="next_payable"
+                            value="0">
+
 
                         <input
                             type="hidden"
-                            id="remaining_amount">
+                            id="remaining_amount"
+                            value="0">
 
                     </div>
 
                 </div>
 
+
                 <hr>
+
+
+
+                {{-- ========================================================= --}}
+                {{-- Late Fine --}}
+                {{-- ========================================================= --}}
+
+                <div
+                    id="lateFineSection"
+                    class="mt-4 d-none">
+
+                    <h5 class="mb-3">
+                        Late Fine
+                    </h5>
+
+
+                    <div class="card border">
+
+
+                        {{-- Late Fine Header --}}
+
+                        <div class="card-header bg-warning">
+
+                            <h6 class="mb-0">
+
+                                <i class="fa fa-clock me-1"></i>
+
+                                Late Fine Details
+
+                            </h6>
+
+                        </div>
+
+
+                        {{-- Late Fine Body --}}
+
+                        <div class="card-body">
+
+
+                            <div class="row">
+
+
+                                {{-- Payment Date --}}
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label
+                                        for="late_payment_date"
+                                        class="fw-bold">
+
+                                        Payment Date
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_payment_date"
+                                        class="form-control bg-light"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Due Date --}}
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label
+                                        for="late_due_date"
+                                        class="fw-bold">
+
+                                        Due Date
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_due_date"
+                                        class="form-control bg-light"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Previous Payment --}}
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label
+                                        for="late_previous_payment"
+                                        class="fw-bold">
+
+                                        Previous Payment
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_previous_payment"
+                                        class="form-control bg-light"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Late Fine --}}
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label
+                                        for="late_fine_amount"
+                                        class="fw-bold">
+
+                                        Late Fine
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_fine_amount"
+                                        class="form-control bg-light fw-bold text-danger"
+                                        value="0.00"
+                                        readonly>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div class="row">
+
+
+                                {{-- Fine Type --}}
+
+                                <div class="col-md-4 mb-3">
+
+                                    <label
+                                        for="late_fine_type"
+                                        class="fw-bold">
+
+                                        Fine Type
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_fine_type"
+                                        class="form-control bg-light"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Attendance Month --}}
+
+                                <div class="col-md-4 mb-3">
+
+                                    <label
+                                        for="late_attendance_month"
+                                        class="fw-bold">
+
+                                        Attendance Month
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_attendance_month"
+                                        class="form-control bg-light"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Attendance Status --}}
+
+                                <div class="col-md-4 mb-3">
+
+                                    <label
+                                        for="late_attendance_status"
+                                        class="fw-bold">
+
+                                        Attendance Status
+
+                                    </label>
+
+
+                                    <input
+                                        type="text"
+                                        id="late_attendance_status"
+                                        class="form-control bg-light"
+                                        readonly>
+
+                                </div>
+
+                            </div>
+
+
+
+                            {{-- Fine Message --}}
+
+                            <div
+                                id="lateFineMessage"
+                                class="alert mb-0 d-none">
+                            </div>
+
+
+
+                            {{-- Hidden Late Fine Values --}}
+
+                            <input
+                                type="hidden"
+                                name="late_fine"
+                                id="late_fine"
+                                value="0.00">
+
+
+                            <input
+                                type="hidden"
+                                name="late_fine_type"
+                                id="late_fine_type_hidden"
+                                value="">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <hr>
+
+
+
                 {{-- ========================================================= --}}
                 {{-- Payment Details --}}
                 {{-- ========================================================= --}}
 
-                <hr>
-
                 <h5 class="mb-3">
-
                     Payment Details
-
                 </h5>
 
+
                 <div class="card border">
+
+
+                    {{-- Payment Header --}}
 
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
 
                         <h6 class="mb-0">
-
                             Payment Entries
-
                         </h6>
+
 
                         <button
                             type="button"
                             class="btn btn-light btn-sm"
                             id="addPaymentRow">
 
-                            <i class="fa fa-plus"></i>
+                            <i class="fa fa-plus me-1"></i>
 
                             Add Payment
 
                         </button>
 
                     </div>
+
+
+
+                    {{-- Payment Table --}}
 
                     <div class="card-body p-0">
 
@@ -439,109 +805,101 @@
                                 class="table table-bordered align-middle mb-0"
                                 id="paymentTable">
 
+
                                 <thead class="table-light">
 
                                     <tr>
 
-                                        <th width="18%">
-
+                                        <th width="17%">
                                             Payment Date
-
                                         </th>
 
-                                        <th width="18%">
-
+                                        <th width="17%">
                                             Payment Mode
-
                                         </th>
 
                                         <th width="15%">
-
                                             Amount
-
                                         </th>
 
                                         <th width="20%">
-
                                             Transaction No.
-
                                         </th>
 
                                         <th>
-
                                             Remarks
-
                                         </th>
 
                                         <th width="8%">
-
                                             Action
-
                                         </th>
 
                                     </tr>
 
                                 </thead>
 
+
                                 <tbody>
 
+
+                                    {{-- First Payment Row --}}
+
                                     <tr>
+
+
+                                        {{-- Payment Date --}}
 
                                         <td>
 
                                             <input
                                                 type="date"
                                                 name="payment_date[]"
-                                                class="form-control"
-                                                value="{{ date('Y-m-d') }}">
+                                                class="form-control payment-date"
+                                                value="{{ date('Y-m-d') }}"
+                                                required>
 
                                         </td>
+
+
+                                        {{-- Payment Mode --}}
 
                                         <td>
 
                                             <select
                                                 name="payment_mode[]"
-                                                class="form-select payment-mode">
+                                                class="form-select payment-mode"
+                                                required>
 
                                                 <option value="">
-
                                                     Select
-
                                                 </option>
 
                                                 <option value="Cash">
-
                                                     Cash
-
                                                 </option>
 
                                                 <option value="UPI">
-
                                                     UPI
-
                                                 </option>
 
                                                 <option value="Card">
-
                                                     Card
-
                                                 </option>
 
                                                 <option value="Bank Transfer">
-
                                                     Bank Transfer
-
                                                 </option>
 
                                                 <option value="Cheque">
-
                                                     Cheque
-
                                                 </option>
 
                                             </select>
 
                                         </td>
+
+
+                                        {{-- Amount --}}
 
                                         <td>
 
@@ -551,9 +909,13 @@
                                                 min="0"
                                                 name="amount[]"
                                                 class="form-control payment-amount"
-                                                placeholder="0.00">
+                                                placeholder="0.00"
+                                                required>
 
                                         </td>
+
+
+                                        {{-- Transaction --}}
 
                                         <td>
 
@@ -561,9 +923,12 @@
                                                 type="text"
                                                 name="transaction_id[]"
                                                 class="form-control transaction-id"
-                                                placeholder="Transaction No">
+                                                placeholder="Transaction / Ref No">
 
                                         </td>
+
+
+                                        {{-- Remarks --}}
 
                                         <td>
 
@@ -575,11 +940,15 @@
 
                                         </td>
 
+
+                                        {{-- Remove --}}
+
                                         <td class="text-center">
 
                                             <button
                                                 type="button"
-                                                class="btn btn-danger btn-sm removeRow">
+                                                class="btn btn-danger btn-sm removeRow"
+                                                title="Remove">
 
                                                 <i class="mdi mdi-delete"></i>
 
@@ -599,35 +968,45 @@
 
                 </div>
 
+
+                <br>
+
+
+
                 {{-- ========================================================= --}}
                 {{-- Billing Summary --}}
                 {{-- ========================================================= --}}
 
-                <br>
-
                 <div class="card border">
+
 
                     <div class="card-header bg-success text-white">
 
                         <h5 class="mb-0">
-
                             Billing Summary
-
                         </h5>
 
                     </div>
 
+
                     <div class="card-body">
+
 
                         <div class="row">
 
+
+                            {{-- Grand Total --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold">
+                                <label
+                                    for="summary_grand_total"
+                                    class="fw-bold">
 
                                     Grand Total
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -637,13 +1016,19 @@
 
                             </div>
 
+
+                            {{-- Total Paid --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold text-success">
+                                <label
+                                    for="summary_total_paid"
+                                    class="fw-bold text-success">
 
                                     Total Paid
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -653,13 +1038,19 @@
 
                             </div>
 
+
+                            {{-- Remaining Due --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold text-danger">
+                                <label
+                                    for="summary_due"
+                                    class="fw-bold text-danger">
 
                                     Remaining Due
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -669,13 +1060,19 @@
 
                             </div>
 
+
+                            {{-- Current Payable --}}
+
                             <div class="col-md-3 mb-3">
 
-                                <label class="fw-bold text-primary">
+                                <label
+                                    for="summary_payable"
+                                    class="fw-bold text-primary">
 
                                     Current Payable
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -687,47 +1084,69 @@
 
                         </div>
 
+
+
                         <div class="row">
 
-                            <div class="col-md-4">
 
-                                <label class="fw-bold">
+                            {{-- Current Entered Amount --}}
+
+                            <div class="col-md-4 mb-3">
+
+                                <label
+                                    for="current_payment"
+                                    class="fw-bold">
 
                                     Current Entered Amount
 
                                 </label>
 
+
                                 <input
                                     type="text"
                                     id="current_payment"
                                     class="form-control bg-warning fw-bold"
+                                    value="0.00"
                                     readonly>
 
                             </div>
 
-                            <div class="col-md-4">
 
-                                <label class="fw-bold text-danger">
+                            {{-- Balance After Payment --}}
+
+                            <div class="col-md-4 mb-3">
+
+                                <label
+                                    for="balance_after_payment"
+                                    class="fw-bold text-danger">
 
                                     Balance After Payment
 
                                 </label>
 
+
                                 <input
                                     type="text"
                                     id="balance_after_payment"
                                     class="form-control bg-light fw-bold"
+                                    value="0.00"
                                     readonly>
 
                             </div>
 
-                            <div class="col-md-4">
 
-                                <label class="fw-bold">
+                            {{-- Payment Status --}}
+
+                            <div class="col-md-4 mb-3">
+
+                                <label
+                                    for="payment_status"
+                                    class="fw-bold">
 
                                     Payment Status
 
                                 </label>
+
 
                                 <input
                                     type="text"
@@ -739,11 +1158,19 @@
 
                         </div>
 
+
                     </div>
 
                 </div>
 
+
                 <hr>
+
+
+
+                {{-- ========================================================= --}}
+                {{-- Form Actions --}}
+                {{-- ========================================================= --}}
 
                 <div class="d-flex justify-content-between">
 
@@ -751,23 +1178,26 @@
                         href="{{ route('billing.index') }}"
                         class="btn btn-secondary">
 
-                        <i class="fa fa-arrow-left"></i>
+                        <i class="fa fa-arrow-left me-1"></i>
 
                         Back
 
                     </a>
 
+
                     <button
                         type="submit"
-                        class="btn btn-success">
+                        class="btn btn-success"
+                        id="saveBillingBtn">
 
-                        <i class="fa fa-save"></i>
+                        <i class="fa fa-save me-1"></i>
 
                         Save Billing
 
                     </button>
 
                 </div>
+
 
             </div>
 
@@ -783,397 +1213,531 @@
 
 <script>
 
-    $(document).ready(function () {
+$(document).ready(function () {
 
-        let today = new Date().toISOString().split('T')[0];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Student Change
-        |--------------------------------------------------------------------------
-        */
-
-        $('#student_id').change(function () {
-
-            let studentId = $(this).val();
-
-            let courseDropdown = $('#student_course_id');
-
-            courseDropdown.html(
-                '<option value="">Loading Courses...</option>'
-            );
-
-            resetCourseDetails();
-
-            if(studentId == ''){
-
-                courseDropdown.html(
-                    '<option value="">Select Student First</option>'
-                );
-
-                return;
-            }
-
-            $.ajax({
-
-                url : "{{ route('billing.student-courses') }}",
-
-                type : "GET",
-
-                data : {
-
-                    student_id : studentId
-
-                },
-
-                success:function(response){
-
-                    courseDropdown.empty();
-
-                    courseDropdown.append(
-                        '<option value="">Select Course</option>'
-                    );
-
-                    if(response.status){
-
-                        $.each(response.courses,function(index,row){
-
-                            courseDropdown.append(
-
-                                `<option value="${row.id}">
-
-                                    ${row.course.course_name}
-
-                                    (Admission No : ${row.admission_no})
-
-                                </option>`
-
-                            );
-
-                        });
-
-                    }
-
-                },
-
-                error:function(){
-
-                    alert("Unable to load student courses.");
-
-                }
-
-            });
-
-        });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Course Change
-        |--------------------------------------------------------------------------
-        */
-
-        $('#student_course_id').change(function(){
-
-            let studentCourseId = $(this).val();
-
-            resetCourseDetails();
-
-            if(studentCourseId==""){
-
-                return;
-
-            }
-
-            $.ajax({
-
-                url : "{{ route('billing.course-details') }}",
-
-                type : "GET",
-
-                data : {
-
-                    student_course_id : studentCourseId
-
-                },
-
-                success:function(response){
-
-                    if(response.status){
-
-                        fillCourseDetails(response.data);
-
-                    }
-
-                },
-
-                error:function(){
-
-                    alert("Unable to fetch course details.");
-
-                }
-
-            });
-
-        });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Fill Course Details
-        |--------------------------------------------------------------------------
-        */
-
-        function fillCourseDetails(data){
-
-            $("#admission_no").val(data.admission_no);
-
-            $("#admission_date").val(data.admission_date);
-
-            $("#course_duration").val(
-
-                data.course_duration + " " + data.duration_type
-
-            );
-
-            $("#course_name").val(data.course_name);
-
-            $("#level_name").val(data.level);
-
-            $("#category_name").val(data.category);
-
-            $("#batch_name").val(data.batch);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Fee
-            |--------------------------------------------------------------------------
-            */
-
-            $("#registration_fee").val(data.registration_fee);
-
-            $("#admission_fee").val(data.admission_fee);
-
-            $("#course_fee").val(data.course_fee);
-
-            $("#grand_total").val(data.grand_total);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Summary
-            |--------------------------------------------------------------------------
-            */
-
-            $("#summary_grand_total").val(data.grand_total);
-
-            $("#summary_total_paid").val(data.total_paid);
-
-            $("#summary_due").val(data.remaining_amount);
-
-            $("#summary_payable").val(data.next_payable);
-
-            $("#current_payment").val("0.00");
-
-            $("#balance_after_payment").val(data.remaining_amount);
-
-            $("#payment_status").val(
-                data.payment_count==0
-                ? "First Payment"
-                : "Regular Payment"
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Hidden Fields
-            |--------------------------------------------------------------------------
-            */
-
-            $("#payment_count").val(data.payment_count);
-
-            $("#next_payable").val(data.next_payable);
-
-            $("#remaining_amount").val(data.remaining_amount);
-
-            calculatePayment();
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Reset
-        |--------------------------------------------------------------------------
-        */
-
-        function resetCourseDetails(){
-
-            $("#admission_no").val("");
-
-            $("#admission_date").val("");
-
-            $("#course_duration").val("");
-
-            $("#course_name").val("");
-
-            $("#level_name").val("");
-
-            $("#category_name").val("");
-
-            $("#batch_name").val("");
-
-            $("#registration_fee").val("");
-
-            $("#admission_fee").val("");
-
-            $("#course_fee").val("");
-
-            $("#grand_total").val("");
-
-            $("#summary_grand_total").val("");
-
-            $("#summary_total_paid").val("");
-
-            $("#summary_due").val("");
-
-            $("#summary_payable").val("");
-
-            $("#current_payment").val("");
-
-            $("#balance_after_payment").val("");
-
-            $("#payment_status").val("");
-
-            $("#payment_count").val("");
-
-            $("#next_payable").val("");
-
-            $("#remaining_amount").val("");
-
-            calculatePayment();
-
-        }
-
-
-        /*
+    /*
     |--------------------------------------------------------------------------
-    | Add Payment Row
+    | GLOBAL
     |--------------------------------------------------------------------------
     */
 
-    $("#addPaymentRow").click(function () {
+    let lateFineRequest = null;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | HELPERS
+    |--------------------------------------------------------------------------
+    */
+
+    function getTodayDate() {
+
+        let date = new Date();
+
+        let year = date.getFullYear();
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let day = String(date.getDate()).padStart(2, '0');
+
+        return year + '-' + month + '-' + day;
+    }
+
+
+    let today = getTodayDate();
+
+
+    function number(value) {
+
+        let result = parseFloat(value);
+
+        return isNaN(result) ? 0 : result;
+    }
+
+
+    function money(value) {
+
+        return number(value).toFixed(2);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT CHANGE
+    |--------------------------------------------------------------------------
+    */
+
+    $('#student_id').on('change', function () {
+
+        let studentId = $(this).val();
+
+        let courseDropdown = $('#student_course_id');
+
+        resetCourseDetails();
+
+        if (studentId === '') {
+
+            courseDropdown.html(
+                '<option value="">Select Student First</option>'
+            );
+
+            return;
+        }
+
+
+        courseDropdown.html(
+            '<option value="">Loading Courses...</option>'
+        );
+
+
+        $.ajax({
+
+            url: "{{ route('billing.student-courses') }}",
+
+            type: "GET",
+
+            data: {
+                student_id: studentId
+            },
+
+            success: function (response) {
+
+                courseDropdown.empty();
+
+                courseDropdown.append(
+                    '<option value="">Select Course</option>'
+                );
+
+
+                if (
+                    response.status &&
+                    response.courses &&
+                    response.courses.length > 0
+                ) {
+
+                    $.each(
+                        response.courses,
+                        function (index, row) {
+
+                            let courseName =
+                                row.course?.course_name ??
+                                row.course?.name ??
+                                'Course';
+
+
+                            let admissionNo =
+                                row.admission_no ??
+                                'N/A';
+
+
+                            courseDropdown.append(`
+
+                                <option value="${row.id}">
+
+                                    ${courseName}
+                                    (Admission No : ${admissionNo})
+
+                                </option>
+
+                            `);
+
+                        }
+                    );
+
+                } else {
+
+                    courseDropdown.append(
+                        '<option value="">No Course Found</option>'
+                    );
+
+                }
+
+            },
+
+            error: function (xhr) {
+
+                console.error(
+                    "Student Course AJAX Error:",
+                    xhr.responseText
+                );
+
+                courseDropdown.html(
+                    '<option value="">Unable to Load Courses</option>'
+                );
+
+                alert(
+                    "Unable to load student courses."
+                );
+
+            }
+
+        });
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | COURSE CHANGE
+    |--------------------------------------------------------------------------
+    */
+
+    $('#student_course_id').on('change', function () {
+
+        let studentCourseId = $(this).val();
+
+        resetCourseDetails();
+
+        if (studentCourseId === '') {
+
+            return;
+        }
+
+
+        $.ajax({
+
+            url: "{{ route('billing.course-details') }}",
+
+            type: "GET",
+
+            data: {
+                student_course_id: studentCourseId
+            },
+
+            success: function (response) {
+
+                if (response.status) {
+
+                    fillCourseDetails(response.data);
+
+                    calculateLateFine();
+
+                } else {
+
+                    alert(
+                        response.message ??
+                        "Unable to fetch course details."
+                    );
+
+                }
+
+            },
+
+            error: function (xhr) {
+
+                console.error(
+                    "Course Details AJAX Error:",
+                    xhr.responseText
+                );
+
+                alert(
+                    "Unable to fetch course details."
+                );
+
+            }
+
+        });
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FILL COURSE DETAILS
+    |--------------------------------------------------------------------------
+    */
+
+    function fillCourseDetails(data) {
+
+        $("#admission_no").val(
+            data.admission_no ?? ''
+        );
+
+        $("#admission_date").val(
+            data.admission_date ?? ''
+        );
+
+        $("#course_duration").val(
+
+            (data.course_duration ?? '') +
+            " " +
+            (data.duration_type ?? '')
+
+        );
+
+        $("#course_name").val(
+            data.course_name ?? ''
+        );
+
+        $("#level_name").val(
+            data.level ?? ''
+        );
+
+        $("#category_name").val(
+            data.category ?? ''
+        );
+
+        $("#batch_name").val(
+            data.batch ?? ''
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $("#registration_fee").val(
+            money(data.registration_fee)
+        );
+
+        $("#admission_fee").val(
+            money(data.admission_fee)
+        );
+
+        $("#course_fee").val(
+            money(data.course_fee)
+        );
+
+        $("#grand_total").val(
+            money(data.grand_total)
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT SUMMARY
+        |--------------------------------------------------------------------------
+        */
+
+        $("#summary_grand_total").val(
+            money(data.grand_total)
+        );
+
+        $("#summary_total_paid").val(
+            money(data.total_paid)
+        );
+
+        $("#summary_due").val(
+            money(data.remaining_amount)
+        );
+
+        $("#summary_payable").val(
+            money(data.next_payable)
+        );
+
+
+        $("#current_payment").val(
+            "0.00"
+        );
+
+        $("#balance_after_payment").val(
+            money(data.remaining_amount)
+        );
+
+
+        $("#payment_status").val(
+
+            number(data.payment_count) === 0
+                ? "First Payment"
+                : "Regular Payment"
+
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | HIDDEN
+        |--------------------------------------------------------------------------
+        */
+
+        $("#payment_count").val(
+            data.payment_count ?? 0
+        );
+
+        $("#next_payable").val(
+            money(data.next_payable)
+        );
+
+        $("#remaining_amount").val(
+            money(data.remaining_amount)
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESET LATE FINE
+        |--------------------------------------------------------------------------
+        */
+
+        resetLateFine(false);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        calculatePayment();
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESET COURSE DETAILS
+    |--------------------------------------------------------------------------
+    */
+
+    function resetCourseDetails() {
+
+        $("#admission_no").val("");
+        $("#admission_date").val("");
+        $("#course_duration").val("");
+        $("#course_name").val("");
+        $("#level_name").val("");
+        $("#category_name").val("");
+        $("#batch_name").val("");
+
+        $("#registration_fee").val("");
+        $("#admission_fee").val("");
+        $("#course_fee").val("");
+        $("#grand_total").val("");
+
+        $("#summary_grand_total").val("");
+        $("#summary_total_paid").val("");
+        $("#summary_due").val("");
+        $("#summary_payable").val("");
+
+        $("#current_payment").val("0.00");
+        $("#balance_after_payment").val("0.00");
+        $("#payment_status").val("");
+
+        $("#payment_count").val("");
+        $("#next_payable").val("");
+        $("#remaining_amount").val("");
+
+        resetLateFine();
+
+        calculatePayment();
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD PAYMENT ROW
+    |--------------------------------------------------------------------------
+    */
+
+    $("#addPaymentRow").on("click", function () {
 
         let row = `
 
-        <tr>
+            <tr>
 
-            <td>
+                <td>
 
-                <input
-                    type="date"
-                    name="payment_date[]"
-                    class="form-control"
-                    value="${today}">
+                    <input
+                        type="date"
+                        name="payment_date[]"
+                        class="form-control"
+                        value="${today}"
+                    >
 
-            </td>
+                </td>
 
-            <td>
+                <td>
 
-                <select
-                    name="payment_mode[]"
-                    class="form-select payment-mode">
+                    <select
+                        name="payment_mode[]"
+                        class="form-select payment-mode"
+                    >
 
-                    <option value="">Select</option>
+                        <option value="">Select</option>
 
-                    <option value="Cash">Cash</option>
+                        <option value="Cash">Cash</option>
 
-                    <option value="UPI">UPI</option>
+                        <option value="UPI">UPI</option>
 
-                    <option value="Card">Card</option>
+                        <option value="Card">Card</option>
 
-                    <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Bank Transfer">
+                            Bank Transfer
+                        </option>
 
-                    <option value="Cheque">Cheque</option>
+                        <option value="Cheque">Cheque</option>
 
-                </select>
+                    </select>
 
-            </td>
+                </td>
 
-            <td>
+                <td>
 
-                <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="amount[]"
-                    class="form-control payment-amount"
-                    placeholder="0.00">
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="amount[]"
+                        class="form-control payment-amount"
+                        placeholder="0.00"
+                    >
 
-            </td>
+                </td>
 
-            <td>
+                <td>
 
-                <input
-                    type="text"
-                    name="transaction_id[]"
-                    class="form-control transaction-id"
-                    placeholder="Transaction No">
+                    <input
+                        type="text"
+                        name="transaction_id[]"
+                        class="form-control transaction-id"
+                        placeholder="Transaction No"
+                    >
 
-            </td>
+                </td>
 
-            <td>
+                <td>
 
-                <input
-                    type="text"
-                    name="remarks[]"
-                    class="form-control"
-                    placeholder="Remarks">
+                    <input
+                        type="text"
+                        name="remarks[]"
+                        class="form-control"
+                        placeholder="Remarks"
+                    >
 
-            </td>
+                </td>
 
-            <td class="text-center">
+                <td class="text-center">
 
-                <button
-                    type="button"
-                    class="btn btn-danger btn-sm removeRow">
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm removeRow"
+                        title="Remove"
+                    >
 
-                    <i class="mdi mdi-delete"></i>
+                        <i class="mdi mdi-delete"></i>
 
-                </button>
+                    </button>
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
         `;
 
+
         $("#paymentTable tbody").append(row);
 
-        $("#paymentTable tbody tr:last .payment-mode")
+
+        let lastRow =
+            $("#paymentTable tbody tr:last");
+
+
+        lastRow
+            .find(".payment-mode")
             .val("Cash")
             .trigger("change");
 
-        calculatePayment();
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Remove Payment Row
-    |--------------------------------------------------------------------------
-    */
-
-    $(document).on("click", ".removeRow", function () {
-
-        if ($("#paymentTable tbody tr").length == 1) {
-
-            alert("At least one payment row is required.");
-
-            return;
-
-        }
-
-        $(this).closest("tr").remove();
 
         calculatePayment();
 
@@ -1182,122 +1746,65 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Cash / Online Mode
-    |--------------------------------------------------------------------------
-    */
-
-    $(document).on("change", ".payment-mode", function () {
-
-        let mode = $(this).val();
-
-        let transactionBox = $(this)
-            .closest("tr")
-            .find(".transaction-id");
-
-        if (mode == "Cash") {
-
-            transactionBox.val("");
-
-            transactionBox.prop("readonly", true);
-
-            transactionBox.attr(
-                "placeholder",
-                "Not Required"
-            );
-
-        } else {
-
-            transactionBox.prop("readonly", false);
-
-            transactionBox.attr(
-                "placeholder",
-                "Transaction / Ref No"
-            );
-
-        }
-
-    });
-
-
-
-   $(document).on("input", "#paymentTable .payment-amount", function () {
-
-        let amount = parseFloat($(this).val());
-
-        if(isNaN(amount) || amount < 0){
-
-            $(this).val(0);
-
-        }
-
-        calculatePayment();
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Auto Select Cash For First Row
-    |--------------------------------------------------------------------------
-    */
-
-    $("#paymentTable tbody tr:first .payment-mode")
-
-        .val("Cash")
-
-        .trigger("change");
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Empty Transaction if Cash
+    | REMOVE PAYMENT ROW
     |--------------------------------------------------------------------------
     */
 
     $(document).on(
-
-        "blur",
-
-        ".transaction-id",
-
+        "click",
+        ".removeRow",
         function () {
 
-            let mode = $(this)
+            let totalRows =
+                $("#paymentTable tbody tr").length;
 
-                .closest("tr")
 
-                .find(".payment-mode")
+            if (totalRows <= 1) {
 
-                .val();
+                alert(
+                    "At least one payment row is required."
+                );
 
-            if (mode == "Cash") {
-
-                $(this).val("");
+                return;
 
             }
 
-        }
 
+            $(this)
+                .closest("tr")
+                .remove();
+
+
+            calculatePayment();
+
+        }
     );
 
 
     /*
     |--------------------------------------------------------------------------
-    | Validate Payment Mode
+    | PAYMENT MODE CHANGE
     |--------------------------------------------------------------------------
     */
 
     $(document).on(
-
         "change",
-
         ".payment-mode",
-
         function () {
 
-            let mode = $(this).val();
+            let mode =
+                $(this).val();
 
-            if (mode == "") {
+
+            let row =
+                $(this).closest("tr");
+
+
+            let transactionBox =
+                row.find(".transaction-id");
+
+
+            if (mode === "") {
 
                 $(this).addClass("is-invalid");
 
@@ -1307,236 +1814,1376 @@
 
             }
 
-        }
 
+            if (mode === "Cash") {
+
+                transactionBox
+                    .val("")
+                    .prop("readonly", true)
+                    .attr(
+                        "placeholder",
+                        "Not Required"
+                    );
+
+            } else {
+
+                transactionBox
+                    .prop("readonly", false)
+                    .attr(
+                        "placeholder",
+                        "Transaction / Ref No"
+                    );
+
+            }
+
+        }
     );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT AMOUNT
+    |--------------------------------------------------------------------------
+    */
+
+    $(document).on(
+        "input",
+        "#paymentTable .payment-amount",
+        function () {
+
+            let value =
+                parseFloat($(this).val());
+
+
+            if (
+                isNaN(value) ||
+                value < 0
+            ) {
+
+                $(this).val("0");
+
+            }
+
+
+            calculatePayment();
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FIRST ROW CASH
+    |--------------------------------------------------------------------------
+    */
+
+    $("#paymentTable tbody tr:first")
+        .find(".payment-mode")
+        .val("Cash")
+        .trigger("change");
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CASH TRANSACTION CLEANUP
+    |--------------------------------------------------------------------------
+    */
+
+    $(document).on(
+        "blur",
+        ".transaction-id",
+        function () {
+
+            let mode =
+                $(this)
+                    .closest("tr")
+                    .find(".payment-mode")
+                    .val();
+
+
+            if (mode === "Cash") {
+
+                $(this).val("");
+
+            }
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | LATE FINE CALCULATION
+    |--------------------------------------------------------------------------
+    */
+
+    function calculateLateFine() {
+
+        let studentId =
+            $("#student_id").val();
+
+
+        let studentCourseId =
+            $("#student_course_id").val();
+
+
+        if (
+            !studentId ||
+            !studentCourseId
+        ) {
+
+            resetLateFine();
+
+            return;
+
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Calculate Payment
+        | Abort Previous
         |--------------------------------------------------------------------------
         */
 
-        function calculatePayment() {
+        if (lateFineRequest) {
 
-            let remainingDue = parseFloat($("#summary_due").val()) || 0;
-            let currentPayable = parseFloat($("#summary_payable").val()) || 0;
+            lateFineRequest.abort();
 
-            let enteredAmount = 0;
+            lateFineRequest = null;
 
-            $("#paymentTable tbody .payment-amount").each(function () {
+        }
 
-                let amt = parseFloat($(this).val());
 
-                if (!isNaN(amt)) {
-                    enteredAmount += amt;
+        $("#lateFineSection")
+            .removeClass("d-none");
+
+
+        $("#lateFineMessage")
+            .removeClass(
+                "alert-success alert-danger"
+            )
+            .addClass(
+                "alert-warning"
+            )
+            .html(
+
+                '<i class="fa fa-spinner fa-spin me-1"></i> ' +
+                'Calculating late fine...'
+
+            );
+
+
+        lateFineRequest = $.ajax({
+
+            url: "{{ route('billing.late-fine') }}",
+
+            type: "GET",
+
+            data: {
+
+                student_id: studentId,
+
+                student_course_id: studentCourseId
+
+            },
+
+
+            success: function (response) {
+
+                console.group(
+                    "========== LATE FINE =========="
+                );
+
+                console.log(
+                    "Complete Response:",
+                    response
+                );
+
+                console.log(
+                    "Student ID:",
+                    response.debug?.student_id
+                );
+
+                console.log(
+                    "Student Course ID:",
+                    response.debug?.student_course_id
+                );
+
+                console.log(
+                    "Course ID:",
+                    response.debug?.course_id
+                );
+
+                console.log(
+                    "Batch ID:",
+                    response.debug?.batch_id
+                );
+
+                console.log(
+                    "Payment Date:",
+                    response.payment_date
+                );
+
+                console.log(
+                    "Previous Payment:",
+                    response.previous_payment_date
+                );
+
+                console.log(
+                    "Month Difference:",
+                    response.month_difference
+                );
+
+                console.log(
+                    "Due Date:",
+                    response.due_date
+                );
+
+                console.log(
+                    "Attendance Month:",
+                    response.attendance_month
+                );
+
+                console.log(
+                    "Attendance Status:",
+                    response.attendance_status
+                );
+
+                console.log(
+                    "Attendance Count:",
+                    response.attendance_count
+                );
+
+                console.log(
+                    "Present Count:",
+                    response.present_count
+                );
+
+                console.log(
+                    "Fine Type:",
+                    response.fine_type
+                );
+
+                console.log(
+                    "Fine Amount:",
+                    response.late_fine
+                );
+
+                console.log(
+                    "Apply Fine:",
+                    response.apply
+                );
+
+                console.log(
+                    "Message:",
+                    response.message
+                );
+
+                console.log(
+                    "Decision:",
+                    response.debug?.decision
+                );
+
+                console.log(
+                    "Reason:",
+                    response.debug?.reason
+                );
+
+                console.groupEnd();
+
+
+                if (!response.status) {
+
+                    resetLateFine(false);
+
+
+                    $("#lateFineSection")
+                        .removeClass("d-none");
+
+
+                    $("#lateFineMessage")
+                        .removeClass(
+                            "alert-warning alert-success"
+                        )
+                        .addClass(
+                            "alert-danger"
+                        )
+                        .html(
+
+                            '<i class="fa fa-exclamation-triangle me-1"></i> ' +
+
+                            (
+                                response.message ??
+                                "Unable to calculate late fine."
+                            )
+
+                        );
+
+
+                    calculatePayment();
+
+                    return;
+
+                }
+
+
+                $("#late_payment_date").val(
+                    response.payment_date ?? ""
+                );
+
+
+                $("#late_due_date").val(
+                    response.due_date ?? "-"
+                );
+
+
+                $("#late_previous_payment").val(
+
+                    response.previous_payment_date ??
+                    "First Payment"
+
+                );
+
+
+                let fine =
+                    number(
+                        response.late_fine
+                    );
+
+
+                fine =
+                    Math.max(
+                        fine,
+                        0
+                    );
+
+
+                $("#late_fine_amount").val(
+                    money(fine)
+                );
+
+
+                $("#late_fine").val(
+                    money(fine)
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | FINE TYPE
+                |--------------------------------------------------------------------------
+                */
+
+                let fineType =
+                    response.fine_type ?? "";
+
+
+                let fineTypeText =
+                    "No Fine";
+
+
+                switch (fineType) {
+
+                    case "same_month_late_fee":
+
+                        fineTypeText =
+                            "Same Month Late Fee";
+
+                        break;
+
+
+                    case "next_month_late_fee":
+
+                        fineTypeText =
+                            "Next Month Late Fee";
+
+                        break;
+
+
+                    case "absent_charge_percentage":
+
+                        fineTypeText =
+                            "Absent Charge (" +
+                            (
+                                response.absent_percentage ??
+                                0
+                            ) +
+                            "%)";
+
+                        break;
+
+
+                    default:
+
+                        fineTypeText =
+                            "No Fine";
+
+                        break;
+
+                }
+
+
+                $("#late_fine_type").val(
+                    fineTypeText
+                );
+
+
+                $("#late_fine_type_hidden").val(
+                    fineType
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | ATTENDANCE
+                |--------------------------------------------------------------------------
+                */
+
+                $("#late_attendance_month").val(
+
+                    response.attendance_month ??
+                    "-"
+
+                );
+
+
+                $("#late_attendance_status").val(
+
+                    response.attendance_status ??
+                    "-"
+
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | MESSAGE
+                |--------------------------------------------------------------------------
+                */
+
+                let message =
+                    response.message ??
+                    "Late fine calculated.";
+
+
+                if (fine > 0) {
+
+                    $("#lateFineMessage")
+                        .removeClass(
+                            "alert-success alert-warning"
+                        )
+                        .addClass(
+                            "alert-danger"
+                        )
+                        .html(
+
+                            '<i class="fa fa-exclamation-triangle me-1"></i> ' +
+
+                            message +
+
+                            ' <strong>Fine: ₹' +
+
+                            money(fine) +
+
+                            '</strong>'
+
+                        );
+
+                } else {
+
+                    $("#lateFineMessage")
+                        .removeClass(
+                            "alert-danger alert-warning"
+                        )
+                        .addClass(
+                            "alert-success"
+                        )
+                        .html(
+
+                            '<i class="fa fa-check-circle me-1"></i> ' +
+
+                            message
+
+                        );
+
+                }
+
+
+                calculatePayment();
+
+            },
+
+
+            error: function (
+                xhr,
+                status,
+                error
+            ) {
+
+                if (status === "abort") {
+
+                    return;
+
+                }
+
+
+                console.error(
+                    "Late Fine AJAX Error:",
+                    error
+                );
+
+                console.error(
+                    "HTTP Status:",
+                    xhr.status
+                );
+
+                console.error(
+                    "Server Response:",
+                    xhr.responseText
+                );
+
+
+                resetLateFine(false);
+
+
+                $("#lateFineSection")
+                    .removeClass("d-none");
+
+
+                $("#lateFineMessage")
+                    .removeClass(
+                        "alert-warning alert-success"
+                    )
+                    .addClass(
+                        "alert-danger"
+                    )
+                    .html(
+
+                        '<i class="fa fa-exclamation-triangle me-1"></i> ' +
+
+                        'Unable to calculate late fine.'
+
+                    );
+
+
+                calculatePayment();
+
+            },
+
+
+            complete: function () {
+
+                lateFineRequest = null;
+
+            }
+
+        });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESET LATE FINE
+    |--------------------------------------------------------------------------
+    */
+
+    function resetLateFine(hideSection = true) {
+
+        if (lateFineRequest) {
+
+            lateFineRequest.abort();
+
+            lateFineRequest = null;
+
+        }
+
+
+        if (hideSection) {
+
+            $("#lateFineSection")
+                .addClass("d-none");
+
+        }
+
+
+        $("#late_payment_date").val("");
+
+        $("#late_due_date").val("");
+
+        $("#late_previous_payment").val("");
+
+        $("#late_fine_amount").val("0.00");
+
+        $("#late_fine").val("0.00");
+
+        $("#late_fine_type").val("");
+
+        $("#late_fine_type_hidden").val("");
+
+        $("#late_attendance_month").val("");
+
+        $("#late_attendance_status").val("");
+
+        $("#lateFineMessage")
+            .removeClass(
+                "alert-success alert-danger alert-warning"
+            )
+            .html("");
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULATE PAYMENT
+    |--------------------------------------------------------------------------
+    */
+
+    function calculatePayment() {
+
+        /*
+        |--------------------------------------------------------------------------
+        | COURSE REMAINING
+        |--------------------------------------------------------------------------
+        */
+
+        let remainingDue =
+            number(
+                $("#summary_due").val()
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LATE FINE
+        |--------------------------------------------------------------------------
+        */
+
+        let lateFine =
+            number(
+                $("#late_fine").val()
+            );
+
+
+        lateFine =
+            Math.max(
+                lateFine,
+                0
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOTAL DUE
+        |--------------------------------------------------------------------------
+        */
+
+        let totalDue =
+            remainingDue +
+            lateFine;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT PAYABLE
+        |--------------------------------------------------------------------------
+        */
+
+        let currentPayable =
+            number(
+                $("#summary_payable").val()
+            );
+
+
+        let payableWithFine =
+            currentPayable +
+            lateFine;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ENTERED PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        let enteredAmount = 0;
+
+
+        $("#paymentTable tbody .payment-amount")
+            .each(function () {
+
+                let amount =
+                    number(
+                        $(this).val()
+                    );
+
+
+                if (amount > 0) {
+
+                    enteredAmount += amount;
+
                 }
 
             });
 
-            // Over Payment
 
-            if (enteredAmount > remainingDue) {
+        enteredAmount =
+            Math.max(
+                enteredAmount,
+                0
+            );
 
-                alert("Payment cannot exceed Remaining Due.");
 
-                let lastBox = $("#paymentTable tbody .payment-amount").last();
+        /*
+        |--------------------------------------------------------------------------
+        | PREVENT OVER PAYMENT
+        |--------------------------------------------------------------------------
+        */
 
-                let last = parseFloat(lastBox.val()) || 0;
+        if (
+            enteredAmount >
+            totalDue
+        ) {
 
-                let excess = enteredAmount - remainingDue;
+            let lastBox =
+                $("#paymentTable tbody .payment-amount")
+                    .last();
 
-                lastBox.val((last - excess).toFixed(2));
 
-                return calculatePayment();
+            let lastAmount =
+                number(
+                    lastBox.val()
+                );
 
-            }
 
-            $("#current_payment").val(enteredAmount.toFixed(2));
+            let excess =
+                enteredAmount -
+                totalDue;
 
-            let balance = remainingDue - enteredAmount;
 
-            if(balance < 0){
-                balance = 0;
-            }
+            let correctedAmount =
+                lastAmount -
+                excess;
 
-            $("#balance_after_payment").val(balance.toFixed(2));
 
-            if(enteredAmount == 0){
+            if (correctedAmount < 0) {
 
-                $("#payment_status").val("No Payment");
-
-            }
-            else if(balance == 0){
-
-                $("#payment_status").val("Completed");
-
-            }
-            else if(enteredAmount > currentPayable){
-
-                $("#payment_status").val("Advance Payment");
-
-            }
-            else{
-
-                $("#payment_status").val("Partial Payment");
+                correctedAmount = 0;
 
             }
+
+
+            lastBox.val(
+                money(correctedAmount)
+            );
+
+
+            return calculatePayment();
 
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Fee Change
+        | CURRENT PAYMENT
         |--------------------------------------------------------------------------
         */
 
-        $("#registration_fee,#admission_fee,#course_fee").on(
-
-            "keyup change",
-
-            function(){
-
-                calculatePayment();
-
-            }
-
+        $("#current_payment").val(
+            money(enteredAmount)
         );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Form Validation
+        | BALANCE
         |--------------------------------------------------------------------------
         */
 
-        $("form").submit(function(e){
+        let balance =
+            totalDue -
+            enteredAmount;
 
-            let student=$("#student_id").val();
 
-            let studentCourse=$("#student_course_id").val();
+        if (balance < 0) {
 
-            if(student==""){
+            balance = 0;
 
-                alert("Please select student.");
+        }
 
-                e.preventDefault();
 
-                return;
+        $("#balance_after_payment").val(
+            money(balance)
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        if (enteredAmount <= 0) {
+
+            if (
+                number(
+                    $("#payment_count").val()
+                ) === 0
+            ) {
+
+                $("#payment_status").val(
+                    "First Payment"
+                );
+
+            } else {
+
+                $("#payment_status").val(
+                    "No Payment"
+                );
 
             }
 
-            if(studentCourse==""){
+        }
 
-                alert("Please select course.");
+        else if (
+            balance <= 0.009
+        ) {
 
-                e.preventDefault();
+            $("#payment_status").val(
+                "Completed"
+            );
 
-                return;
+        }
 
+        else if (
+            enteredAmount >
+            payableWithFine
+        ) {
+
+            $("#payment_status").val(
+                "Advance Payment"
+            );
+
+        }
+
+        else {
+
+            $("#payment_status").val(
+                "Partial Payment"
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEBUG
+        |--------------------------------------------------------------------------
+        */
+
+        console.log(
+            "Payment Calculation:",
+            {
+                remainingDue: remainingDue,
+                lateFine: lateFine,
+                totalDue: totalDue,
+                currentPayable: currentPayable,
+                payableWithFine: payableWithFine,
+                enteredAmount: enteredAmount,
+                balance: balance
             }
+        );
 
-            let payable=parseFloat($("#summary_due").val())||0;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FEE CHANGE
+    |--------------------------------------------------------------------------
+    */
+
+    $(
+        "#registration_fee," +
+        "#admission_fee," +
+        "#course_fee"
+    ).on(
+        "keyup change",
+        function () {
 
             calculatePayment();
 
-            let paid=parseFloat($("#current_payment").val())||0;
+        }
+    );
 
-            if(paid<=0){
 
-                alert("Please enter payment amount.");
+    /*
+    |--------------------------------------------------------------------------
+    | SUMMARY DUE CHANGE
+    |--------------------------------------------------------------------------
+    */
+
+    $("#summary_due").on(
+        "keyup change",
+        function () {
+
+            calculatePayment();
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUMMARY PAYABLE CHANGE
+    |--------------------------------------------------------------------------
+    */
+
+    $("#summary_payable").on(
+        "keyup change",
+        function () {
+
+            calculatePayment();
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FORM SUBMIT VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    $("#billingForm").on(
+        "submit",
+        function (e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | STUDENT
+            |--------------------------------------------------------------------------
+            */
+
+            let student =
+                $("#student_id").val();
+
+
+            if (student === "") {
 
                 e.preventDefault();
 
-                return;
+                alert(
+                    "Please select student."
+                );
+
+                return false;
 
             }
 
-            if(paid>payable){
 
-                alert("Payment amount cannot exceed Remaining Due.");
+            /*
+            |--------------------------------------------------------------------------
+            | COURSE
+            |--------------------------------------------------------------------------
+            */
+
+            let studentCourse =
+                $("#student_course_id").val();
+
+
+            if (studentCourse === "") {
 
                 e.preventDefault();
 
-                return;
+                alert(
+                    "Please select course."
+                );
+
+                return false;
 
             }
 
-            let valid=true;
 
-            $("#paymentTable tbody tr").each(function(){
+            /*
+            |--------------------------------------------------------------------------
+            | CALCULATE
+            |--------------------------------------------------------------------------
+            */
 
-                let mode=$(this).find(".payment-mode").val();
+            calculatePayment();
 
-                let amount=parseFloat(
-                    $(this).find(".payment-amount").val()
-                )||0;
 
-                let txn=$(this)
-                    .find(".transaction-id")
-                    .val();
+            /*
+            |--------------------------------------------------------------------------
+            | TOTAL PAYABLE
+            |--------------------------------------------------------------------------
+            */
 
-                if(mode==""){
+            let remainingDue =
+                number(
+                    $("#summary_due").val()
+                );
 
-                    valid=false;
 
-                }
+            let lateFine =
+                number(
+                    $("#late_fine").val()
+                );
 
-                if(amount<=0){
 
-                    valid=false;
+            let totalPayable =
+                remainingDue +
+                lateFine;
 
-                }
 
-                if(mode!="Cash" && txn==""){
+            /*
+            |--------------------------------------------------------------------------
+            | CURRENT PAYMENT
+            |--------------------------------------------------------------------------
+            */
 
-                    alert(
-                        "Transaction No is required for online payment."
+            let paid =
+                number(
+                    $("#current_payment").val()
+                );
+
+
+            if (paid <= 0) {
+
+                e.preventDefault();
+
+                alert(
+                    "Please enter payment amount."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | OVER PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                paid >
+                totalPayable + 0.009
+            ) {
+
+                e.preventDefault();
+
+                alert(
+                    "Payment amount cannot exceed Total Payable ₹" +
+                    money(totalPayable) +
+                    "."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT ROW VALIDATION
+            |--------------------------------------------------------------------------
+            */
+
+            let valid = true;
+
+            let errorMessage = "";
+
+
+            $("#paymentTable tbody tr")
+                .each(function (index) {
+
+                    let row =
+                        $(this);
+
+
+                    let mode =
+                        row
+                            .find(".payment-mode")
+                            .val();
+
+
+                    let amount =
+                        number(
+                            row
+                                .find(".payment-amount")
+                                .val()
+                        );
+
+
+                    let transaction =
+                        $.trim(
+                            row
+                                .find(".transaction-id")
+                                .val() || ""
+                        );
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | MODE
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (mode === "") {
+
+                        valid = false;
+
+                        row
+                            .find(".payment-mode")
+                            .addClass("is-invalid");
+
+                        errorMessage =
+                            "Please select payment mode for row " +
+                            (index + 1) +
+                            ".";
+
+                        return false;
+
+                    } else {
+
+                        row
+                            .find(".payment-mode")
+                            .removeClass("is-invalid");
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | AMOUNT
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (amount <= 0) {
+
+                        valid = false;
+
+                        row
+                            .find(".payment-amount")
+                            .addClass("is-invalid");
+
+                        errorMessage =
+                            "Payment amount must be greater than 0 in row " +
+                            (index + 1) +
+                            ".";
+
+                        return false;
+
+                    } else {
+
+                        row
+                            .find(".payment-amount")
+                            .removeClass("is-invalid");
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | TRANSACTION
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        mode !== "Cash" &&
+                        transaction === ""
+                    ) {
+
+                        valid = false;
+
+                        row
+                            .find(".transaction-id")
+                            .addClass("is-invalid");
+
+
+                        errorMessage =
+                            "Transaction / Reference No is required for " +
+                            mode +
+                            " payment in row " +
+                            (index + 1) +
+                            ".";
+
+                        return false;
+
+                    } else {
+
+                        row
+                            .find(".transaction-id")
+                            .removeClass("is-invalid");
+
+                    }
+
+                });
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | INVALID
+            |--------------------------------------------------------------------------
+            */
+
+            if (!valid) {
+
+                e.preventDefault();
+
+                alert(
+                    errorMessage ||
+                    "Please complete all payment details."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | FINAL TOTAL CHECK
+            |--------------------------------------------------------------------------
+            */
+
+            let calculatedTotal = 0;
+
+
+            $("#paymentTable tbody .payment-amount")
+                .each(function () {
+
+                    calculatedTotal +=
+                        number(
+                            $(this).val()
+                        );
+
+                });
+
+
+            if (
+                Math.abs(
+                    calculatedTotal -
+                    paid
+                ) > 0.009
+            ) {
+
+                e.preventDefault();
+
+                alert(
+                    "Payment amount calculation mismatch. Please check payment rows."
+                );
+
+                return false;
+
+            }
+
+
+            return true;
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE INVALID AMOUNT
+    |--------------------------------------------------------------------------
+    */
+
+    $(document).on(
+        "input",
+        ".payment-amount",
+        function () {
+
+            if (
+                number($(this).val()) > 0
+            ) {
+
+                $(this)
+                    .removeClass(
+                        "is-invalid"
                     );
 
-                    valid=false;
+            }
 
-                }
+        }
+    );
 
-            });
 
-            if(!valid){
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE INVALID TRANSACTION
+    |--------------------------------------------------------------------------
+    */
 
-                alert("Please complete all payment details.");
+    $(document).on(
+        "input",
+        ".transaction-id",
+        function () {
 
-                e.preventDefault();
+            if (
+                $.trim(
+                    $(this).val()
+                ) !== ""
+            ) {
 
-                return;
+                $(this)
+                    .removeClass(
+                        "is-invalid"
+                    );
 
             }
 
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INITIAL PAYMENT MODE
+    |--------------------------------------------------------------------------
+    */
+
+    $("#paymentTable tbody tr")
+        .each(function () {
+
+            let mode =
+                $(this)
+                    .find(".payment-mode")
+                    .val();
+
+
+            if (mode === "") {
+
+                $(this)
+                    .find(".payment-mode")
+                    .val("Cash");
+
+            }
+
+
+            $(this)
+                .find(".payment-mode")
+                .trigger("change");
+
         });
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Auto Calculation
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | INITIAL CALCULATION
+    |--------------------------------------------------------------------------
+    */
 
-        calculatePayment();
+    calculatePayment();
 
+});
 
-        /*
-        |--------------------------------------------------------------------------
-        | If Payable Changes
-        |--------------------------------------------------------------------------
-        */
+</script>
 
-        $("#summary_due").on("change",function(){
-
-            calculatePayment();
-
-        });
-
-    });
-
-    </script>
 @endpush

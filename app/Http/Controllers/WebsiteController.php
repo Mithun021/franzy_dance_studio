@@ -19,6 +19,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class WebsiteController extends Controller
 {
@@ -875,6 +876,8 @@ class WebsiteController extends Controller
             */
 
             $payment = StudentPayment::create([
+
+                'order_id' => 'ORD-' . strtoupper(Str::random(12)),
 
                 'student_course_id' => $studentCourse->id,
 

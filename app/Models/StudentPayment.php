@@ -10,6 +10,8 @@ class StudentPayment extends Model
     use HasFactory;
     protected $fillable = [
 
+        'order_id',
+
         'student_course_id',
 
         'user_id',
@@ -27,6 +29,8 @@ class StudentPayment extends Model
         'payment_type',
 
         'amount',
+
+        'late_fine',
 
         'platform_fee_percentage',
 

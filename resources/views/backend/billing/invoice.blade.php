@@ -176,7 +176,7 @@ body{
             </h4>
 
             <strong>
-                INV-{{ str_pad($payment->id,6,'0',STR_PAD_LEFT) }}
+                {{ $payment->order_id ?? 'N/A' }}
             </strong>
 
         </div>
@@ -372,6 +372,22 @@ body{
             <td>{{ number_format($payment->course_fee,2) }}</td>
 
         </tr>
+
+        @if($payment->late_fine > 0)
+
+        <tr>
+            <td>{{ $i++ }}</td>
+
+            <td>
+                Late Fine
+            </td>
+
+            <td class="text-danger">
+                ₹ {{ number_format($payment->late_fine,2) }}
+            </td>
+        </tr>
+
+        @endif
 
         <tr class="table-success">
 
