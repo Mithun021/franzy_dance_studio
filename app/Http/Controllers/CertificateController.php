@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Certificate;
 use App\Models\Course;
+use App\Models\Level;
 use App\Models\StudentCourse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -35,9 +36,11 @@ class CertificateController extends Controller
     {
         $courses = Course::orderBy('course_name')->get();
 
+        $levels = Level::orderBy('name')->get();
+
         return view(
             'backend.certificate.create',
-            compact('courses')
+            compact('courses', 'levels')
         );
     }
 

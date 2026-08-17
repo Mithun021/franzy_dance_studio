@@ -21,5 +21,7 @@ Route::get('/payment-page/{studentCourse}', [WebsiteController::class, 'payment_
     ->name('student.payment-page');
 Route::post( '/student/payment/{studentCourse}', [WebsiteController::class, 'saveStudentPayment'] )->name('student.payment.store');
 Route::get( '/student/offline-payment-success/{payment}', [WebsiteController::class, 'offlinePaymentSuccess'] )->name('student.offline-payment-success');
+Route::get('/search-studio-booking', [WebsiteController::class, 'searchStudioBooking'])
+    ->name('studio.booking.search');
 ?>
 

@@ -30,4 +30,6 @@ class Studio extends Model
     {
         return $this->belongsTo(StudioCategory::class,'studio_category_id');
     }
+
+    
 }

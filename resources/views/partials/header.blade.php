@@ -53,7 +53,7 @@ $menus = [
 
     [
         'title' => 'Home',
-        'url'   => '#home',
+        'url'   => url('/'),
     ],
 
     [
@@ -137,7 +137,7 @@ if (auth()->check() && auth()->user()->user_type == 'student') {
 
             <!-- Logo -->
 
-            <a href="/" class="flex items-center gap-3 group">
+            <a href="{{ url('/') }}" class="flex items-center gap-3 group">
 
                 {{-- Logo --}}
                 <img

@@ -1388,4 +1388,76 @@ class WebsiteController extends Controller
         );
     }
 
+    public function searchStudioBooking(Request $request)
+    {
+        $request->validate([
+            'booking_id' => ['nullable', 'string', 'max:100'],
+            'phone'     => ['nullable', 'string', 'max:20'],
+        ], [
+            'booking_id.max' => 'Booking ID is too long.',
+            'phone.max'      => 'Phone number is too long.',
+        ]);
+
+        $bookingId = trim($request->booking_id ?? '');
+        $phone     = trim($request->phone ?? '');
+
+        /*
+        |--------------------------------------------------------------------------
+        | At least one search field is required
+        |--------------------------------------------------------------------------
+        */
+        if ($bookingId === '' && $phone === '') {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Please enter Booking ID or Phone Number.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search Studio Bookings
+        |--------------------------------------------------------------------------
+        |
+        | If both Booking ID and Phone are provided:
+        | Booking must match BOTH conditions.
+        |
+        | If only one is provided:
+        | Search using that field.
+        |
+        */
+        $bookings = StudioBooking::with([
+            'studio',
+            'payments' => function ($query) {
+                $query->latest('payment_date')
+                    ->latest('id');
+            }
+        ])
+        ->when($bookingId !== '', function ($query) use ($bookingId) {
+            $query->where('booking_id', $bookingId);
+        })
+        ->when($phone !== '', function ($query) use ($phone) {
+            $query->where('phone', $phone);
+        })
+        ->latest('id')
+        ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | No Record Found
+        |--------------------------------------------------------------------------
+        */
+        if ($bookings->isEmpty()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'No studio booking found with the provided details.');
+        }
+
+        return view('pages.search-studio-data', compact(
+            'bookings',
+            'bookingId',
+            'phone'
+        ));
+    }
+
 }

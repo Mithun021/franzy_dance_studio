@@ -76,6 +76,26 @@
 
                 </div>
 
+                {{-- <div class="col-md-4">
+                    <label for="">Level <span class="text-danger">*</span></label>
+                    <select name="level_id" class="form-select" required>
+
+                        <option value="">Select Level</option>
+
+                        @foreach($levels as $level)
+
+                            <option value="{{ $level->id }}"
+                                {{ old('level_id') == $level->id ? 'selected' : '' }}>
+
+                                {{ $level->name }}
+
+                            </option>
+
+                        @endforeach
+
+                    </select>
+                </div> --}}
+
                 <div class="col-md-2 d-flex align-items-end">
 
                     <button
