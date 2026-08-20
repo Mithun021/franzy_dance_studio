@@ -6,14 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('student_payments', function (Blueprint $table) {
+        Schema::create('course_payment_records', function (Blueprint $table) {
+
             $table->id();
-             /*
+
+            /*
             |--------------------------------------------------------------------------
             | Relationships
             |--------------------------------------------------------------------------
@@ -35,56 +34,71 @@ return new class extends Migration
 
             $table->date('payment_date');
 
-            $table->enum('payment_mode',[
+            $table->enum('payment_mode', [
                 'Cash',
                 'UPI',
                 'Card',
                 'Bank Transfer',
-                'Cheque'
+                'Cheque',
             ]);
 
-            $table->enum('payment_type', [
-                'full',
-                'half',
-                'next_month'
-            ])->nullable();
+            $table->decimal('amount', 10, 2);
 
-            $table->decimal('amount',10,2);
-
-            $table->decimal('platform_fee_percentage', 5, 2)->nullable();
-
-            $table->decimal('platform_fee_amount', 10, 2)->nullable();
-
-            $table->decimal('total_amount', 10, 2)->nullable();
-
-            $table->string('payment_proof')->nullable();
-
-            $table->string('transaction_id')->nullable();
-
-            $table->text('remarks')->nullable();
+            $table->decimal('platform_fee_percentage', 5, 2)->default(0);
+            $table->decimal('platform_fee_amount', 12, 2)->default(0);
 
             /*
             |--------------------------------------------------------------------------
-            | Status
+            | Transaction Details
             |--------------------------------------------------------------------------
             */
 
-            $table->enum('status',[
+            $table->string('transaction_id')
+                ->nullable();
+
+            $table->string('payment_proof')
+                ->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Status
+            |--------------------------------------------------------------------------
+            */
+
+            $table->enum('status', [
                 'success',
                 'pending',
                 'failed',
                 'cancelled',
-                'refunded'
+                'refunded',
             ])->default('success');
+
+            $table->text('remarks')
+                ->nullable();
+
             $table->timestamps();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Indexes
+            |--------------------------------------------------------------------------
+            */
+
+            $table->index('student_course_id');
+            $table->index('user_id');
+            $table->index('payment_date');
+            $table->index('payment_mode');
+            $table->index('status');
+
+            $table->index([
+                'student_course_id',
+                'payment_date'
+            ]);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('student_payments');
+        Schema::dropIfExists('course_payment_records');
     }
 };

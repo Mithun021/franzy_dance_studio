@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('student_course', function (Blueprint $table) {
@@ -17,7 +14,7 @@ return new class extends Migration
 
             /*
             |--------------------------------------------------------------------------
-            | Student & Admission Details
+            | Student & Admission
             |--------------------------------------------------------------------------
             */
 
@@ -25,7 +22,8 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnDelete();
 
-            $table->string('admission_no')->unique();
+            $table->string('admission_no', 50)
+                ->unique();
 
             $table->date('admission_date');
 
@@ -39,9 +37,11 @@ return new class extends Migration
                 ->constrained('courses')
                 ->cascadeOnDelete();
 
-            $table->integer('course_duration')->nullable();
+            $table->integer('course_duration')
+                ->nullable();
 
-            $table->string('duration_type',20)->nullable();
+            $table->string('duration_type', 20)
+                ->nullable();
 
             $table->foreignId('level_id')
                 ->nullable()
@@ -69,19 +69,24 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             */
 
-            $table->decimal('registration_fee', 10, 2)->default(0);
-            $table->decimal('admission_fee', 10, 2)->default(0);
-            $table->decimal('course_fee', 10, 2)->default(0);
+            $table->decimal('registration_fee', 10, 2)
+                ->default(0);
+
+            $table->decimal('admission_fee', 10, 2)
+                ->default(0);
+
+            $table->decimal('monthly_fee', 10, 2)
+                ->default(0);
 
             /*
             |--------------------------------------------------------------------------
-            | Course Status
+            | Enrollment Status
             |--------------------------------------------------------------------------
             */
 
             $table->boolean('is_enroll')
-            ->default(0)
-            ->comment('1 = Active Enrollment, 0 = Not Enrolled');
+                ->default(0)
+                ->comment('1 = Active Enrollment, 0 = Not Enrolled');
 
             $table->enum('status', [
                 'ongoing',
@@ -89,7 +94,8 @@ return new class extends Migration
                 'discontinued',
             ])->default('ongoing');
 
-            $table->date('completion_date')->nullable();
+            $table->date('completion_date')
+                ->nullable();
 
             $table->timestamps();
 
@@ -109,16 +115,23 @@ return new class extends Migration
             $table->index('completion_date');
             $table->index('status');
 
-            // Frequently used filters
-            $table->index(['course_id', 'status']);
-            $table->index(['batch_id', 'status']);
-            $table->index(['instructor_id', 'status']);
+            $table->index([
+                'course_id',
+                'status'
+            ]);
+
+            $table->index([
+                'batch_id',
+                'status'
+            ]);
+
+            $table->index([
+                'instructor_id',
+                'status'
+            ]);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('student_course');

@@ -2,65 +2,36 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class StudentPayment extends Model
+class CoursePaymentRecord extends Model
 {
-    use HasFactory;
+    protected $table = 'course_payment_records';
+
     protected $fillable = [
 
-        'order_id',
-
         'student_course_id',
-
         'user_id',
 
-        'registration_fee',
-
-        'admission_fee',
-
-        'course_fee',
-
         'payment_date',
-
         'payment_mode',
-
-        'payment_type',
-
         'amount',
-
-        'late_fine',
-
         'platform_fee_percentage',
-
         'platform_fee_amount',
 
-        'total_amount',
-
         'transaction_id',
-
         'payment_proof',
-
-        'remarks',
 
         'status',
 
+        'remarks',
     ];
 
-
     protected $casts = [
-
         'payment_date' => 'date',
-
         'amount' => 'decimal:2',
-
         'platform_fee_percentage' => 'decimal:2',
-
         'platform_fee_amount' => 'decimal:2',
-
-        'total_amount' => 'decimal:2',
-
     ];
 
     /*
@@ -69,13 +40,21 @@ class StudentPayment extends Model
     |--------------------------------------------------------------------------
     */
 
+    // Student Course
     public function studentCourse()
     {
-        return $this->belongsTo(StudentCourse::class);
+        return $this->belongsTo(
+            StudentCourse::class,
+            'student_course_id'
+        );
     }
 
+    // Student
     public function student()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(
+            User::class,
+            'user_id'
+        );
     }
 }

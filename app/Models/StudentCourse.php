@@ -10,36 +10,35 @@ class StudentCourse extends Model
 
     protected $fillable = [
         'user_id',
+        'admission_no',
+        'admission_date',
+
         'course_id',
         'course_duration',
         'duration_type',
+
         'level_id',
         'category_id',
         'batch_id',
         'instructor_id',
 
-        'admission_no',
-        'admission_date',
-
         'registration_fee',
         'admission_fee',
-        'course_fee',
-        'total_monthly_fee',
-        'grand_total',
+        'monthly_fee',
+
         'is_enroll',
         'status',
         'completion_date',
     ];
 
     protected $casts = [
+
         'admission_date' => 'date',
         'completion_date' => 'date',
 
         'registration_fee' => 'decimal:2',
         'admission_fee'    => 'decimal:2',
-        'course_fee'       => 'decimal:2',
-        'total_monthly_fee' => 'decimal:2',
-        'grand_total' => 'decimal:2',
+        'monthly_fee'      => 'decimal:2',
 
         'is_enroll' => 'boolean',
     ];
@@ -68,33 +67,61 @@ class StudentCourse extends Model
         return $this->belongsTo(Course::class);
     }
 
-    /**
-     * Level
-     */
+    // Level
     public function level()
     {
         return $this->belongsTo(Level::class);
     }
 
-    /**
-     * Category
-     */
+    // Category
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Batch
-     */
+    // Batch
     public function batch()
     {
         return $this->belongsTo(Batch::class);
     }
 
+    // Monthly Fee Records
+    public function monthRecords()
+    {
+        return $this->hasMany(
+            CourseMonthRecord::class,
+            'student_course_id'
+        );
+    }
+
+    // Payment Records
+    public function paymentRecords()
+    {
+        return $this->hasMany(
+            CoursePaymentRecord::class,
+            'student_course_id'
+        );
+    }
+
+    // Late Fine Records
+    public function lateFineRecords()
+    {
+        return $this->hasMany(
+            LateFineRecord::class,
+            'student_course_id'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
+
     public function scopeActiveEnroll($query)
     {
-        return $query->where('is_enroll', 1)
-                     ->where('status', 'ongoing');
+        return $query
+            ->where('is_enroll', 1)
+            ->where('status', 'ongoing');
     }
 }

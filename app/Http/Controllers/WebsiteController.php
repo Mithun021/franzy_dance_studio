@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Batch;
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\CourseMonthRecord;
+use App\Models\CoursePaymentRecord;
 use App\Models\Level;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\StudentCourse;
@@ -23,6 +26,17 @@ use Illuminate\Support\Str;
 
 class WebsiteController extends Controller
 {
+    private function generateAdmissionNo()
+    {
+        $lastAdmissionNo = StudentCourse::max('admission_no');
+
+        if (!$lastAdmissionNo) {
+            return 1001;
+        }
+
+        return (int) $lastAdmissionNo + 1;
+    }
+
     public function admission_form()
     {
         $courses = Course::orderBy('course_name')->get();
@@ -36,60 +50,74 @@ class WebsiteController extends Controller
         ));
     }
 
-    // public function save_admission_form(Request $request){
-    //     dd($request->all());
-    // }
-
     public function save_admission_form(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
 
             /*
             |--------------------------------------------------------------------------
-            | Course Details
+            | Student
             |--------------------------------------------------------------------------
             */
 
-            'admission_date'     => 'required|date',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
 
-            'course_id'          => 'required|exists:courses,id',
-            'level_id'           => 'required|exists:levels,id',
-            'category_id'        => 'required|exists:categories,id',
-            'batch_id'           => 'required|exists:batches,id',
+            'phone' => [
+                'required',
+                'string',
+                'max:15',
+            ],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Fee
-            |--------------------------------------------------------------------------
-            */
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+            ],
 
-            'registration_fee'   => 'required|numeric|min:0',
-            'admission_fee'      => 'required|numeric|min:0',
-            'monthly_fee'        => 'required|numeric|min:0',
+            'date_of_birth' => [
+                'required',
+                'date',
+            ],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Student Details
-            |--------------------------------------------------------------------------
-            */
+            'religion' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
 
-            'name'               => 'required|string|max:255',
+            'mother_tongue' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
 
-            'phone'              => 'required|string|max:15',
+            'occupation' => [
+                'nullable',
+                'string',
+                'max:150',
+            ],
 
-            'email'              => 'nullable|email|max:255',
+            'qualification' => [
+                'nullable',
+                'string',
+                'max:150',
+            ],
 
-            'date_of_birth'      => 'required|date',
-
-            'religion'           => 'nullable|string|max:100',
-
-            'mother_tongue'      => 'nullable|string|max:100',
-
-            'occupation'         => 'nullable|string|max:150',
-
-            'qualification'      => 'nullable|string|max:150',
-
-            'whatsapp_no'        => 'nullable|string|max:15',
+            'whatsapp_no' => [
+                'nullable',
+                'string',
+                'max:15',
+            ],
 
             /*
             |--------------------------------------------------------------------------
@@ -97,9 +125,23 @@ class WebsiteController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            'guardian_name'        => 'nullable|string|max:255',
-            'guardian_contact'     => 'nullable|string|max:20',
-            'guardian_occupation'  => 'nullable|string|max:255',
+            'guardian_name' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'guardian_contact' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
+
+            'guardian_occupation' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
 
             /*
             |--------------------------------------------------------------------------
@@ -107,8 +149,17 @@ class WebsiteController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            'local_guardian_name'      => 'nullable|string|max:255',
-            'local_guardian_relation'  => 'nullable|string|max:255',
+            'local_guardian_name' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'local_guardian_relation' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
 
             /*
             |--------------------------------------------------------------------------
@@ -116,33 +167,136 @@ class WebsiteController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            'address' => 'nullable|string',
+            'address' => [
+                'nullable',
+                'string',
+            ],
 
             /*
             |--------------------------------------------------------------------------
-            | Profile Image
+            | Profile Image / Signature
             |--------------------------------------------------------------------------
             */
 
-            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'signature' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'profile_image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
 
+            'signature' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Admission
+            |--------------------------------------------------------------------------
+            */
+
+            'admission_no' => [
+                'nullable',
+                'string',
+                'max:50',
+                'unique:student_course,admission_no',
+            ],
+
+            'admission_date' => [
+                'required',
+                'date',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Course
+            |--------------------------------------------------------------------------
+            */
+
+            'course_id' => [
+                'required',
+                'exists:courses,id',
+            ],
+
+            'course_duration' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+
+            'duration_type' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
+
+            'level_id' => [
+                'nullable',
+                'exists:levels,id',
+            ],
+
+            'category_id' => [
+                'nullable',
+                'exists:categories,id',
+            ],
+
+            'batch_id' => [
+                'nullable',
+                'exists:batches,id',
+            ],
+
+            'instructor_id' => [
+                'nullable',
+                'exists:users,id',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Fees
+            |--------------------------------------------------------------------------
+            */
+
+            'registration_fee' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'admission_fee' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'monthly_fee' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
         ]);
 
-        if ($validator->fails()) {
 
-            return redirect()
-                ->back()
-                ->withErrors($validator)
-                ->withInput();
-
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Database Transaction
+        |--------------------------------------------------------------------------
+        */
 
         DB::beginTransaction();
 
         try {
 
+            /*
+            |--------------------------------------------------------------------------
+            | Logged In Student
+            |--------------------------------------------------------------------------
+            */
+
             $user = Auth::user();
+
 
             /*
             |--------------------------------------------------------------------------
@@ -159,8 +313,14 @@ class WebsiteController extends Controller
             } else {
 
                 $profileImage = $user->profile_image;
-
             }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Upload Signature
+            |--------------------------------------------------------------------------
+            */
 
             if ($request->hasFile('signature')) {
 
@@ -171,26 +331,8 @@ class WebsiteController extends Controller
             } else {
 
                 $signature = $user->signature;
-
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Admission Number
-            |--------------------------------------------------------------------------
-            */
-
-            $lastAdmission = StudentCourse::max('admission_no');
-
-            if (!$lastAdmission) {
-
-                $admissionNo = 1001;
-
-            } else {
-
-                $admissionNo = $lastAdmission + 1;
-
-            }
 
             /*
             |--------------------------------------------------------------------------
@@ -200,106 +342,89 @@ class WebsiteController extends Controller
 
             $user->update([
 
-                'name'                     => $request->name,
+                'name' => $validated['name'],
 
-                'email'                    => $request->email,
+                'email' => $validated['email'] ?? null,
 
-                'phone'                    => $request->phone,
+                'phone' => $validated['phone'],
 
-                'date_of_birth'            => $request->date_of_birth,
+                'date_of_birth' => $validated['date_of_birth'],
 
-                'religion'                 => $request->religion,
+                'religion' => $validated['religion'] ?? null,
 
-                'mother_tongue'            => $request->mother_tongue,
+                'mother_tongue' => $validated['mother_tongue'] ?? null,
 
-                'occupation'               => $request->occupation,
+                'occupation' => $validated['occupation'] ?? null,
 
-                'qualification'            => $request->qualification,
+                'qualification' => $validated['qualification'] ?? null,
 
-                'whatsapp_no'              => $request->whatsapp_no,
+                'whatsapp_no' => $validated['whatsapp_no'] ?? null,
 
-                'guardian_name'            => $request->guardian_name,
+                'guardian_name' => $validated['guardian_name'] ?? null,
 
-                'guardian_contact'         => $request->guardian_contact,
+                'guardian_contact' => $validated['guardian_contact'] ?? null,
 
-                'guardian_occupation'      => $request->guardian_occupation,
+                'guardian_occupation' => $validated['guardian_occupation'] ?? null,
 
-                'address'                  => $request->address,
+                'local_guardian_name' => $validated['local_guardian_name'] ?? null,
 
-                'local_guardian_name'      => $request->local_guardian_name,
+                'local_guardian_relation' => $validated['local_guardian_relation'] ?? null,
 
-                'local_guardian_relation'  => $request->local_guardian_relation,
+                'address' => $validated['address'] ?? null,
 
-                'profile_image'            => $profileImage,
+                'profile_image' => $profileImage,
 
                 'signature' => $signature,
-
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | PART-2
-            |--------------------------------------------------------------------------
-            */
 
             /*
             |--------------------------------------------------------------------------
-            | Check Batch Capacity
+            | Check Already Enrolled
             |--------------------------------------------------------------------------
             */
 
-            $batch = Batch::withCount([
-                'studentCourses as enrolled_students_count' => function ($query) {
-                    $query->activeEnroll();
-                }
-            ])->findOrFail($request->batch_id);
-
-            if (
-                $batch->capacity &&
-                $batch->enrolled_students_count >= $batch->capacity
-            ) {
-                DB::rollBack();
-
-                return redirect()
-                    ->back()
-                    ->withInput()
-                    ->with('error', 'Selected batch is already full.');
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Duplicate Admission Check
-            |--------------------------------------------------------------------------
-            */
-
-            $alreadyEnrolled = StudentCourse::where('user_id', $user->id)
-                ->where('course_id', $request->course_id)
+            $alreadyEnrolled = StudentCourse::where(
+                    'user_id',
+                    $user->id
+                )
+                ->where(
+                    'course_id',
+                    $validated['course_id']
+                )
                 ->activeEnroll()
                 ->exists();
+
 
             if ($alreadyEnrolled) {
 
                 DB::rollBack();
 
-                return back()
+                return redirect()
+                    ->back()
                     ->withInput()
-                    ->with('error', 'You are already enrolled in this course.');
-
+                    ->with(
+                        'error',
+                        'You are already enrolled in this course.'
+                    );
             }
 
-            $course = Course::findOrFail($request->course_id);
-
-            $totalMonthlyFee = $request->monthly_fee * $course->duration;
-
-            $grandTotal =
-                $totalMonthlyFee +
-                $request->admission_fee +
-                $request->registration_fee;
 
             /*
             |--------------------------------------------------------------------------
-            | Save Student Course
+            | Generate Admission Number
+            |--------------------------------------------------------------------------
+            */
+
+            $admissionNo = $validated['admission_no']
+                ?? $this->generateAdmissionNo();
+
+            $course = Course::findOrFail($validated['course_id']);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create Student Course
             |--------------------------------------------------------------------------
             */
 
@@ -309,32 +434,37 @@ class WebsiteController extends Controller
 
                 'admission_no' => $admissionNo,
 
-                'admission_date' => $request->admission_date,
+                'admission_date' => $validated['admission_date'],
 
-                'course_id' => $request->course_id,
+                'course_id' => $validated['course_id'],
 
-                'level_id' => $request->level_id,
+                'course_duration' => $course['duration'] ?? null,
 
-                'category_id' => $request->category_id,
+                'duration_type' => $course['duration_type'] ?? null,
 
-                'batch_id' => $request->batch_id,
+                'level_id' => $validated['level_id'] ?? null,
 
-                'instructor_id' => null,
+                'category_id' => $validated['category_id'] ?? null,
 
-                'registration_fee' => $request->registration_fee,
+                'batch_id' => $validated['batch_id'] ?? null,
 
-                'admission_fee' => $request->admission_fee,
+                'instructor_id' => $validated['instructor_id'] ?? null,
 
-                'course_fee' => $request->monthly_fee,
+                'registration_fee' => $validated['registration_fee'] ?? 0,
 
-                'total_monthly_fee' => $totalMonthlyFee,
+                'admission_fee' => $validated['admission_fee'] ?? 0,
 
-                'grand_total' => $grandTotal,
+                'monthly_fee' => $validated['monthly_fee'],
+
+                /*
+                | Payment successful hone ke baad 1 hoga
+                */
 
                 'is_enroll' => 0,
 
                 'status' => 'ongoing',
 
+                'completion_date' => null,
             ]);
 
 
@@ -347,21 +477,35 @@ class WebsiteController extends Controller
             DB::commit();
 
 
-            return redirect()->route(
-                'student.payment-page',
-                $studentCourse->id
-            )->with('success', 'Admission saved successfully.');
+            /*
+            |--------------------------------------------------------------------------
+            | Redirect To Payment Page
+            |--------------------------------------------------------------------------
+            */
+
+            return redirect()
+                ->route(
+                    'student.payment-page',
+                    $studentCourse->id
+                )
+                ->with(
+                    'success',
+                    'Admission saved successfully.'
+                );
+
 
         } catch (\Exception $e) {
 
             DB::rollBack();
 
-            return back()
+            return redirect()
+                ->back()
                 ->withInput()
-                ->with('error', $e->getMessage());
-
+                ->with(
+                    'error',
+                    $e->getMessage()
+                );
         }
-
     }
 
     public function payment_page(StudentCourse $studentCourse)
@@ -380,275 +524,8 @@ class WebsiteController extends Controller
         );
     }
 
-    // public function saveStudentPayment(
-    //     Request $request,
-    //     StudentCourse $studentCourse
-    // ) {
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Validation
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     $request->validate([
-
-    //         'payment_method' => 'required|in:online,qr,bank_transfer',
-
-    //         'payment_proof' => [
-    //             'nullable',
-    //             'required_if:payment_method,qr,bank_transfer',
-    //             'file',
-    //             'mimes:jpg,jpeg,png,pdf',
-    //             'max:5120',
-    //         ],
-
-    //         'transaction_id' => [
-    //             'nullable',
-    //             'string',
-    //             'max:255',
-    //         ],
-
-    //         'remarks' => [
-    //             'nullable',
-    //             'string',
-    //         ],
-
-    //     ]);
-
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Online Payment
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     if ($request->payment_method === 'online') {
-
-    //         return back()
-    //             ->with('error', 'Work in Process / Try After Sometimes.');
-    //     }
-
-
-    //     DB::beginTransaction();
-
-    //     try {
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Payment Date
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $paymentDate = Carbon::today();
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Payment Type
-    //         |--------------------------------------------------------------------------
-    //         |
-    //         | 1 - 10  = Full
-    //         | 11 - 25 = Half
-    //         | 26 - End = Next Month
-    //         |
-    //         */
-
-    //         $day = $paymentDate->day;
-
-    //         if ($day >= 1 && $day <= 10) {
-
-    //             $paymentType = 'full';
-
-    //         } elseif ($day >= 11 && $day <= 25) {
-
-    //             $paymentType = 'half';
-
-    //         } else {
-
-    //             $paymentType = 'next_month';
-    //         }
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Calculate Monthly Fee
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $monthlyFee = (float) $studentCourse->course_fee;
-
-
-    //         if ($paymentType === 'half') {
-
-    //             $monthlyPayable = $monthlyFee / 2;
-
-    //         } else {
-
-    //             $monthlyPayable = $monthlyFee;
-    //         }
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Registration + Admission Fee
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $registrationFee = (float) $studentCourse->registration_fee;
-
-    //         $admissionFee = (float) $studentCourse->admission_fee;
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Total Payment Amount
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $amount =
-    //             $registrationFee +
-    //             $admissionFee +
-    //             $monthlyPayable;
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Platform Fee
-    //         |--------------------------------------------------------------------------
-    //         |
-    //         | Currently 0.
-    //         | Gateway integration ke time percentage yahan calculate kar sakte ho.
-    //         |
-    //         */
-
-    //         $platformFeePercentage = 2;
-
-    //         $platformFeeAmount = ($amount * $platformFeePercentage) / 100;
-
-    //         $totalAmount = $amount + $platformFeeAmount;
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Payment Mode
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         if ($request->payment_method === 'qr') {
-
-    //             $paymentMode = 'UPI';
-
-    //         } else {
-
-    //             $paymentMode = 'Bank Transfer';
-    //         }
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Payment Proof Upload
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $paymentProof = null;
-
-    //         if ($request->hasFile('payment_proof')) {
-
-    //             $paymentProof = $request
-    //                 ->file('payment_proof')
-    //                 ->store(
-    //                     'student-payments',
-    //                     'public'
-    //                 );
-    //         }
-
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Save Payment
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $payment = StudentPayment::create([
-
-    //             'student_course_id' => $studentCourse->id,
-
-    //             'user_id' => $studentCourse->user_id,
-
-    //             'payment_date' => $paymentDate,
-
-    //             'payment_mode' => $paymentMode,
-
-    //             'payment_type' => $paymentType,
-
-    //             'amount' => $amount,
-
-    //             'platform_fee_percentage' => $platformFeePercentage,
-
-    //             'platform_fee_amount' => $platformFeeAmount,
-
-    //             'total_amount' => $totalAmount,
-
-    //             'payment_proof' => $paymentProof,
-
-    //             'transaction_id' => $request->transaction_id,
-
-    //             'remarks' => $request->remarks,
-
-    //             'status' => 'pending',
-
-    //         ]);
-
-
-    //         DB::commit();
-
-
-    //         // return redirect()
-    //         //     ->route(
-    //         //         'student.payment-page',
-    //         //         $studentCourse->id
-    //         //     )
-    //         //     ->with(
-    //         //         'success',
-    //         //         'Payment submitted successfully. Your payment is pending verification.'
-    //         //     );
-
-    //         return redirect()
-    //         ->route(
-    //             'student.offline-payment-success',
-    //             $payment->id
-    //         );
-
-
-    //     } catch (\Exception $e) {
-
-    //         DB::rollBack();
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Remove Uploaded File If Database Failed
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         if (!empty($paymentProof)) {
-
-    //             Storage::disk('public')->delete($paymentProof);
-    //         }
-
-
-    //         return back()
-    //             ->withInput()
-    //             ->with(
-    //                 'error',
-    //                 'Payment could not be processed. Please try again.'
-    //             );
-    //     }
-    // }
-
-    public function saveStudentPayment(
-        Request $request,
-        StudentCourse $studentCourse
-    ) {
+    public function saveStudentPayment(Request $request, StudentCourse $studentCourse)
+    {
         /*
         |--------------------------------------------------------------------------
         | Validation
@@ -657,25 +534,16 @@ class WebsiteController extends Controller
 
         $request->validate([
 
-            'payment_method' => 'required|in:online,qr,bank_transfer',
+            'payment_method' => [
+                'required',
+                'in:online,qr,bank_transfer',
+            ],
 
             'payment_proof' => [
-                'nullable',
                 'required_if:payment_method,qr,bank_transfer',
                 'file',
-                'mimes:jpg,jpeg,png,pdf',
+                'mimes:jpg,jpeg,png,webp,pdf',
                 'max:5120',
-            ],
-
-            'transaction_id' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'remarks' => [
-                'nullable',
-                'string',
             ],
 
         ]);
@@ -697,239 +565,281 @@ class WebsiteController extends Controller
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Date
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentDate = Carbon::today();
+
+        $day = $paymentDate->day;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fee Details
+        |--------------------------------------------------------------------------
+        */
+
+        $registrationFee = (float) (
+            $studentCourse->registration_fee ?? 0
+        );
+
+        $admissionFee = (float) (
+            $studentCourse->admission_fee ?? 0
+        );
+
+        $monthlyFee = (float) (
+            $studentCourse->monthly_fee ?? 0
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Monthly Fee Payment Rule
+        |--------------------------------------------------------------------------
+        |
+        | 1 - 10
+        | Full Monthly Fee
+        | Current Month
+        |
+        | 11 - 25
+        | 50% Monthly Fee
+        | Current Month
+        |
+        | 26 - Month End
+        | Full Monthly Fee
+        | Next Month
+        |
+        */
+
+        $monthlyPayable = 0;
+
+        $paymentPercentage = 0;
+
+        $feeMonth = $paymentDate->copy();
+
+        $paymentRule = '';
+
+
+        if ($day >= 1 && $day <= 10) {
+
+            $monthlyPayable = $monthlyFee;
+
+            $paymentPercentage = 100;
+
+            $feeMonth = $paymentDate->copy();
+
+            $paymentRule = 'Full Monthly Fee';
+
+        } elseif ($day >= 11 && $day <= 25) {
+
+            $monthlyPayable = $monthlyFee * 0.50;
+
+            $paymentPercentage = 50;
+
+            $feeMonth = $paymentDate->copy();
+
+            $paymentRule = '50% Monthly Fee';
+
+        } else {
+
+            $monthlyPayable = $monthlyFee;
+
+            $paymentPercentage = 100;
+
+            $feeMonth = $paymentDate
+                ->copy()
+                ->addMonth();
+
+            $paymentRule = 'Full Monthly Fee - Next Month';
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Monthly Record Status
+        |--------------------------------------------------------------------------
+        */
+
+        $monthStatus = $paymentPercentage >= 100
+            ? 'paid'
+            : 'partial';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Mode Mapping
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->payment_method === 'qr') {
+
+            $paymentMode = 'UPI';
+
+        } elseif ($request->payment_method === 'bank_transfer') {
+
+            $paymentMode = 'Bank Transfer';
+
+        } else {
+
+            $paymentMode = null;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Total Before Platform Fee
+        |--------------------------------------------------------------------------
+        */
+
+        $subtotal =
+            $registrationFee +
+            $admissionFee +
+            $monthlyPayable;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Platform Fee
+        |--------------------------------------------------------------------------
+        */
+
+        $platformFeePercentage = 2;
+
+        $platformFeeAmount =
+            $subtotal * ($platformFeePercentage / 100);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Final Payment Amount
+        |--------------------------------------------------------------------------
+        */
+
+        $totalAmount =
+            $subtotal +
+            $platformFeeAmount;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Upload Payment Proof
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentProof = null;
+
+        if ($request->hasFile('payment_proof')) {
+
+            $paymentProof = $request
+                ->file('payment_proof')
+                ->store(
+                    'student-payment-proofs',
+                    'public'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Database Transaction
+        |--------------------------------------------------------------------------
+        */
+
         DB::beginTransaction();
 
         try {
 
             /*
             |--------------------------------------------------------------------------
-            | Payment Date
-            |--------------------------------------------------------------------------
-            */
-
-            $paymentDate = Carbon::today();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Check First Payment
+            | 1. Course Payment Record
             |--------------------------------------------------------------------------
             |
-            | Agar is admission ka ek bhi SUCCESS payment nahi hai,
-            | to current payment first payment maana jayega.
+            | Actual payment transaction
             |
             */
 
-            $hasSuccessfulPayment = StudentPayment::where(
-                'student_course_id',
-                $studentCourse->id
-            )
-            ->where('status', 'success')
-            ->exists();
-
-
-            $isFirstPayment = !$hasSuccessfulPayment;
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | First Payment Fee Snapshot
-            |--------------------------------------------------------------------------
-            */
-
-            $registrationFee = 0;
-            $admissionFee = 0;
-            $courseFee = 0;
-
-
-            if ($isFirstPayment) {
-
-                $registrationFee = (float) $studentCourse->registration_fee;
-
-                $admissionFee = (float) $studentCourse->admission_fee;
-
-                $courseFee = (float) $studentCourse->course_fee;
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Payment Type
-            |--------------------------------------------------------------------------
-            |
-            | 1 - 10  = Full
-            | 11 - 25 = Half
-            | 26 - End = Next Month
-            |
-            */
-
-            $day = $paymentDate->day;
-
-
-            if ($day >= 1 && $day <= 10) {
-
-                $paymentType = 'full';
-
-            } elseif ($day >= 11 && $day <= 25) {
-
-                $paymentType = 'half';
-
-            } else {
-
-                $paymentType = 'next_month';
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Calculate Monthly Fee
-            |--------------------------------------------------------------------------
-            */
-
-            $monthlyFee = (float) $studentCourse->course_fee;
-
-
-            if ($paymentType === 'half') {
-
-                $monthlyPayable = $monthlyFee / 2;
-
-            } else {
-
-                $monthlyPayable = $monthlyFee;
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Total Payment Amount
-            |--------------------------------------------------------------------------
-            |
-            | First payment:
-            | Registration + Admission + Monthly
-            |
-            | Next payments:
-            | Only Monthly
-            |
-            */
-
-            $amount =
-                $registrationFee +
-                $admissionFee +
-                $monthlyPayable;
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Platform Fee
-            |--------------------------------------------------------------------------
-            */
-
-            $platformFeePercentage = 2;
-
-            $platformFeeAmount =
-                ($amount * $platformFeePercentage) / 100;
-
-            $totalAmount =
-                $amount + $platformFeeAmount;
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Payment Mode
-            |--------------------------------------------------------------------------
-            */
-
-            if ($request->payment_method === 'qr') {
-
-                $paymentMode = 'UPI';
-
-            } else {
-
-                $paymentMode = 'Bank Transfer';
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Payment Proof Upload
-            |--------------------------------------------------------------------------
-            */
-
-            $paymentProof = null;
-
-
-            if ($request->hasFile('payment_proof')) {
-
-                $paymentProof = $request
-                    ->file('payment_proof')
-                    ->store(
-                        'student-payments',
-                        'public'
-                    );
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Save Payment
-            |--------------------------------------------------------------------------
-            */
-
-            $payment = StudentPayment::create([
-
-                'order_id' => 'ORD-' . strtoupper(Str::random(12)),
+            $payment = CoursePaymentRecord::create([
 
                 'student_course_id' => $studentCourse->id,
 
                 'user_id' => $studentCourse->user_id,
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | First Payment Fee Snapshot
-                |--------------------------------------------------------------------------
-                */
-
-                'registration_fee' => $registrationFee,
-
-                'admission_fee' => $admissionFee,
-
-                'course_fee' => $courseFee,
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Payment Details
-                |--------------------------------------------------------------------------
-                */
-
                 'payment_date' => $paymentDate,
 
                 'payment_mode' => $paymentMode,
 
-                'payment_type' => $paymentType,
+                'amount' => $totalAmount,
 
-                'amount' => $amount,
+                'platform_fee_percentage' => $platformFeePercentage,
 
-                'platform_fee_percentage' =>
-                    $platformFeePercentage,
+                'platform_fee_amount' => $platformFeeAmount,
 
-                'platform_fee_amount' =>
-                    $platformFeeAmount,
+                'transaction_id' => null,
 
-                'total_amount' =>
-                    $totalAmount,
+                'payment_proof' => $paymentProof,
 
-                'payment_proof' =>
-                    $paymentProof,
-
-                'transaction_id' =>
-                    $request->transaction_id,
+                /*
+                | Offline payment proof needs admin verification
+                */
+                'status' => 'pending',
 
                 'remarks' =>
-                    $request->remarks,
+                    'Offline payment submitted for verification.',
 
-                'status' => 'pending',
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Course Month Record
+            |--------------------------------------------------------------------------
+            |
+            | Monthly fee + applied monthly payment rule
+            |
+            */
+
+            CourseMonthRecord::create([
+
+                'student_course_id' => $studentCourse->id,
+
+                'fee_month' => $feeMonth,
+
+                'monthly_fee' => $monthlyFee,
+
+                'waiver_amount' => 0,
+
+                'payable_amount' => $monthlyPayable,
+
+                'paid_amount' => $monthlyPayable,
+
+                'due_date' => null,
+
+                'paid_date' => $paymentDate,
+
+                'payment_percentage' => $paymentPercentage,
+
+                'payment_rule' => $paymentRule,
+
+                'status' => $monthStatus,
+
+                'remarks' =>
+                    'Monthly fee payment submitted for verification.',
+
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Update Student Course
+            |--------------------------------------------------------------------------
+            */
+
+            $studentCourse->update([
+
+                'is_enroll' => true,
 
             ]);
 
@@ -943,6 +853,12 @@ class WebsiteController extends Controller
             DB::commit();
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Offline Payment Success Page
+            |--------------------------------------------------------------------------
+            */
+
             return redirect()
                 ->route(
                     'student.offline-payment-success',
@@ -950,23 +866,65 @@ class WebsiteController extends Controller
                 );
 
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Rollback
+            |--------------------------------------------------------------------------
+            */
 
             DB::rollBack();
 
 
             /*
             |--------------------------------------------------------------------------
-            | Remove Uploaded File If Database Failed
+            | Delete Uploaded Proof
             |--------------------------------------------------------------------------
             */
 
-            if (!empty($paymentProof)) {
+            if ($paymentProof) {
 
-                Storage::disk('public')
-                    ->delete($paymentProof);
+                Storage::disk('public')->delete(
+                    $paymentProof
+                );
             }
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Log Error
+            |--------------------------------------------------------------------------
+            */
+
+            Log::error(
+                'Student Payment Error',
+                [
+
+                    'student_course_id' =>
+                        $studentCourse->id,
+
+                    'payment_method' =>
+                        $request->payment_method,
+
+                    'error' =>
+                        $e->getMessage(),
+
+                    'line' =>
+                        $e->getLine(),
+
+                    'file' =>
+                        $e->getFile(),
+
+                ]
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Return With Error
+            |--------------------------------------------------------------------------
+            */
 
             return back()
                 ->withInput()
@@ -977,12 +935,15 @@ class WebsiteController extends Controller
         }
     }
 
-    public function offlinePaymentSuccess(StudentPayment $payment)
+    public function offlinePaymentSuccess(CoursePaymentRecord $payment)
     {
         /*
         |--------------------------------------------------------------------------
         | Security Check
         |--------------------------------------------------------------------------
+        |
+        | Payment sirf wahi student dekh sakta hai jiska payment record hai.
+        |
         */
 
         if ($payment->user_id !== Auth::id()) {
@@ -1006,9 +967,35 @@ class WebsiteController extends Controller
         ]);
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Monthly Fee Record
+        |--------------------------------------------------------------------------
+        |
+        | Is payment ke student course ka related month record bhi fetch karenge.
+        |
+        */
+
+        $monthRecord = CourseMonthRecord::where(
+            'student_course_id',
+            $payment->student_course_id
+        )
+            ->latest('id')
+            ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Success Page
+        |--------------------------------------------------------------------------
+        */
+
         return view(
             'pages.course-offline-payment-success',
-            compact('payment')
+            compact(
+                'payment',
+                'monthRecord'
+            )
         );
     }
 

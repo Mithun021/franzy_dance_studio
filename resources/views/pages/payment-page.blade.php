@@ -27,7 +27,13 @@
     |--------------------------------------------------------------------------
     */
 
-    $monthlyFee = (float) $studentCourse->course_fee;
+    /*
+    | NOTE:
+    | StudentCourse model mein field `monthly_fee` hai.
+    | Calculation logic same rakha gaya hai.
+    */
+
+    $monthlyFee = (float) $studentCourse->monthly_fee;
 
     $monthlyPayable = 0;
 
@@ -164,12 +170,85 @@
 
 
 {{-- ============================================================
+     ERROR MESSAGE
+============================================================ --}}
+
+@if(session('error'))
+
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 shadow-sm">
+
+        <div class="flex items-center gap-3">
+
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+
+            <div>
+                <p class="font-bold text-red-800">
+                    Payment Error
+                </p>
+
+                <p class="text-sm text-red-700">
+                    {{ session('error') }}
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+@endif
+
+
+{{-- ============================================================
+     VALIDATION ERRORS
+============================================================ --}}
+
+@if($errors->any())
+
+    <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 shadow-sm">
+
+        <div class="flex gap-3">
+
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+
+            <div>
+
+                <p class="font-bold text-red-800">
+                    Please check the following errors
+                </p>
+
+                <ul class="mt-2 list-disc pl-5 text-sm text-red-700">
+
+                    @foreach($errors->all() as $error)
+
+                        <li>
+                            {{ $error }}
+                        </li>
+
+                    @endforeach
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </div>
+
+@endif
+
+
+{{-- ============================================================
      MAIN PAYMENT CARD
 ============================================================ --}}
 
 <div class="relative overflow-hidden rounded-[28px] border border-gray-100 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)] my-5">
 
     {{-- Decorative Background --}}
+
     <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-pink-100/60 blur-3xl"></div>
 
     <div class="pointer-events-none absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-blue-100/50 blur-3xl"></div>
@@ -182,6 +261,7 @@
     <div class="relative overflow-hidden bg-gradient-to-br from-pink-600 via-fuchsia-600 to-blue-600 px-6 py-8 md:px-10 md:py-10">
 
         {{-- Header Pattern --}}
+
         <div class="absolute inset-0 opacity-10">
 
             <div class="absolute -right-10 -top-16 h-56 w-56 rounded-full border-[30px] border-white"></div>
@@ -277,6 +357,7 @@
 
 
                 {{-- Admission No --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -291,6 +372,7 @@
 
 
                 {{-- Admission Date --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -298,13 +380,16 @@
                     </p>
 
                     <p class="font-bold text-gray-900">
-                        {{ $studentCourse->admission_date->format('d M Y') }}
+
+                        {{ $studentCourse->admission_date?->format('d M Y') ?? '—' }}
+
                     </p>
 
                 </div>
 
 
                 {{-- Student --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -312,13 +397,16 @@
                     </p>
 
                     <p class="truncate font-bold text-gray-900">
-                        {{ $studentCourse->student->name }}
+
+                        {{ $studentCourse->student?->name ?? '—' }}
+
                     </p>
 
                 </div>
 
 
                 {{-- Phone --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -326,13 +414,16 @@
                     </p>
 
                     <p class="font-bold text-gray-900">
-                        {{ $studentCourse->student->phone }}
+
+                        {{ $studentCourse->student?->phone ?? '—' }}
+
                     </p>
 
                 </div>
 
 
                 {{-- Course --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -340,13 +431,43 @@
                     </p>
 
                     <p class="truncate font-bold text-gray-900">
-                        {{ $studentCourse->course->course_name }}
+
+                        {{ $studentCourse->course?->course_name ?? '—' }}
+
+                    </p>
+
+                </div>
+
+
+                {{-- Course Duration --}}
+
+                <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
+
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Course Duration
+                    </p>
+
+                    <p class="font-bold text-gray-900">
+
+                        @if($studentCourse->course_duration)
+
+                            {{ $studentCourse->course_duration }}
+
+                            {{ $studentCourse->duration_type ?? '' }}
+
+                        @else
+
+                            —
+
+                        @endif
+
                     </p>
 
                 </div>
 
 
                 {{-- Level --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -354,13 +475,16 @@
                     </p>
 
                     <p class="font-bold text-gray-900">
-                        {{ $studentCourse->level->name }}
+
+                        {{ $studentCourse->level?->name ?? '—' }}
+
                     </p>
 
                 </div>
 
 
                 {{-- Category --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -368,13 +492,16 @@
                     </p>
 
                     <p class="font-bold text-gray-900">
-                        {{ $studentCourse->category->name }}
+
+                        {{ $studentCourse->category?->name ?? '—' }}
+
                     </p>
 
                 </div>
 
 
                 {{-- Batch --}}
+
                 <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
 
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -382,7 +509,76 @@
                     </p>
 
                     <p class="truncate font-bold text-gray-900">
-                        {{ $studentCourse->batch->batch_name }}
+
+                        {{ $studentCourse->batch?->batch_name ?? '—' }}
+
+                    </p>
+
+                </div>
+
+
+                {{-- Instructor --}}
+
+                <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
+
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Instructor
+                    </p>
+
+                    <p class="truncate font-bold text-gray-900">
+
+                        {{ $studentCourse->instructor?->name ?? 'Not Assigned' }}
+
+                    </p>
+
+                </div>
+
+
+                {{-- Enrollment Status --}}
+
+                <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
+
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Enrollment Status
+                    </p>
+
+                    @if($studentCourse->is_enroll)
+
+                        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700">
+
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+
+                            Enrolled
+
+                        </span>
+
+                    @else
+
+                        <span class="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-700">
+
+                            <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+
+                            Payment Pending
+
+                        </span>
+
+                    @endif
+
+                </div>
+
+
+                {{-- Course Status --}}
+
+                <div class="rounded-2xl border border-gray-100 bg-gray-50/70 p-5 transition hover:border-pink-200 hover:bg-pink-50/40">
+
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        Course Status
+                    </p>
+
+                    <p class="font-bold capitalize text-gray-900">
+
+                        {{ $studentCourse->status ?? '—' }}
+
                     </p>
 
                 </div>
@@ -405,6 +601,7 @@
 
 
             {{-- LEFT SIDE --}}
+
             <div class="lg:col-span-3">
 
                 <div class="mb-5 flex items-center gap-3">
@@ -450,7 +647,9 @@
                             </div>
 
                             <span class="whitespace-nowrap font-bold text-gray-900">
+
                                 ₹ {{ number_format($studentCourse->registration_fee, 2) }}
+
                             </span>
 
                         </div>
@@ -473,7 +672,9 @@
                             </div>
 
                             <span class="whitespace-nowrap font-bold text-gray-900">
+
                                 ₹ {{ number_format($studentCourse->admission_fee, 2) }}
+
                             </span>
 
                         </div>
@@ -496,7 +697,9 @@
                             </div>
 
                             <span class="whitespace-nowrap font-bold text-gray-900">
+
                                 ₹ {{ number_format($monthlyFee, 2) }}
+
                             </span>
 
                         </div>
@@ -524,10 +727,13 @@
                                 </p>
 
                                 <p class="mt-1 text-xs text-gray-500">
+
                                     Payment Date:
+
                                     <span class="font-semibold text-gray-700">
                                         {{ $paymentDate->format('d M Y') }}
                                     </span>
+
                                 </p>
 
                             </div>
@@ -857,6 +1063,7 @@
 
                                         ₹ {{ number_format($monthlyPayable, 2) }}
                                         monthly fee will be counted for
+
                                         <strong>
                                             {{ $feeMonth->format('F Y') }}
                                         </strong>.
@@ -869,12 +1076,22 @@
 
                         </div>
 
-                        <form action="{{ route('student.payment.store', $studentCourse->id) }}" method="POST" enctype="multipart/form-data">
+
+                        {{-- =================================================
+                             PAYMENT FORM
+                        ================================================== --}}
+
+                        <form
+                            action="{{ route('student.payment.store', $studentCourse->id) }}"
+                            method="POST"
+                            enctype="multipart/form-data"
+                        >
+
                             @csrf
 
-                            {{-- Existing admission/fee summary --}}
 
                             {{-- Payment Method --}}
+
                             <div class="mt-10">
 
                                 <h3 class="text-xl font-bold text-pink-500 mb-5">
@@ -883,7 +1100,9 @@
 
                                 <div class="space-y-4">
 
+
                                     {{-- Online Payment --}}
+
                                     <label class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 cursor-pointer hover:border-pink-500 transition">
 
                                         <input
@@ -891,9 +1110,11 @@
                                             name="payment_method"
                                             value="online"
                                             class="paymentMethod w-5 h-5 accent-pink-500"
-                                            checked>
+                                            checked
+                                        >
 
                                         <div>
+
                                             <h4 class="font-semibold text-gray-800">
                                                 Online Payment
                                             </h4>
@@ -901,21 +1122,25 @@
                                             <p class="text-gray-500 text-sm">
                                                 Secure payment using Payment Gateway
                                             </p>
+
                                         </div>
 
                                     </label>
 
 
                                     {{-- QR Payment --}}
+
                                     <label class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 cursor-pointer hover:border-pink-500 transition">
 
                                         <input
                                             type="radio"
                                             name="payment_method"
                                             value="qr"
-                                            class="paymentMethod w-5 h-5 accent-pink-500">
+                                            class="paymentMethod w-5 h-5 accent-pink-500"
+                                        >
 
                                         <div>
+
                                             <h4 class="font-semibold text-gray-800">
                                                 QR Payment
                                             </h4>
@@ -923,21 +1148,25 @@
                                             <p class="text-gray-500 text-sm">
                                                 Scan QR Code and upload payment proof
                                             </p>
+
                                         </div>
 
                                     </label>
 
 
                                     {{-- Direct Bank Transfer --}}
+
                                     <label class="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 cursor-pointer hover:border-pink-500 transition">
 
                                         <input
                                             type="radio"
                                             name="payment_method"
                                             value="bank_transfer"
-                                            class="paymentMethod w-5 h-5 accent-pink-500">
+                                            class="paymentMethod w-5 h-5 accent-pink-500"
+                                        >
 
                                         <div>
+
                                             <h4 class="font-semibold text-gray-800">
                                                 Direct Bank Transfer
                                             </h4>
@@ -945,6 +1174,7 @@
                                             <p class="text-gray-500 text-sm">
                                                 Transfer directly to our bank account
                                             </p>
+
                                         </div>
 
                                     </label>
@@ -953,6 +1183,7 @@
 
 
                                 {{-- QR Section --}}
+
                                 <div id="qrSection" class="hidden mt-6">
 
                                     <div class="rounded-2xl border border-pink-100 bg-pink-50 p-6">
@@ -966,7 +1197,8 @@
                                             <img
                                                 src="{{ asset('images/qr.jpg') }}"
                                                 alt="Payment QR Code"
-                                                class="w-56 h-56 object-contain mx-auto rounded-xl bg-white p-3 shadow">
+                                                class="w-56 h-56 object-contain mx-auto rounded-xl bg-white p-3 shadow"
+                                            >
 
                                         </div>
 
@@ -976,6 +1208,7 @@
 
 
                                 {{-- Bank Transfer Section --}}
+
                                 <div id="bankSection" class="hidden mt-6">
 
                                     <div class="rounded-2xl border border-blue-100 bg-blue-50 p-6">
@@ -1014,18 +1247,23 @@
 
 
                                 {{-- Payment Proof --}}
+
                                 <div id="paymentProofSection" class="hidden mt-6">
 
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">
+
                                         Payment Proof
+
                                         <span class="text-red-500">*</span>
+
                                     </label>
 
                                     <input
                                         type="file"
                                         name="payment_proof"
                                         accept="image/*,.pdf"
-                                        class="w-full rounded-xl border border-gray-300 px-4 py-3">
+                                        class="w-full rounded-xl border border-gray-300 px-4 py-3"
+                                    >
 
                                     <p class="text-sm text-gray-500 mt-2">
                                         Upload screenshot, receipt or transaction proof.
@@ -1043,14 +1281,17 @@
                                 <button
                                     id="paymentBtn"
                                     type="submit"
-                                    class="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-pink-600 via-fuchsia-600 to-blue-600 px-6 py-4 text-base font-extrabold text-white shadow-lg shadow-pink-200 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pink-300 focus:outline-none focus:ring-4 focus:ring-pink-200">
+                                    class="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-pink-600 via-fuchsia-600 to-blue-600 px-6 py-4 text-base font-extrabold text-white shadow-lg shadow-pink-200 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pink-300 focus:outline-none focus:ring-4 focus:ring-pink-200"
+                                >
 
                                     <span>
                                         Proceed To Checkout
                                     </span>
 
                                     <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
+
                                         ₹ {{ number_format($finalTotalPayable, 2) }}
+
                                     </span>
 
                                     <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
@@ -1059,50 +1300,7 @@
 
                             </div>
 
-                            {{-- <div class="mt-10">
-
-                                <button
-                                    id="paymentBtn"
-                                    type="submit"
-                                    class="px-8 py-3 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-700 transition">
-
-                                    Proceed To Secure Payment
-                                    <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
-                                        ₹ {{ number_format($finalTotalPayable, 2) }}
-                                    </span>
-
-                                    <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
-
-                                </button>
-
-
-
-                            </div> --}}
-
                         </form>
-
-
-                        {{-- Proceed Button --}}
-
-                        {{-- <div class="mt-6">
-
-                            <button
-                                type="button"
-                                class="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-pink-600 via-fuchsia-600 to-blue-600 px-6 py-4 text-base font-extrabold text-white shadow-lg shadow-pink-200 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pink-300 focus:outline-none focus:ring-4 focus:ring-pink-200">
-
-                                <span>
-                                    Proceed To Checkout
-                                </span>
-
-                                <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
-                                    ₹ {{ number_format($finalTotalPayable, 2) }}
-                                </span>
-
-                                <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
-
-                            </button>
-
-                        </div> --}}
 
 
                         {{-- Secure Payment Text --}}
@@ -1147,7 +1345,11 @@
                     </p>
 
                     <p class="mt-1 text-sm text-gray-500">
-                        Please review the payment breakdown above. The final amount includes the applicable 2% platform fee.
+
+                        Please review the payment breakdown above.
+                        The final amount includes the applicable
+                        {{ $platformFeePercentage }}% platform fee.
+
                     </p>
 
                 </div>
@@ -1160,80 +1362,174 @@
 
 </div>
 
+
+{{-- ============================================================
+     PAYMENT METHOD SCRIPT
+============================================================ --}}
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
 
-        const paymentMethods = document.querySelectorAll('.paymentMethod');
+document.addEventListener('DOMContentLoaded', function () {
 
-        const qrSection = document.getElementById('qrSection');
-        const bankSection = document.getElementById('bankSection');
-        const paymentProofSection = document.getElementById('paymentProofSection');
+    const paymentMethods =
+        document.querySelectorAll('.paymentMethod');
 
-        const paymentBtn = document.getElementById('paymentBtn');
-        const paymentProof = document.querySelector('input[name="payment_proof"]');
+    const qrSection =
+        document.getElementById('qrSection');
 
+    const bankSection =
+        document.getElementById('bankSection');
 
-        function togglePaymentSection() {
+    const paymentProofSection =
+        document.getElementById('paymentProofSection');
 
-            const selected = document.querySelector('.paymentMethod:checked').value;
+    const paymentBtn =
+        document.getElementById('paymentBtn');
 
-
-            // Reset
-            qrSection.classList.add('hidden');
-            bankSection.classList.add('hidden');
-            paymentProofSection.classList.add('hidden');
-
-            paymentProof.removeAttribute('required');
-
-
-            // Online Payment
-            if (selected === 'online') {
-
-                paymentBtn.innerHTML = 'Proceed To Secure Payment';
-
-            }
+    const paymentProof =
+        document.querySelector(
+            'input[name="payment_proof"]'
+        );
 
 
-            // QR Payment
-            else if (selected === 'qr') {
+    function togglePaymentSection() {
 
-                qrSection.classList.remove('hidden');
-
-                paymentProofSection.classList.remove('hidden');
-
-                paymentProof.setAttribute('required', true);
-
-                paymentBtn.innerHTML = 'Submit Payment Proof';
-
-            }
+        const selected =
+            document.querySelector(
+                '.paymentMethod:checked'
+            ).value;
 
 
-            // Direct Bank Transfer
-            else if (selected === 'bank_transfer') {
+        /*
+        |--------------------------------------------------------------------------
+        | Reset
+        |--------------------------------------------------------------------------
+        */
 
-                bankSection.classList.remove('hidden');
+        qrSection.classList.add('hidden');
 
-                paymentProofSection.classList.remove('hidden');
+        bankSection.classList.add('hidden');
 
-                paymentProof.setAttribute('required', true);
+        paymentProofSection.classList.add('hidden');
 
-                paymentBtn.innerHTML = 'Submit Payment Proof';
+        paymentProof.removeAttribute('required');
 
-            }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Online Payment
+        |--------------------------------------------------------------------------
+        */
+
+        if (selected === 'online') {
+
+            paymentBtn.innerHTML = `
+                <span>
+                    Proceed To Secure Payment
+                </span>
+
+                <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
+                    ₹ {{ number_format($finalTotalPayable, 2) }}
+                </span>
+
+                <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
+            `;
 
         }
 
 
-        paymentMethods.forEach(function (item) {
+        /*
+        |--------------------------------------------------------------------------
+        | QR Payment
+        |--------------------------------------------------------------------------
+        */
 
-            item.addEventListener('change', togglePaymentSection);
+        else if (selected === 'qr') {
 
-        });
+            qrSection.classList.remove('hidden');
+
+            paymentProofSection.classList.remove('hidden');
+
+            paymentProof.setAttribute(
+                'required',
+                true
+            );
+
+            paymentBtn.innerHTML = `
+                <span>
+                    Submit Payment Proof
+                </span>
+
+                <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
+                    ₹ {{ number_format($finalTotalPayable, 2) }}
+                </span>
+
+                <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
+            `;
+
+        }
 
 
-        togglePaymentSection();
+        /*
+        |--------------------------------------------------------------------------
+        | Bank Transfer
+        |--------------------------------------------------------------------------
+        */
+
+        else if (selected === 'bank_transfer') {
+
+            bankSection.classList.remove('hidden');
+
+            paymentProofSection.classList.remove('hidden');
+
+            paymentProof.setAttribute(
+                'required',
+                true
+            );
+
+            paymentBtn.innerHTML = `
+                <span>
+                    Submit Payment Proof
+                </span>
+
+                <span class="rounded-lg bg-white/15 px-2 py-1 text-sm backdrop-blur-sm">
+                    ₹ {{ number_format($finalTotalPayable, 2) }}
+                </span>
+
+                <i class="fas fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-1"></i>
+            `;
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Method Change
+    |--------------------------------------------------------------------------
+    */
+
+    paymentMethods.forEach(function (item) {
+
+        item.addEventListener(
+            'change',
+            togglePaymentSection
+        );
 
     });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Initial State
+    |--------------------------------------------------------------------------
+    */
+
+    togglePaymentSection();
+
+});
+
 </script>
 
 @endsection
