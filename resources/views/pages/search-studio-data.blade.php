@@ -11,6 +11,7 @@
         {{-- =========================================================
             PAGE HEADER
         ========================================================== --}}
+
         <div class="text-center mb-12">
 
             <span class="inline-flex items-center gap-2
@@ -40,6 +41,7 @@
 
             </span>
 
+
             <h1 class="text-3xl md:text-4xl font-bold text-white mt-5">
 
                 Studio
@@ -53,8 +55,12 @@
 
             </h1>
 
+
             <p class="text-gray-400 mt-3">
-                We found {{ $bookings->count() }} booking(s) matching your search.
+
+                We found {{ $bookings->count() }} booking(s)
+                matching your search.
+
             </p>
 
         </div>
@@ -63,6 +69,7 @@
         {{-- =========================================================
             SEARCH SUMMARY
         ========================================================== --}}
+
         <div class="max-w-6xl mx-auto mb-8">
 
             <div class="rounded-2xl
@@ -74,6 +81,7 @@
                 <div class="flex flex-wrap items-center gap-4">
 
                     @if($bookingId)
+
                         <div class="inline-flex items-center gap-2
                                     px-4 py-2
                                     rounded-lg
@@ -81,18 +89,24 @@
                                     border border-pink-500/20">
 
                             <span class="text-gray-400 text-sm">
+
                                 Booking ID:
+
                             </span>
 
                             <span class="text-white font-semibold">
+
                                 {{ $bookingId }}
+
                             </span>
 
                         </div>
+
                     @endif
 
 
                     @if($phone)
+
                         <div class="inline-flex items-center gap-2
                                     px-4 py-2
                                     rounded-lg
@@ -100,14 +114,19 @@
                                     border border-blue-500/20">
 
                             <span class="text-gray-400 text-sm">
+
                                 Phone:
+
                             </span>
 
                             <span class="text-white font-semibold">
+
                                 {{ $phone }}
+
                             </span>
 
                         </div>
+
                     @endif
 
                 </div>
@@ -120,6 +139,7 @@
         {{-- =========================================================
             BOOKING RECORDS
         ========================================================== --}}
+
         <div class="max-w-6xl mx-auto space-y-6">
 
             @foreach($bookings as $booking)
@@ -128,17 +148,87 @@
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Find successful payment
+                    | Booking Type
                     |--------------------------------------------------------------------------
-                    |
-                    | Even if booking has multiple payments,
-                    | one SUCCESS payment is enough.
-                    |
                     */
+
+                    $bookingType = strtolower($booking->booking_type ?? 'day');
+
+                    $isHourly = in_array($bookingType, [
+                        'hour',
+                        'hourly'
+                    ]);
+
+                    $bookingTypeLabel = $isHourly
+                        ? 'Per Hour'
+                        : 'Per Day';
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Rate
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $rate = $booking->rate
+                        ?? $booking->studio_amount
+                        ?? 0;
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Duration
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($isHourly) {
+
+                        $duration = $booking->booking_duration ?? 1;
+
+                        $durationText = $duration == 1
+                            ? '1 Hour'
+                            : number_format($duration, 2) . ' Hours';
+
+                    } else {
+
+                        $duration = $booking->booking_duration
+                            ?? $booking->total_days
+                            ?? 1;
+
+                        $durationText = $duration == 1
+                            ? '1 Day'
+                            : $duration . ' Days';
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Successful Payment
+                    |--------------------------------------------------------------------------
+                    */
+
                     $successfulPayment = $booking->payments
                         ->first(function ($payment) {
-                            return strtolower(trim($payment->payment_status)) === 'success';
+
+                            return strtolower(
+                                trim($payment->payment_status ?? '')
+                            ) === 'success';
+
                         });
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Payment Totals
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $bookingAmount = $booking->booking_amount;
+
+                    $totalPaid = $booking->total_paid;
+
+                    $dueAmount = $booking->due_amount;
 
                 @endphp
 
@@ -146,6 +236,7 @@
                 {{-- =================================================
                     BOOKING CARD
                 ================================================== --}}
+
                 <div class="relative overflow-hidden
                             rounded-3xl
                             border border-white/10
@@ -153,7 +244,9 @@
                             backdrop-blur-xl
                             shadow-2xl">
 
+
                     {{-- Gradient Top Line --}}
+
                     <div class="h-1 bg-gradient-to-r
                                 from-pink-500
                                 via-purple-500
@@ -163,9 +256,11 @@
 
                     <div class="p-6 md:p-8">
 
+
                         {{-- =========================================
                             TOP SECTION
                         ========================================== --}}
+
                         <div class="flex flex-col lg:flex-row
                                     lg:items-center
                                     lg:justify-between
@@ -184,6 +279,7 @@
 
                                 </p>
 
+
                                 <h2 class="text-2xl
                                            md:text-3xl
                                            font-bold
@@ -196,8 +292,35 @@
                             </div>
 
 
-                            {{-- Payment Status --}}
-                            <div>
+                            {{-- Status --}}
+
+                            <div class="flex flex-wrap gap-3">
+
+                                {{-- Booking Status --}}
+
+                                <span class="inline-flex
+                                             items-center
+                                             gap-2
+                                             px-4
+                                             py-2
+                                             rounded-full
+                                             bg-blue-500/10
+                                             border border-blue-500/20
+                                             text-blue-400
+                                             text-sm
+                                             font-semibold">
+
+                                    <span class="w-2 h-2
+                                                 rounded-full
+                                                 bg-blue-400">
+                                    </span>
+
+                                    {{ $booking->enquiry_status }}
+
+                                </span>
+
+
+                                {{-- Payment Status --}}
 
                                 @if($successfulPayment)
 
@@ -255,6 +378,7 @@
                         {{-- =========================================
                             BOOKING INFORMATION
                         ========================================== --}}
+
                         <div class="grid
                                     sm:grid-cols-2
                                     lg:grid-cols-4
@@ -263,6 +387,7 @@
 
 
                             {{-- Customer --}}
+
                             <div class="rounded-xl
                                         bg-black/20
                                         border border-white/5
@@ -290,6 +415,7 @@
 
 
                             {{-- Phone --}}
+
                             <div class="rounded-xl
                                         bg-black/20
                                         border border-white/5
@@ -316,6 +442,7 @@
 
 
                             {{-- Studio --}}
+
                             <div class="rounded-xl
                                         bg-black/20
                                         border border-white/5
@@ -341,7 +468,8 @@
                             </div>
 
 
-                            {{-- City --}}
+                            {{-- Booking Type --}}
+
                             <div class="rounded-xl
                                         bg-black/20
                                         border border-white/5
@@ -353,18 +481,14 @@
                                           text-gray-500
                                           mb-1">
 
-                                    Location
+                                    Booking Type
 
                                 </p>
 
                                 <p class="text-white
                                           font-semibold">
 
-                                    {{ $booking->city ?? 'N/A' }}
-
-                                    @if($booking->state)
-                                        , {{ $booking->state }}
-                                    @endif
+                                    {{ $bookingTypeLabel }}
 
                                 </p>
 
@@ -374,8 +498,100 @@
 
 
                         {{-- =========================================
-                            BOOKING DATES
+                            LOCATION
                         ========================================== --}}
+
+                        <div class="grid
+                                    sm:grid-cols-2
+                                    lg:grid-cols-3
+                                    gap-4
+                                    mb-8">
+
+
+                            {{-- City --}}
+
+                            <div class="rounded-xl
+                                        bg-black/20
+                                        border border-white/5
+                                        p-4">
+
+                                <p class="text-xs
+                                          uppercase
+                                          tracking-wider
+                                          text-gray-500
+                                          mb-1">
+
+                                    City
+
+                                </p>
+
+                                <p class="text-white font-semibold">
+
+                                    {{ $booking->city ?? 'N/A' }}
+
+                                </p>
+
+                            </div>
+
+
+                            {{-- State --}}
+
+                            <div class="rounded-xl
+                                        bg-black/20
+                                        border border-white/5
+                                        p-4">
+
+                                <p class="text-xs
+                                          uppercase
+                                          tracking-wider
+                                          text-gray-500
+                                          mb-1">
+
+                                    State
+
+                                </p>
+
+                                <p class="text-white font-semibold">
+
+                                    {{ $booking->state ?? 'N/A' }}
+
+                                </p>
+
+                            </div>
+
+
+                            {{-- Pincode --}}
+
+                            <div class="rounded-xl
+                                        bg-black/20
+                                        border border-white/5
+                                        p-4">
+
+                                <p class="text-xs
+                                          uppercase
+                                          tracking-wider
+                                          text-gray-500
+                                          mb-1">
+
+                                    Pincode
+
+                                </p>
+
+                                <p class="text-white font-semibold">
+
+                                    {{ $booking->pincode ?? 'N/A' }}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        {{-- =========================================
+                            BOOKING DATE / TIME
+                        ========================================== --}}
+
                         <div class="grid
                                     md:grid-cols-3
                                     gap-4
@@ -383,6 +599,7 @@
 
 
                             {{-- From --}}
+
                             <div class="rounded-xl
                                         border border-white/5
                                         bg-gradient-to-br
@@ -400,21 +617,42 @@
 
                                 </p>
 
+
                                 <p class="text-lg
                                           font-bold
                                           text-white">
 
                                     {{ $booking->booking_from_date
-                                        ? \Carbon\Carbon::parse($booking->booking_from_date)->format('d M Y')
+                                        ? \Carbon\Carbon::parse(
+                                            $booking->booking_from_date
+                                        )->format('d M Y')
                                         : 'N/A'
                                     }}
 
                                 </p>
 
+
+                                @if($booking->booking_from_time)
+
+                                    <p class="text-sm text-pink-400 mt-2">
+
+                                        <span class="text-gray-500">
+                                            Time:
+                                        </span>
+
+                                        {{ \Carbon\Carbon::parse(
+                                            $booking->booking_from_time
+                                        )->format('h:i A') }}
+
+                                    </p>
+
+                                @endif
+
                             </div>
 
 
                             {{-- To --}}
+
                             <div class="rounded-xl
                                         border border-white/5
                                         bg-gradient-to-br
@@ -432,21 +670,42 @@
 
                                 </p>
 
+
                                 <p class="text-lg
                                           font-bold
                                           text-white">
 
                                     {{ $booking->booking_to_date
-                                        ? \Carbon\Carbon::parse($booking->booking_to_date)->format('d M Y')
+                                        ? \Carbon\Carbon::parse(
+                                            $booking->booking_to_date
+                                        )->format('d M Y')
                                         : 'N/A'
                                     }}
 
                                 </p>
 
+
+                                @if($booking->booking_to_time)
+
+                                    <p class="text-sm text-blue-400 mt-2">
+
+                                        <span class="text-gray-500">
+                                            Time:
+                                        </span>
+
+                                        {{ \Carbon\Carbon::parse(
+                                            $booking->booking_to_time
+                                        )->format('h:i A') }}
+
+                                    </p>
+
+                                @endif
+
                             </div>
 
 
-                            {{-- Total Days --}}
+                            {{-- Duration --}}
+
                             <div class="rounded-xl
                                         border border-white/5
                                         bg-gradient-to-br
@@ -460,19 +719,146 @@
                                           text-gray-500
                                           mb-2">
 
-                                    Total Days
+                                    Total Duration
 
                                 </p>
+
 
                                 <p class="text-lg
                                           font-bold
                                           text-white">
 
-                                    {{ $booking->total_days }}
-
-                                    {{ $booking->total_days == 1 ? 'Day' : 'Days' }}
+                                    {{ $durationText }}
 
                                 </p>
+
+
+                                <p class="text-sm text-purple-400 mt-2">
+
+                                    {{ $bookingTypeLabel }}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        {{-- =========================================
+                            RATE & CALCULATION
+                        ========================================== --}}
+
+                        <div class="rounded-2xl
+                                    border border-white/10
+                                    bg-black/20
+                                    p-5
+                                    mb-8">
+
+                            <div class="grid
+                                        sm:grid-cols-2
+                                        lg:grid-cols-4
+                                        gap-5">
+
+
+                                {{-- Rate --}}
+
+                                <div>
+
+                                    <p class="text-sm text-gray-500">
+
+                                        {{ $isHourly
+                                            ? 'Price / Hour'
+                                            : 'Price / Day'
+                                        }}
+
+                                    </p>
+
+                                    <p class="text-xl
+                                              font-bold
+                                              text-white
+                                              mt-1">
+
+                                        ₹{{ number_format($rate, 2) }}
+
+                                    </p>
+
+                                </div>
+
+
+                                {{-- Duration --}}
+
+                                <div>
+
+                                    <p class="text-sm text-gray-500">
+
+                                        Duration
+
+                                    </p>
+
+                                    <p class="text-xl
+                                              font-bold
+                                              text-white
+                                              mt-1">
+
+                                        {{ $durationText }}
+
+                                    </p>
+
+                                </div>
+
+
+                                {{-- Calculation --}}
+
+                                <div>
+
+                                    <p class="text-sm text-gray-500">
+
+                                        Calculation
+
+                                    </p>
+
+                                    <p class="text-xl
+                                              font-bold
+                                              text-blue-400
+                                              mt-1">
+
+                                        ₹{{ number_format($rate, 2) }}
+
+                                        ×
+
+                                        {{ $isHourly
+                                            ? number_format($duration, 2)
+                                            : $duration
+                                        }}
+
+                                    </p>
+
+                                </div>
+
+
+                                {{-- Booking Amount --}}
+
+                                <div>
+
+                                    <p class="text-sm text-gray-500">
+
+                                        Booking Amount
+
+                                    </p>
+
+                                    <p class="text-xl
+                                              font-bold
+                                              text-pink-400
+                                              mt-1">
+
+                                        ₹{{ number_format(
+                                            $bookingAmount,
+                                            2
+                                        ) }}
+
+                                    </p>
+
+                                </div>
 
                             </div>
 
@@ -482,9 +868,11 @@
                         {{-- =========================================
                             PAYMENT SUMMARY
                         ========================================== --}}
+
                         <div class="border-t
                                     border-white/10
                                     pt-6">
+
 
                             <div class="grid
                                         sm:grid-cols-3
@@ -492,10 +880,13 @@
 
 
                                 {{-- Booking Amount --}}
+
                                 <div>
 
                                     <p class="text-sm text-gray-500">
+
                                         Booking Amount
+
                                     </p>
 
                                     <p class="text-xl
@@ -503,7 +894,10 @@
                                               text-white
                                               mt-1">
 
-                                        ₹{{ number_format($booking->booking_amount, 2) }}
+                                        ₹{{ number_format(
+                                            $bookingAmount,
+                                            2
+                                        ) }}
 
                                     </p>
 
@@ -511,10 +905,13 @@
 
 
                                 {{-- Total Paid --}}
+
                                 <div>
 
                                     <p class="text-sm text-gray-500">
+
                                         Total Paid
+
                                     </p>
 
                                     <p class="text-xl
@@ -522,7 +919,10 @@
                                               text-green-400
                                               mt-1">
 
-                                        ₹{{ number_format($booking->total_paid, 2) }}
+                                        ₹{{ number_format(
+                                            $totalPaid,
+                                            2
+                                        ) }}
 
                                     </p>
 
@@ -530,20 +930,26 @@
 
 
                                 {{-- Due --}}
+
                                 <div>
 
                                     <p class="text-sm text-gray-500">
+
                                         Due Amount
+
                                     </p>
 
                                     <p class="text-xl
                                               font-bold
-                                              {{ $booking->due_amount > 0
+                                              mt-1
+                                              {{ $dueAmount > 0
                                                     ? 'text-yellow-400'
-                                                    : 'text-green-400' }}
-                                              mt-1">
+                                                    : 'text-green-400' }}">
 
-                                        ₹{{ number_format($booking->due_amount, 2) }}
+                                        ₹{{ number_format(
+                                            $dueAmount,
+                                            2
+                                        ) }}
 
                                     </p>
 
@@ -555,8 +961,9 @@
 
 
                         {{-- =========================================
-                            ACTION
+                            PAYMENT MESSAGE
                         ========================================== --}}
+
                         <div class="mt-7
                                     pt-6
                                     border-t
@@ -572,19 +979,32 @@
 
                                 @if($successfulPayment)
 
-                                    <p class="text-sm text-gray-400">
+                                    <p class="text-sm text-green-400">
 
-                                        Your payment has been successfully
+                                        ✓ Payment has been successfully
                                         received.
+
+                                    </p>
+
+                                    <p class="text-xs text-gray-500 mt-1">
+
+                                        Payment ID:
+                                        {{ $successfulPayment->payment_id }}
 
                                     </p>
 
                                 @else
 
-                                    <p class="text-sm text-gray-400">
+                                    <p class="text-sm text-yellow-400">
 
-                                        No successful payment has been
-                                        recorded for this booking.
+                                        Payment is pending.
+
+                                    </p>
+
+                                    <p class="text-xs text-gray-500 mt-1">
+
+                                        Please complete the payment to
+                                        proceed with your booking.
 
                                     </p>
 
@@ -596,6 +1016,7 @@
                             {{-- =====================================
                                 SUCCESS PAYMENT
                             ====================================== --}}
+
                             @if($successfulPayment)
 
                                 <a href="{{ route(
@@ -643,6 +1064,7 @@
                             {{-- =====================================
                                 NO SUCCESS PAYMENT
                             ====================================== --}}
+
                             @else
 
                                 <a href="{{ route(
@@ -701,6 +1123,7 @@
         {{-- =========================================================
             BACK BUTTON
         ========================================================== --}}
+
         <div class="max-w-6xl mx-auto mt-8">
 
             <a href="{{ url()->previous() }}"
@@ -717,7 +1140,7 @@
                      stroke="currentColor">
 
                     <path stroke-linecap="round"
-                          stroke-linecap="round"
+                          stroke-linejoin="round"
                           stroke-width="2"
                           d="M15 19l-7-7 7-7"/>
 

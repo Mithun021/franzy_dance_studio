@@ -1047,27 +1047,43 @@ class WebsiteController extends Controller
 
         $validator = Validator::make($request->all(), [
 
-            'customer_name'        => 'required|string|max:255',
+            // Customer Information
+            'customer_name' => 'required|string|max:255',
 
-            'email'                => 'required|email|max:255',
+            'email' => 'required|email|max:255',
 
-            'phone'                => 'required|max:20',
+            'phone' => 'required|string|max:20',
 
-            'city'                 => 'required|max:100',
+            'city' => 'required|string|max:100',
 
-            'state'                => 'required|max:100',
+            'state' => 'required|string|max:100',
 
-            'pincode'              => 'required|max:20',
+            'pincode' => 'required|string|max:20',
 
-            'address'              => 'required',
+            'address' => 'required|string',
 
-            'booking_from_date'    => 'required|date|after_or_equal:today',
+            // Booking
+            'booking_type' => 'required|in:day,hour',
 
-            'booking_to_date'      => 'nullable|date|after_or_equal:booking_from_date',
+            'booking_from_date' => 'required|date|after_or_equal:today',
 
-            'remarks'              => 'required|max:1000',
+            'booking_from_time' => 'required|date_format:H:i',
+
+            'booking_to_date' => 'required|date|after_or_equal:booking_from_date',
+
+            'booking_to_time' => 'required|date_format:H:i',
+
+            // Remarks
+            'remarks' => 'required|string|max:1000',
 
         ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validation Failed
+        |--------------------------------------------------------------------------
+        */
 
         if ($validator->fails()) {
 
@@ -1077,9 +1093,220 @@ class WebsiteController extends Controller
 
         }
 
+
         DB::beginTransaction();
 
         try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create Booking DateTime
+            |--------------------------------------------------------------------------
+            */
+
+            $from = Carbon::createFromFormat(
+                'Y-m-d H:i',
+                $request->booking_from_date . ' ' . $request->booking_from_time
+            );
+
+            $to = Carbon::createFromFormat(
+                'Y-m-d H:i',
+                $request->booking_to_date . ' ' . $request->booking_to_time
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Booking To Must Be After Booking From
+            |--------------------------------------------------------------------------
+            */
+
+            if ($to->lessThanOrEqualTo($from)) {
+
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'booking_to_date' =>
+                            'Booking To date and time must be after Booking From date and time.'
+                    ]);
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Check Studio Pricing
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->booking_type === 'day') {
+
+                if (
+                    is_null($studio->price_per_day) ||
+                    $studio->price_per_day <= 0
+                ) {
+
+                    return back()
+                        ->withInput()
+                        ->withErrors([
+                            'booking_type' =>
+                                'Per Day booking is currently not available for this studio.'
+                        ]);
+
+                }
+
+                $rate = (float) $studio->price_per_day;
+
+            } else {
+
+                if (
+                    is_null($studio->price_per_hour) ||
+                    $studio->price_per_hour <= 0
+                ) {
+
+                    return back()
+                        ->withInput()
+                        ->withErrors([
+                            'booking_type' =>
+                                'Per Hour booking is currently not available for this studio.'
+                        ]);
+
+                }
+
+                $rate = (float) $studio->price_per_hour;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Calculate Duration
+            |--------------------------------------------------------------------------
+            */
+
+            $differenceMinutes = $from->diffInMinutes($to);
+
+            $differenceHours = $differenceMinutes / 60;
+
+
+            $duration = 0;
+
+            $amount = 0;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PER DAY
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->booking_type === 'day') {
+
+                /*
+                * 24 hours = 1 day
+                *
+                * Example:
+                *
+                * 20 Aug 09:00
+                * →
+                * 21 Aug 09:00
+                *
+                * = 1 Day
+                */
+
+                $duration = max(
+                    1,
+                    ceil($differenceHours / 24)
+                );
+
+
+                $amount = $duration * $rate;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PER HOUR
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->booking_type === 'hour') {
+
+                /*
+                * Exact hourly calculation
+                *
+                * Example:
+                *
+                * 09:00 → 12:30
+                * = 3.5 Hours
+                */
+
+                $duration = round(
+                    $differenceHours,
+                    2
+                );
+
+
+                $amount = $duration * $rate;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Round Off Final Amount
+            |--------------------------------------------------------------------------
+            */
+
+            $amount = round($amount);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Studio Availability Check
+            |--------------------------------------------------------------------------
+            |
+            | Prevent overlapping bookings for same studio.
+            |
+            */
+
+            $overlappingBooking = StudioBooking::where(
+                'studio_id',
+                $studio->id
+            )
+            ->whereNotIn('enquiry_status', [
+                'Cancelled'
+            ])
+            ->where(function ($query) use ($from, $to) {
+
+                $query
+                    ->whereRaw(
+                        "TIMESTAMP(booking_from_date, booking_from_time) < ?",
+                        [$to]
+                    )
+                    ->whereRaw(
+                        "TIMESTAMP(booking_to_date, booking_to_time) > ?",
+                        [$from]
+                    );
+
+            })
+            ->exists();
+
+
+            if ($overlappingBooking) {
+
+                DB::rollBack();
+
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'booking_from_date' =>
+                            'This studio is already booked for the selected date and time.'
+                    ]);
+
+            }
+
 
             /*
             |--------------------------------------------------------------------------
@@ -1089,11 +1316,14 @@ class WebsiteController extends Controller
 
             $lastBooking = StudioBooking::latest('id')->first();
 
+
             $bookingNumber = $lastBooking
                 ? ((int) substr($lastBooking->booking_id, 3)) + 1
                 : 1001;
 
+
             $bookingId = 'SB-' . $bookingNumber;
+
 
             /*
             |--------------------------------------------------------------------------
@@ -1103,39 +1333,78 @@ class WebsiteController extends Controller
 
             $booking = StudioBooking::create([
 
-                'booking_id'         => $bookingId,
+                // Booking ID
+                'booking_id' => $bookingId,
 
-                'user_id'            => Auth::check() ? Auth::id() : null,
 
-                'customer_name'      => $request->customer_name,
+                // User
+                'user_id' => Auth::check()
+                    ? Auth::id()
+                    : null,
 
-                'email'              => $request->email,
 
-                'phone'              => $request->phone,
+                // Customer
+                'customer_name' => $request->customer_name,
 
-                'city'               => $request->city,
+                'email' => $request->email,
 
-                'state'              => $request->state,
+                'phone' => $request->phone,
 
-                'pincode'            => $request->pincode,
+                'city' => $request->city,
 
-                'address'            => $request->address,
+                'state' => $request->state,
 
-                'studio_id'          => $studio->id,
+                'pincode' => $request->pincode,
 
-                'booking_from_date'  => $request->booking_from_date,
+                'address' => $request->address,
 
-                'booking_to_date'    => $request->booking_to_date,
 
-                'studio_amount'      => $studio->price,
+                // Studio
+                'studio_id' => $studio->id,
 
-                'enquiry_status'     => 'Pending',
 
-                'remarks'            => $request->remarks,
+                // Booking Type
+                'booking_type' => $request->booking_type,
+
+
+                // Booking Date & Time
+                'booking_from_date' => $request->booking_from_date,
+
+                'booking_from_time' => $request->booking_from_time,
+
+                'booking_to_date' => $request->booking_to_date,
+
+                'booking_to_time' => $request->booking_to_time,
+
+
+                // Duration
+                'booking_duration' => $duration,
+
+
+                // Price Snapshot
+                'rate' => $rate,
+
+                'studio_amount' => $amount,
+
+
+                // Status
+                'enquiry_status' => 'Pending',
+
+
+                // Customer Remarks
+                'remarks' => $request->remarks,
 
             ]);
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Commit Transaction
+            |--------------------------------------------------------------------------
+            */
+
             DB::commit();
+
 
             /*
             |--------------------------------------------------------------------------
@@ -1144,10 +1413,23 @@ class WebsiteController extends Controller
             */
 
             return redirect()
-                ->route('studio.booking.payment', $booking->id)
-                ->with('success', 'Booking submitted successfully.');
+                ->route(
+                    'studio.booking.payment',
+                    $booking->id
+                )
+                ->with(
+                    'success',
+                    'Booking submitted successfully.'
+                );
 
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Exception
+        |--------------------------------------------------------------------------
+        */
 
         catch (\Exception $e) {
 
@@ -1155,10 +1437,136 @@ class WebsiteController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', $e->getMessage());
+                ->with(
+                    'error',
+                    $e->getMessage()
+                );
 
         }
     }
+
+    // public function storeStudioBooking(Request $request, Studio $studio)
+    // {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Validation
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $validator = Validator::make($request->all(), [
+
+    //         'customer_name'        => 'required|string|max:255',
+
+    //         'email'                => 'required|email|max:255',
+
+    //         'phone'                => 'required|max:20',
+
+    //         'city'                 => 'required|max:100',
+
+    //         'state'                => 'required|max:100',
+
+    //         'pincode'              => 'required|max:20',
+
+    //         'address'              => 'required',
+
+    //         'booking_from_date'    => 'required|date|after_or_equal:today',
+
+    //         'booking_to_date'      => 'nullable|date|after_or_equal:booking_from_date',
+
+    //         'remarks'              => 'required|max:1000',
+
+    //     ]);
+
+    //     if ($validator->fails()) {
+
+    //         return back()
+    //             ->withErrors($validator)
+    //             ->withInput();
+
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Generate Booking ID
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $lastBooking = StudioBooking::latest('id')->first();
+
+    //         $bookingNumber = $lastBooking
+    //             ? ((int) substr($lastBooking->booking_id, 3)) + 1
+    //             : 1001;
+
+    //         $bookingId = 'SB-' . $bookingNumber;
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Create Booking
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $booking = StudioBooking::create([
+
+    //             'booking_id'         => $bookingId,
+
+    //             'user_id'            => Auth::check() ? Auth::id() : null,
+
+    //             'customer_name'      => $request->customer_name,
+
+    //             'email'              => $request->email,
+
+    //             'phone'              => $request->phone,
+
+    //             'city'               => $request->city,
+
+    //             'state'              => $request->state,
+
+    //             'pincode'            => $request->pincode,
+
+    //             'address'            => $request->address,
+
+    //             'studio_id'          => $studio->id,
+
+    //             'booking_from_date'  => $request->booking_from_date,
+
+    //             'booking_to_date'    => $request->booking_to_date,
+
+    //             'studio_amount'      => $studio->price,
+
+    //             'enquiry_status'     => 'Pending',
+
+    //             'remarks'            => $request->remarks,
+
+    //         ]);
+
+    //         DB::commit();
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Redirect Payment Page
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         return redirect()
+    //             ->route('studio.booking.payment', $booking->id)
+    //             ->with('success', 'Booking submitted successfully.');
+
+    //     }
+
+    //     catch (\Exception $e) {
+
+    //         DB::rollBack();
+
+    //         return back()
+    //             ->withInput()
+    //             ->with('error', $e->getMessage());
+
+    //     }
+    // }
 
     public function studioBookingPayment($id)
     {
@@ -1189,7 +1597,7 @@ class WebsiteController extends Controller
 
     public function studioPaymentStore(Request $request)
     {
-
+        // dd($request->all());
         $validator = Validator::make($request->all(), [
 
             'booking_id' => 'required|exists:studio_bookings,id',

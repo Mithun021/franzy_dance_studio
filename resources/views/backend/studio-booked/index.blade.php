@@ -6,33 +6,76 @@
 
 <div class="container-fluid">
 
-    <!-- Header -->
+    {{-- =========================================================
+        PAGE HEADER
+    ========================================================== --}}
     <div class="row mb-3">
+
         <div class="col-md-6">
+
             <h4 class="mb-0">
+
                 <i class="fas fa-calendar-check text-primary"></i>
+
                 Studio Bookings
+
             </h4>
+
             <small class="text-muted">
+
                 Manage all studio bookings & payments
+
             </small>
+
         </div>
+
     </div>
 
+
+    {{-- =========================================================
+        MAIN CARD
+    ========================================================== --}}
     <div class="card shadow-sm">
 
+        {{-- =====================================================
+            CARD HEADER
+        ====================================================== --}}
         <div class="card-header d-flex justify-content-between align-items-center">
+
             <h5 class="mb-0">
+
+                <i class="fas fa-list"></i>
+
                 Booking List
+
             </h5>
+
+            <span class="badge bg-primary">
+
+                {{ $bookings->count() }}
+
+                Booking{{ $bookings->count() != 1 ? 's' : '' }}
+
+            </span>
+
         </div>
 
+
+        {{-- =====================================================
+            CARD BODY
+        ====================================================== --}}
         <div class="card-body">
 
             <div class="table-responsive">
 
-                <table class="table table-bordered table-hover align-middle" id="responsive-datatable">
+                <table
+                    class="table table-bordered table-hover align-middle"
+                    id="responsive-datatable"
+                    style="width:100%;">
 
+                    {{-- =================================================
+                        TABLE HEAD
+                    ================================================== --}}
                     <thead class="table-dark text-center">
 
                         <tr>
@@ -45,11 +88,11 @@
 
                             <th>Studio</th>
 
-                            <th>Booking Dates</th>
+                            <th>Booking Schedule</th>
 
-                            <th>Days</th>
+                            <th>Duration</th>
 
-                            <th>Per Day</th>
+                            <th>Rate</th>
 
                             <th>Total Amount</th>
 
@@ -61,36 +104,213 @@
 
                             <th>Status</th>
 
-                            <th width="120">Action</th>
+                            <th width="130">
+                                Action
+                            </th>
 
                         </tr>
 
                     </thead>
 
+
+                    {{-- =================================================
+                        TABLE BODY
+                    ================================================== --}}
                     <tbody>
 
                         @forelse($bookings as $key => $booking)
 
+                            @php
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Booking Type
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $bookingType = strtolower(
+                                    trim($booking->booking_type ?? 'day')
+                                );
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Hourly / Daily
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $isHourly = $bookingType === 'hour';
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Booking Type Label
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $bookingTypeLabel = $isHourly
+                                    ? 'Per Hour'
+                                    : 'Per Day';
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Rate
+                                |--------------------------------------------------------------------------
+                                |
+                                | Studio model:
+                                |
+                                | price_per_day
+                                | price_per_hour
+                                |
+                                */
+
+                                if ($isHourly) {
+
+                                    $rate = $booking->studio->price_per_hour ?? 0;
+
+                                    $rateLabel = 'Per Hour';
+
+                                    $durationUnit =
+                                        ($booking->booking_duration ?? 0) > 1
+                                            ? 'Hours'
+                                            : 'Hour';
+
+                                } else {
+
+                                    $rate = $booking->studio->price_per_day ?? 0;
+
+                                    $rateLabel = 'Per Day';
+
+                                    $durationUnit =
+                                        ($booking->booking_duration ?? 0) > 1
+                                            ? 'Days'
+                                            : 'Day';
+
+                                }
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Duration
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $duration = $booking->booking_duration ?? 0;
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Total Booking Amount
+                                |--------------------------------------------------------------------------
+                                |
+                                | booking_amount is the final booking amount.
+                                |
+                                */
+
+                                $totalAmount = $booking->booking_amount ?? 0;
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Paid Amount
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $paidAmount = $booking->total_paid ?? 0;
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Due Amount
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $dueAmount = $booking->due_amount ?? 0;
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Payments
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $payments = $booking->payments ?? collect();
+
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Successful Payments
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $successfulPayments = $payments->filter(
+                                    function ($payment) {
+
+                                        return strtolower(
+                                            trim($payment->payment_status ?? '')
+                                        ) === 'success';
+
+                                    }
+                                );
+
+                            @endphp
+
+
+                            {{-- =================================================
+                                BOOKING ROW
+                            ================================================== --}}
                             <tr>
 
+
+                                {{-- =================================================
+                                    #
+                                ================================================== --}}
                                 <td class="text-center">
-                                    {{ ++$key }}
+
+                                    {{ $key + 1 }}
+
                                 </td>
 
+
+                                {{-- =================================================
+                                    BOOKING
+                                ================================================== --}}
                                 <td>
 
-                                    <strong>{{ $booking->booking_id }}</strong>
+                                    <strong class="text-primary">
+
+                                        {{ $booking->booking_id }}
+
+                                    </strong>
 
                                     <br>
 
                                     <small class="text-muted">
 
-                                        {{ \Carbon\Carbon::parse($booking->created_at)->format('d M Y') }}
+                                        <i class="fas fa-calendar-plus"></i>
+
+                                        {{ $booking->created_at
+                                            ? $booking->created_at->format('d M Y')
+                                            : 'N/A'
+                                        }}
 
                                     </small>
 
+                                    <br>
+
+                                    <span class="badge bg-light text-dark mt-1">
+
+                                        {{ $bookingTypeLabel }}
+
+                                    </span>
+
                                 </td>
 
+
+                                {{-- =================================================
+                                    CUSTOMER
+                                ================================================== --}}
                                 <td>
 
                                     <strong>
@@ -101,7 +321,7 @@
 
                                     <br>
 
-                                    <small>
+                                    <small class="text-muted">
 
                                         <i class="fas fa-phone"></i>
 
@@ -109,11 +329,12 @@
 
                                     </small>
 
+
                                     @if($booking->email)
 
                                         <br>
 
-                                        <small>
+                                        <small class="text-muted">
 
                                             <i class="fas fa-envelope"></i>
 
@@ -125,113 +346,307 @@
 
                                 </td>
 
-                                <td>
 
-                                    {{ optional(optional($booking->studio)->category)->name ?? 'N/A' }}
-
-                                </td>
-
+                                {{-- =================================================
+                                    STUDIO
+                                ================================================== --}}
                                 <td>
 
                                     <strong>
 
-                                        {{ \Carbon\Carbon::parse($booking->booking_from_date)->format('d M Y') }}
+                                        {{ optional(
+                                            optional($booking->studio)->category
+                                        )->name ?? 'N/A' }}
 
                                     </strong>
 
-                                    <br>
+                                </td>
 
-                                    <small class="text-muted">
 
-                                        @if($booking->booking_to_date)
+                                {{-- =================================================
+                                    BOOKING SCHEDULE
+                                ================================================== --}}
+                                <td>
 
-                                            {{ \Carbon\Carbon::parse($booking->booking_to_date)->format('d M Y') }}
+                                    {{-- FROM DATE --}}
 
-                                        @else
+                                    @if($booking->booking_from_date)
+
+                                        <strong>
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $booking->booking_from_date
+                                            )->format('d M Y') }}
+
+                                        </strong>
+
+                                    @else
+
+                                        <span class="text-muted">
+                                            N/A
+                                        </span>
+
+                                    @endif
+
+
+                                    {{-- FROM TIME --}}
+
+                                    @if($booking->booking_from_time)
+
+                                        <br>
+
+                                        <small class="text-muted">
+
+                                            <i class="far fa-clock"></i>
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $booking->booking_from_time
+                                            )->format('h:i A') }}
+
+                                        </small>
+
+                                    @endif
+
+
+                                    <div class="text-muted my-1">
+
+                                        <i class="fas fa-arrow-down"></i>
+
+                                    </div>
+
+
+                                    {{-- TO DATE --}}
+
+                                    @if($booking->booking_to_date)
+
+                                        <strong>
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $booking->booking_to_date
+                                            )->format('d M Y') }}
+
+                                        </strong>
+
+                                    @else
+
+                                        <span class="text-muted">
 
                                             Same Day
 
-                                        @endif
+                                        </span>
 
-                                    </small>
+                                    @endif
+
+
+                                    {{-- TO TIME --}}
+
+                                    @if($booking->booking_to_time)
+
+                                        <br>
+
+                                        <small class="text-muted">
+
+                                            <i class="far fa-clock"></i>
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $booking->booking_to_time
+                                            )->format('h:i A') }}
+
+                                        </small>
+
+                                    @endif
 
                                 </td>
 
+
+                                {{-- =================================================
+                                    DURATION
+                                ================================================== --}}
                                 <td class="text-center">
 
                                     <span class="badge bg-info">
 
-                                        {{ $booking->total_days }}
+                                        {{ number_format($duration, 2) }}
 
-                                        Day{{ $booking->total_days > 1 ? 's' : '' }}
+                                        {{ $durationUnit }}
 
                                     </span>
 
                                 </td>
 
+
+                                {{-- =================================================
+                                    RATE
+                                ================================================== --}}
                                 <td class="text-end">
 
-                                    ₹ {{ number_format($booking->studio_amount,2) }}
+                                    <small class="text-muted d-block">
 
-                                </td>
+                                        {{ $rateLabel }}
 
-                                <td class="text-end">
+                                    </small>
 
-                                    <strong class="text-primary">
+                                    <strong>
 
-                                        ₹ {{ number_format($booking->booking_amount,2) }}
+                                        ₹ {{ number_format($rate, 2) }}
 
                                     </strong>
 
                                 </td>
 
+
+                                {{-- =================================================
+                                    TOTAL AMOUNT
+                                ================================================== --}}
                                 <td class="text-end">
 
-                                    <span class="text-success fw-bold">
+                                    <strong class="text-primary">
 
-                                        ₹ {{ number_format($booking->total_paid,2) }}
+                                        ₹ {{ number_format(
+                                            $totalAmount,
+                                            2
+                                        ) }}
 
-                                    </span>
+                                    </strong>
 
                                 </td>
 
+
+                                {{-- =================================================
+                                    PAID
+                                ================================================== --}}
                                 <td class="text-end">
 
-                                    <span class="text-danger fw-bold">
+                                    <strong class="text-success">
 
-                                        ₹ {{ number_format($booking->due_amount,2) }}
+                                        ₹ {{ number_format(
+                                            $paidAmount,
+                                            2
+                                        ) }}
 
-                                    </span>
+                                    </strong>
 
                                 </td>
 
+
+                                {{-- =================================================
+                                    DUE
+                                ================================================== --}}
+                                <td class="text-end">
+
+                                    @if($dueAmount > 0)
+
+                                        <strong class="text-danger">
+
+                                            ₹ {{ number_format(
+                                                $dueAmount,
+                                                2
+                                            ) }}
+
+                                        </strong>
+
+                                    @else
+
+                                        <strong class="text-success">
+
+                                            ₹ 0.00
+
+                                        </strong>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- =================================================
+                                    PAYMENTS
+                                ================================================== --}}
                                 <td>
-                                    <span class="badge bg-secondary">
-                                        {{ $booking->payments->count() }}
-                                    </span>
 
-                                    @foreach($booking->payments as $payment)
+                                    {{-- Payment Count --}}
+
+                                    <div class="mb-1">
+
+                                        <span class="badge bg-secondary">
+
+                                            {{ $payments->count() }}
+
+                                            Payment{{ $payments->count() != 1 ? 's' : '' }}
+
+                                        </span>
+
+                                    </div>
+
+
+                                    {{-- Successful Payment Invoice --}}
+
+                                    @foreach($successfulPayments as $payment)
+
                                         @if(!empty($payment->payment_id))
-                                            <a href="{{ route('studio.invoice.download', $payment->id) }}"
-                                            class="badge bg-primary text-decoration-none ms-1"
-                                            target="_blank"
-                                            title="View Invoice">
 
-                                                <i class="mdi mdi-receipt-text-outline"></i>
-                                                {{ $payment->payment_id }}
+                                            <div class="mb-1">
 
-                                            </a>
+                                                <a
+                                                    href="{{ route(
+                                                        'studio.invoice.download',
+                                                        $payment->id
+                                                    ) }}"
+                                                    target="_blank"
+                                                    class="badge bg-primary text-decoration-none"
+                                                    title="View Invoice">
+
+                                                    <i class="mdi mdi-receipt-text-outline"></i>
+
+                                                    {{ $payment->payment_id }}
+
+                                                </a>
+
+                                            </div>
+
                                         @endif
+
                                     @endforeach
+
+
+                                    {{-- No Successful Payment --}}
+
+                                    @if(
+                                        $payments->count() > 0 &&
+                                        $successfulPayments->count() == 0
+                                    )
+
+                                        <small class="text-muted">
+
+                                            No successful payment
+
+                                        </small>
+
+                                    @endif
+
                                 </td>
 
+
+                                {{-- =================================================
+                                    STATUS
+                                ================================================== --}}
                                 <td class="text-center">
 
-                                    @switch($booking->booking_status)
+                                    @switch(
+                                        strtolower(
+                                            trim(
+                                                $booking->booking_status ?? ''
+                                            )
+                                        )
+                                    )
 
-                                        @case('Paid')
+
+                                        {{-- FULLY PAID --}}
+
+                                        @case('paid')
 
                                             <span class="badge bg-success">
+
+                                                <i class="fas fa-check-circle"></i>
 
                                                 Fully Paid
 
@@ -239,9 +654,14 @@
 
                                             @break
 
-                                        @case('Partial')
+
+                                        {{-- PARTIAL --}}
+
+                                        @case('partial')
 
                                             <span class="badge bg-warning text-dark">
+
+                                                <i class="fas fa-adjust"></i>
 
                                                 Partial Paid
 
@@ -249,9 +669,14 @@
 
                                             @break
 
-                                        @case('Pending')
+
+                                        {{-- PENDING --}}
+
+                                        @case('pending')
 
                                             <span class="badge bg-info">
+
+                                                <i class="fas fa-clock"></i>
 
                                                 Pending
 
@@ -259,9 +684,14 @@
 
                                             @break
 
-                                        @case('Failed')
+
+                                        {{-- FAILED --}}
+
+                                        @case('failed')
 
                                             <span class="badge bg-danger">
+
+                                                <i class="fas fa-times-circle"></i>
 
                                                 Failed
 
@@ -269,15 +699,23 @@
 
                                             @break
 
-                                        @case('Cancelled')
+
+                                        {{-- CANCELLED --}}
+
+                                        @case('cancelled')
 
                                             <span class="badge bg-secondary">
+
+                                                <i class="fas fa-ban"></i>
 
                                                 Cancelled
 
                                             </span>
 
                                             @break
+
+
+                                        {{-- DEFAULT --}}
 
                                         @default
 
@@ -291,10 +729,18 @@
 
                                 </td>
 
+
+                                {{-- =================================================
+                                    ACTION
+                                ================================================== --}}
                                 <td class="text-center">
 
-                                    <a href="{{ route('studio-booked.payment-history',$booking->id) }}"
-                                       class="btn btn-primary btn-sm">
+                                    <a
+                                        href="{{ route(
+                                            'studio-booked.payment-history',
+                                            $booking->id
+                                        ) }}"
+                                        class="btn btn-primary btn-sm">
 
                                         <i class="fas fa-wallet"></i>
 
@@ -304,21 +750,40 @@
 
                                 </td>
 
+
                             </tr>
+
 
                         @empty
 
+
+                            {{-- =================================================
+                                EMPTY STATE
+                            ================================================== --}}
                             <tr>
 
-                                <td colspan="13" class="text-center py-5">
+                                <td
+                                    colspan="13"
+                                    class="text-center py-5">
 
                                     <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
 
-                                    <h5>No Booking Found</h5>
+                                    <h5 class="text-muted">
+
+                                        No Booking Found
+
+                                    </h5>
+
+                                    <p class="text-muted mb-0">
+
+                                        No studio bookings are available.
+
+                                    </p>
 
                                 </td>
 
                             </tr>
+
 
                         @endforelse
 

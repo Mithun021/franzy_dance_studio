@@ -50,7 +50,8 @@ class StudioController extends Controller
 
             'studio_category_id' => 'required|exists:studio_categories,id',
 
-            'price' => 'required|numeric|min:0',
+            'price_per_hour' => 'required|numeric|min:0',
+            'price_per_day' => 'required|numeric|min:0',
 
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
 
@@ -77,7 +78,8 @@ class StudioController extends Controller
 
                 'studio_category_id' => $request->studio_category_id,
 
-                'price' => $request->price,
+                'price_per_day' => $request->price_per_day,
+                'price_per_hour' => $request->price_per_hour,
 
                 'thumbnail' => $thumbnail,
 
@@ -138,7 +140,8 @@ class StudioController extends Controller
 
             'studio_category_id' => 'required|exists:studio_categories,id',
 
-            'price' => 'required|numeric|min:0',
+            'price_per_day' => 'required|numeric|min:0',
+            'price_per_hour' => 'required|numeric|min:0',
 
             'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
 
@@ -169,7 +172,8 @@ class StudioController extends Controller
 
             $studio->studio_category_id = $request->studio_category_id;
 
-            $studio->price = $request->price;
+            $studio->price_per_day = $request->price_per_day;
+            $studio->price_per_hour = $request->price_per_hour;
 
             $studio->description = $request->description;
 

@@ -14,15 +14,21 @@
         <div class="col-md-6">
 
             <h4 class="mb-1">
+
                 <i class="fas fa-credit-card text-primary"></i>
+
                 Studio Payment History
+
             </h4>
 
             <small class="text-muted">
+
                 Complete studio booking payment records
+
             </small>
 
         </div>
+
 
         <div class="col-md-6 text-end">
 
@@ -30,6 +36,7 @@
                class="btn btn-secondary">
 
                 <i class="fas fa-arrow-left"></i>
+
                 Back to Bookings
 
             </a>
@@ -64,11 +71,14 @@
 
                 <div class="row g-3">
 
+
                     {{-- Payment ID --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Payment ID
+
                         </label>
 
                         <input type="text"
@@ -84,7 +94,9 @@
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Booking ID
+
                         </label>
 
                         <input type="text"
@@ -100,7 +112,9 @@
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Customer Name
+
                         </label>
 
                         <input type="text"
@@ -116,15 +130,20 @@
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Studio
+
                         </label>
 
                         <select name="studio_name"
                                 class="form-select">
 
                             <option value="">
+
                                 All Studios
+
                             </option>
+
 
                             @foreach($studioCategories as $studio)
 
@@ -146,7 +165,9 @@
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             From Date
+
                         </label>
 
                         <input type="date"
@@ -161,7 +182,9 @@
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             To Date
+
                         </label>
 
                         <input type="date"
@@ -176,15 +199,20 @@
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Payment Status
+
                         </label>
 
                         <select name="payment_status"
                                 class="form-select">
 
                             <option value="">
+
                                 All Status
+
                             </option>
+
 
                             @foreach($paymentStatuses as $status)
 
@@ -209,6 +237,7 @@
                                 class="btn btn-primary">
 
                             <i class="fas fa-search"></i>
+
                             Filter
 
                         </button>
@@ -218,6 +247,7 @@
                            class="btn btn-light border">
 
                             <i class="fas fa-sync-alt"></i>
+
                             Reset
 
                         </a>
@@ -233,10 +263,12 @@
     </div>
 
 
+
     {{-- =========================================================
         SUMMARY
     ========================================================== --}}
     <div class="row mb-4">
+
 
         {{-- Total Records --}}
         <div class="col-md-3">
@@ -250,14 +282,19 @@
                         <div>
 
                             <small class="text-muted">
+
                                 Total Records
+
                             </small>
 
                             <h4 class="mb-0 text-primary">
+
                                 {{ $payments->total() }}
+
                             </h4>
 
                         </div>
+
 
                         <div class="text-primary fs-3">
 
@@ -274,7 +311,8 @@
         </div>
 
 
-        {{-- Success --}}
+
+        {{-- Successful --}}
         <div class="col-md-3">
 
             <div class="card border-success shadow-sm">
@@ -286,19 +324,22 @@
                         <div>
 
                             <small class="text-muted">
+
                                 Successful
+
                             </small>
 
                             <h4 class="mb-0 text-success">
 
                                 ₹ {{ number_format(
-                                    \App\Models\StudioPayment::where('payment_status', 'Success')->sum('amount'),
+                                    $totalSuccessful,
                                     2
                                 ) }}
 
                             </h4>
 
                         </div>
+
 
                         <div class="text-success fs-3">
 
@@ -315,6 +356,7 @@
         </div>
 
 
+
         {{-- Pending --}}
         <div class="col-md-3">
 
@@ -327,19 +369,22 @@
                         <div>
 
                             <small class="text-muted">
+
                                 Pending
+
                             </small>
 
                             <h4 class="mb-0 text-info">
 
                                 ₹ {{ number_format(
-                                    \App\Models\StudioPayment::where('payment_status', 'Pending')->sum('amount'),
+                                    $totalPending,
                                     2
                                 ) }}
 
                             </h4>
 
                         </div>
+
 
                         <div class="text-info fs-3">
 
@@ -356,6 +401,7 @@
         </div>
 
 
+
         {{-- Failed / Refunded --}}
         <div class="col-md-3">
 
@@ -368,22 +414,22 @@
                         <div>
 
                             <small class="text-muted">
+
                                 Failed / Refunded
+
                             </small>
 
                             <h4 class="mb-0 text-danger">
 
                                 ₹ {{ number_format(
-                                    \App\Models\StudioPayment::whereIn(
-                                        'payment_status',
-                                        ['Failed', 'Refunded']
-                                    )->sum('amount'),
+                                    $totalFailedRefunded,
                                     2
                                 ) }}
 
                             </h4>
 
                         </div>
+
 
                         <div class="text-danger fs-3">
 
@@ -402,10 +448,12 @@
     </div>
 
 
+
     {{-- =========================================================
         PAYMENT TABLE
     ========================================================== --}}
     <div class="card shadow-sm">
+
 
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
 
@@ -419,14 +467,23 @@
 
                 </h6>
 
+
                 <small class="text-muted">
+
                     Showing {{ $payments->count() }}
-                    of {{ $payments->total() }} records
+
+                    of
+
+                    {{ $payments->total() }}
+
+                    records
+
                 </small>
 
             </div>
 
         </div>
+
 
 
         <div class="card-body p-0">
@@ -457,6 +514,10 @@
 
                             <th>
                                 Studio
+                            </th>
+
+                            <th>
+                                Booking Dates
                             </th>
 
                             <th>
@@ -492,6 +553,7 @@
                     </thead>
 
 
+
                     <tbody>
 
                         @forelse($payments as $payment)
@@ -504,10 +566,11 @@
 
                             @endphp
 
+
                             <tr>
 
-                                {{-- #
-                                --}}
+
+                                {{-- # --}}
                                 <td>
 
                                     {{ $payments->firstItem() + $loop->index }}
@@ -515,22 +578,24 @@
                                 </td>
 
 
+
                                 {{-- Payment ID --}}
                                 <td>
-                                <a href="{{ route('studio.invoice.download', $payment->id) }}"
-                                    target="_blank"
-                                    class="text-primary fw-semibold text-decoration-none">
-                                        {{ $payment->payment_id }}
-                                    </a>
-                                </td>
 
+                                    @if($payment->payment_id)
 
-                                {{-- Booking ID --}}
-                                <td>
+                                        <a href="{{ route(
+                                            'studio.invoice.download',
+                                            $payment->id
+                                        ) }}"
+                                           target="_blank"
+                                           class="text-primary fw-semibold text-decoration-none">
 
-                                    @if($payment->booking)
+                                            <i class="mdi mdi-receipt-text-outline"></i>
 
-                                       {{ $payment->booking->booking_id }}
+                                            {{ $payment->payment_id }}
+
+                                        </a>
 
                                     @else
 
@@ -539,6 +604,28 @@
                                     @endif
 
                                 </td>
+
+
+
+                                {{-- Booking ID --}}
+                                <td>
+
+                                    @if($payment->booking)
+
+                                        <strong>
+
+                                            {{ $payment->booking->booking_id }}
+
+                                        </strong>
+
+                                    @else
+
+                                        -
+
+                                    @endif
+
+                                </td>
+
 
 
                                 {{-- Customer --}}
@@ -550,9 +637,12 @@
 
                                     </div>
 
+
                                     @if(!empty($payment->booking?->phone))
 
                                         <small class="text-muted">
+
+                                            <i class="fas fa-phone"></i>
 
                                             {{ $payment->booking->phone }}
 
@@ -561,6 +651,7 @@
                                     @endif
 
                                 </td>
+
 
 
                                 {{-- Studio --}}
@@ -575,6 +666,41 @@
                                 </td>
 
 
+
+                                {{-- Booking Dates --}}
+                                <td>
+
+                                    @if($payment->booking)
+
+                                        <div class="fw-semibold">
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $payment->booking->booking_from_date
+                                            )->format('d M Y') }}
+
+                                        </div>
+
+
+                                        <small class="text-muted">
+
+                                            to
+
+                                            {{ \Carbon\Carbon::parse(
+                                                $payment->booking->booking_to_date
+                                            )->format('d M Y') }}
+
+                                        </small>
+
+                                    @else
+
+                                        -
+
+                                    @endif
+
+                                </td>
+
+
+
                                 {{-- Payment Date --}}
                                 <td>
 
@@ -585,6 +711,7 @@
                                             {{ $payment->payment_date->format('d M Y') }}
 
                                         </div>
+
 
                                         <small class="text-muted">
 
@@ -601,24 +728,47 @@
                                 </td>
 
 
+
                                 {{-- Amount --}}
                                 <td class="text-end">
 
-                                    <strong>
+                                    <strong class="
+                                        {{ $status === 'success'
+                                            ? 'text-success'
+                                            : 'text-dark'
+                                        }}
+                                    ">
 
-                                        ₹ {{ number_format($payment->amount ?? 0, 2) }}
+                                        ₹ {{ number_format(
+                                            $payment->amount ?? 0,
+                                            2
+                                        ) }}
 
                                     </strong>
 
                                 </td>
 
 
+
                                 {{-- Payment Type --}}
                                 <td>
 
-                                    {{ $payment->payment_type ?? '-' }}
+                                    @if($payment->payment_type)
+
+                                        <span class="badge bg-secondary">
+
+                                            {{ $payment->payment_type }}
+
+                                        </span>
+
+                                    @else
+
+                                        -
+
+                                    @endif
 
                                 </td>
+
 
 
                                 {{-- Payment Method --}}
@@ -627,6 +777,7 @@
                                     {{ $payment->payment_method ?? '-' }}
 
                                 </td>
+
 
 
                                 {{-- Transaction ID --}}
@@ -647,6 +798,7 @@
                                     @endif
 
                                 </td>
+
 
 
                                 {{-- Status --}}
@@ -706,6 +858,19 @@
                                         @break
 
 
+                                        @case('cancelled')
+
+                                            <span class="badge bg-secondary">
+
+                                                <i class="fas fa-ban"></i>
+
+                                                Cancelled
+
+                                            </span>
+
+                                        @break
+
+
                                         @default
 
                                             <span class="badge bg-secondary">
@@ -719,6 +884,7 @@
                                 </td>
 
 
+
                                 {{-- Creator --}}
                                 <td>
 
@@ -726,13 +892,15 @@
 
                                 </td>
 
+
                             </tr>
+
 
                         @empty
 
                             <tr>
 
-                                <td colspan="12"
+                                <td colspan="13"
                                     class="text-center py-5">
 
                                     <div class="text-muted">
@@ -740,11 +908,15 @@
                                         <i class="fas fa-wallet fa-2x mb-3"></i>
 
                                         <h6>
+
                                             No Payment Records Found
+
                                         </h6>
 
                                         <small>
+
                                             Try changing your filters.
+
                                         </small>
 
                                     </div>
@@ -764,6 +936,7 @@
         </div>
 
 
+
         {{-- =====================================================
             PAGINATION
         ====================================================== --}}
@@ -771,26 +944,32 @@
 
             <div class="card-footer bg-white">
 
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
 
                     <div class="text-muted small">
 
                         Showing
 
                         <strong>
+
                             {{ $payments->firstItem() }}
+
                         </strong>
 
                         to
 
                         <strong>
+
                             {{ $payments->lastItem() }}
+
                         </strong>
 
                         of
 
                         <strong>
+
                             {{ $payments->total() }}
+
                         </strong>
 
                         records

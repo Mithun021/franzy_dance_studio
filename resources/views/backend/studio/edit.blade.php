@@ -101,7 +101,26 @@
                         </div>
 
                         {{-- Price --}}
-                        <div class="col-md-6 mb-3">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Price(per hours)
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                name="price_per_hour"
+                                class="form-control"
+                                placeholder="Enter Price"
+                                value="{{ old('price_per_hour',$studio->price_per_hour) }}">
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
 
                             <label class="form-label">
 
@@ -112,11 +131,11 @@
 
                             <input
                                 type="number"
-                                name="price"
+                                name="price_per_day"
                                 class="form-control"
                                 min="0"
                                 step="0.01"
-                                value="{{ old('price',$studio->price) }}">
+                                value="{{ old('price_per_day',$studio->price_per_day) }}">
 
                         </div>
 

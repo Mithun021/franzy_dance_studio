@@ -480,378 +480,589 @@
 
             <div>
 
-                <div class="sticky top-24 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl overflow-hidden">
+    <div class="sticky top-24 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl overflow-hidden">
 
-                    {{-- Header --}}
+        {{-- ========================================================= --}}
+        {{-- Header --}}
+        {{-- ========================================================= --}}
 
-                    <div class="px-8 py-6 border-b border-white/10">
+        <div class="px-8 py-6 border-b border-white/10">
 
-                        <h3 class="text-2xl font-bold text-white">
+            <h3 class="text-2xl font-bold text-white">
 
-                            Payment Summary
+                Payment Summary
 
-                        </h3>
+            </h3>
+
+        </div>
+
+
+        {{-- ========================================================= --}}
+        {{-- Payment Form Starts --}}
+        {{-- ========================================================= --}}
+
+        <form
+            action="{{ route('studio.payment.store') }}"
+            method="POST"
+            enctype="multipart/form-data">
+
+            @csrf
+
+            <input
+                type="hidden"
+                name="booking_id"
+                value="{{ $booking->id }}">
+
+
+            <div class="p-8">
+
+
+                {{-- ========================================================= --}}
+                {{-- Booking Type --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            Booking Type
+
+                        </p>
+
+                        <span class="text-xs text-gray-500">
+
+                            Studio Rental
+
+                        </span>
 
                     </div>
 
-                    {{-- Payment Form Starts --}}
-
-                    <form
-                        action="{{ route('studio.payment.store') }}"
-                        method="POST"
-                        enctype="multipart/form-data">
-
-                        @csrf
-
-                        <input
-                            type="hidden"
-                            name="booking_id"
-                            value="{{ $booking->id }}">
-
-                        <div class="p-8">
-
-                            {{-- Per Day Charge --}}
-
-                            <div class="flex justify-between items-start mb-6">
-
-                                <div>
-
-                                    <p class="text-gray-400">
-
-                                        Per Day Charge
-
-                                    </p>
-
-                                    <span class="text-xs text-gray-500">
-
-                                        Studio Rental
-
-                                    </span>
-
-                                </div>
-
-                                <div class="text-right">
-
-                                    <p class="text-white font-semibold">
-
-                                        ₹{{ number_format($booking->studio_amount,2) }}
-
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            {{-- Total Days --}}
-
-                            <div class="flex justify-between items-start mb-6">
-
-                                <div>
-
-                                    <p class="text-gray-400">
-
-                                        Total Days
-
-                                    </p>
-
-                                </div>
-
-                                <div>
-
-                                    <span class="text-blue-400 font-bold">
-
-                                        {{ $totalDays }}
-
-                                        {{ $totalDays > 1 ? 'Days' : 'Day' }}
-
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                            {{-- Total Amount --}}
-
-                            <div class="flex justify-between items-start mb-6">
-
-                                <div>
-
-                                    <p class="text-gray-400">
-
-                                        Total Amount
-
-                                    </p>
-
-                                </div>
-
-                                <div>
-
-                                    <span class="text-white text-lg font-bold">
-
-                                        ₹{{ number_format($totalAmount,2) }}
-
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                            {{-- Paid Amount --}}
-
-                            <div class="flex justify-between items-start mb-6">
-
-                                <div>
-
-                                    <p class="text-gray-400">
-
-                                        Paid Amount
-
-                                    </p>
-
-                                </div>
-
-                                <div>
-
-                                    <span class="text-green-400 font-semibold">
-
-                                        ₹{{ number_format($paidAmount,2) }}
-
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                            {{-- Due Amount --}}
-
-                            <div class="flex justify-between items-center border-t border-white/10 pt-6">
-
-                                <div>
-
-                                    <p class="text-lg text-white font-semibold">
-
-                                        Due Amount
-
-                                    </p>
-
-                                </div>
-
-                                <div>
-
-                                    <span class="text-3xl font-bold text-pink-400">
-
-                                        ₹{{ number_format($dueAmount,2) }}
-
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                            {{-- ========================================================= --}}
-                            {{-- Payment Method --}}
-                            {{-- Part 3 Starts From Here --}}
-                            {{-- ========================================================= --}}
-
-                                                        {{-- ========================================================= --}}
-                            {{-- Payment Method --}}
-                            {{-- ========================================================= --}}
-
-                            <div class="mt-10">
-
-                                <label class="block text-white text-lg font-semibold mb-5">
-
-                                    Select Payment Method
-                                    <span class="text-red-500">*</span>
-
-                                </label>
-
-                                <div class="space-y-4">
-
-                                    {{-- Online Payment --}}
-                                    <label class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-5 py-4 cursor-pointer hover:border-pink-500 transition">
-
-                                        <input
-                                            type="radio"
-                                            name="payment_method"
-                                            value="online"
-                                            class="paymentMethod w-5 h-5 accent-pink-500"
-                                            checked>
-
-                                        <div>
-
-                                            <h4 class="text-white font-semibold">
-
-                                                Online Payment
-
-                                            </h4>
-
-                                            <p class="text-gray-400 text-sm">
-
-                                                Secure payment using Payment Gateway
-
-                                            </p>
-
-                                        </div>
-
-                                    </label>
-
-                                    {{-- QR Payment --}}
-                                    <label class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-5 py-4 cursor-pointer hover:border-pink-500 transition">
-
-                                        <input
-                                            type="radio"
-                                            name="payment_method"
-                                            value="qr"
-                                            class="paymentMethod w-5 h-5 accent-pink-500">
-
-                                        <div>
-
-                                            <h4 class="text-white font-semibold">
-
-                                                QR Payment
-
-                                            </h4>
-
-                                            <p class="text-gray-400 text-sm">
-
-                                                Scan QR Code and upload payment proof
-
-                                            </p>
-
-                                        </div>
-
-                                    </label>
-
-                                    {{-- Bank Transfer --}}
-                                    <label class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-5 py-4 cursor-pointer hover:border-pink-500 transition">
-
-                                        <input
-                                            type="radio"
-                                            name="payment_method"
-                                            value="Bank Transfer"
-                                            class="paymentMethod w-5 h-5 accent-pink-500">
-
-                                        <div>
-
-                                            <h4 class="text-white font-semibold">
-
-                                                Bank Transfer
-
-                                            </h4>
-
-                                            <p class="text-gray-400 text-sm">
-
-                                                Transfer to our bank account and upload receipt
-
-                                            </p>
-
-                                        </div>
-
-                                    </label>
-
-                                </div>
-
-                            </div>
-
-                            {{-- ========================================================= --}}
-                            {{-- QR PAYMENT SECTION --}}
-                            {{-- ========================================================= --}}
-
-                            <div id="qrSection" class="hidden mt-10">
-
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-
-                                    <h4 class="text-xl text-white font-semibold mb-5">
-
-                                        Scan QR Code
-
-                                    </h4>
-
-                                    <img
-                                        src="{{ asset('images/qr.jpg') }}"
-                                        alt="QR Code"
-                                        class="rounded-xl border border-white/10 w-full">
-
-                                </div>
-
-                            </div>
-
-                            {{-- ========================================================= --}}
-                            {{-- BANK SECTION --}}
-                            {{-- ========================================================= --}}
-
-                            <div id="bankSection" class="hidden mt-10">
-
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-
-                                    <h4 class="text-xl text-white font-semibold mb-5">
-
-                                        Bank Account Details
-
-                                    </h4>
-
-                                    <img
-                                        src="{{ asset('images/bank-details.jpg') }}"
-                                        alt="Bank Details"
-                                        class="rounded-xl border border-white/10 w-full">
-
-                                </div>
-
-                            </div>
-
-                            {{-- ========================================================= --}}
-                            {{-- SCREENSHOT --}}
-                            {{-- ========================================================= --}}
-
-                            <div id="paymentProofSection" class="hidden mt-8">
-
-                                <label class="block text-white font-medium mb-3">
-
-                                    Upload Payment Screenshot
-
-                                    <span class="text-red-500">*</span>
-
-                                </label>
-
-                                <input
-                                    type="file"
-                                    name="payment_proof"
-                                    accept=".jpg,.jpeg,.png,.pdf"
-                                    class="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white">
-
-                                @error('payment_proof')
-
-                                    <p class="text-red-400 mt-2 text-sm">
-
-                                        {{ $message }}
-
-                                    </p>
-
-                                @enderror
-
-                            </div>
-
-                            {{-- ========================================================= --}}
-                            {{-- Submit --}}
-                            {{-- ========================================================= --}}
-
-                            <button
-                                id="paymentBtn"
-                                type="submit"
-                                class="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-600 to-blue-600 py-4 text-lg font-bold text-white transition duration-300 hover:scale-[1.02]">
-
-                                Pay Securely
-
-                            </button>
-
-                        </div>
-
-                    </form>
+                    <div class="text-right">
+
+                        <span class="inline-flex items-center rounded-full
+                                     bg-blue-500/20
+                                     border border-blue-500/30
+                                     px-4 py-1.5
+                                     text-sm font-semibold
+                                     text-blue-400">
+
+                            {{ $booking->booking_type === 'hour'
+                                ? 'Per Hour'
+                                : 'Per Day'
+                            }}
+
+                        </span>
+
+                    </div>
 
                 </div>
 
+
+                {{-- ========================================================= --}}
+                {{-- Booking From --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            Booking From
+
+                        </p>
+
+                    </div>
+
+                    <div class="text-right">
+
+                        <p class="text-white font-semibold">
+
+                            {{ $booking->booking_from_date
+                                ? $booking->booking_from_date->format('d M Y')
+                                : '-'
+                            }}
+
+                        </p>
+
+                        @if($booking->booking_from_time)
+
+                            <p class="text-gray-400 text-sm mt-1">
+
+                                {{ \Carbon\Carbon::parse($booking->booking_from_time)->format('h:i A') }}
+
+                            </p>
+
+                        @endif
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Booking To --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            Booking To
+
+                        </p>
+
+                    </div>
+
+                    <div class="text-right">
+
+                        <p class="text-white font-semibold">
+
+                            {{ $booking->booking_to_date
+                                ? $booking->booking_to_date->format('d M Y')
+                                : '-'
+                            }}
+
+                        </p>
+
+                        @if($booking->booking_to_time)
+
+                            <p class="text-gray-400 text-sm mt-1">
+
+                                {{ \Carbon\Carbon::parse($booking->booking_to_time)->format('h:i A') }}
+
+                            </p>
+
+                        @endif
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Rate --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            {{ $booking->booking_type === 'hour'
+                                ? 'Per Hour Charge'
+                                : 'Per Day Charge'
+                            }}
+
+                        </p>
+
+                        <span class="text-xs text-gray-500">
+
+                            Studio Rental Rate
+
+                        </span>
+
+                    </div>
+
+                    <div class="text-right">
+
+                        <p class="text-white font-semibold">
+
+                            ₹{{ number_format($booking->rate, 2) }}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Duration --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            {{ $booking->booking_type === 'hour'
+                                ? 'Total Hours'
+                                : 'Total Days'
+                            }}
+
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        <span class="text-blue-400 font-bold">
+
+                            {{ number_format($booking->booking_duration, 2) }}
+
+                            {{ $booking->booking_type === 'hour'
+                                ? ($booking->booking_duration > 1 ? 'Hours' : 'Hour')
+                                : ($booking->booking_duration > 1 ? 'Days' : 'Day')
+                            }}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Calculation --}}
+                {{-- ========================================================= --}}
+
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4 mb-6">
+
+                    <div class="flex justify-between items-center text-sm">
+
+                        <span class="text-gray-400">
+
+                            {{ $booking->booking_type === 'hour'
+                                ? 'Hourly Rate'
+                                : 'Daily Rate'
+                            }}
+
+                            ×
+
+                            {{ $booking->booking_type === 'hour'
+                                ? 'Hours'
+                                : 'Days'
+                            }}
+
+                        </span>
+
+                        <span class="text-gray-300">
+
+                            ₹{{ number_format($booking->rate, 2) }}
+
+                            ×
+
+                            {{ number_format($booking->booking_duration, 2) }}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Total Amount --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            Total Amount
+
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        <span class="text-white text-lg font-bold">
+
+                            ₹{{ number_format($booking->studio_amount, 2) }}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Paid Amount --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+
+                        <p class="text-gray-400">
+
+                            Paid Amount
+
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        <span class="text-green-400 font-semibold">
+
+                            ₹{{ number_format($paidAmount, 2) }}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Due Amount --}}
+                {{-- ========================================================= --}}
+
+                <div class="flex justify-between items-center border-t border-white/10 pt-6">
+
+                    <div>
+
+                        <p class="text-lg text-white font-semibold">
+
+                            Due Amount
+
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        <span class="text-3xl font-bold text-pink-400">
+
+                            ₹{{ number_format($dueAmount, 2) }}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Payment Method --}}
+                {{-- ========================================================= --}}
+
+                <div class="mt-10">
+
+                    <label class="block text-white text-lg font-semibold mb-5">
+
+                        Select Payment Method
+
+                        <span class="text-red-500">*</span>
+
+                    </label>
+
+
+                    <div class="space-y-4">
+
+
+                        {{-- ================================================= --}}
+                        {{-- Online Payment --}}
+                        {{-- ================================================= --}}
+
+                        <label class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-5 py-4 cursor-pointer hover:border-pink-500 transition">
+
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="online"
+                                class="paymentMethod w-5 h-5 accent-pink-500"
+                                checked>
+
+                            <div>
+
+                                <h4 class="text-white font-semibold">
+
+                                    Online Payment
+
+                                </h4>
+
+                                <p class="text-gray-400 text-sm">
+
+                                    Secure payment using Payment Gateway
+
+                                </p>
+
+                            </div>
+
+                        </label>
+
+
+                        {{-- ================================================= --}}
+                        {{-- QR Payment --}}
+                        {{-- ================================================= --}}
+
+                        <label class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-5 py-4 cursor-pointer hover:border-pink-500 transition">
+
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="qr"
+                                class="paymentMethod w-5 h-5 accent-pink-500">
+
+                            <div>
+
+                                <h4 class="text-white font-semibold">
+
+                                    QR Payment
+
+                                </h4>
+
+                                <p class="text-gray-400 text-sm">
+
+                                    Scan QR Code and upload payment proof
+
+                                </p>
+
+                            </div>
+
+                        </label>
+
+
+                        {{-- ================================================= --}}
+                        {{-- Bank Transfer --}}
+                        {{-- ================================================= --}}
+
+                        <label class="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-5 py-4 cursor-pointer hover:border-pink-500 transition">
+
+                            <input
+                                type="radio"
+                                name="payment_method"
+                                value="Bank Transfer"
+                                class="paymentMethod w-5 h-5 accent-pink-500">
+
+                            <div>
+
+                                <h4 class="text-white font-semibold">
+
+                                    Bank Transfer
+
+                                </h4>
+
+                                <p class="text-gray-400 text-sm">
+
+                                    Transfer to our bank account and upload receipt
+
+                                </p>
+
+                            </div>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- QR PAYMENT SECTION --}}
+                {{-- ========================================================= --}}
+
+                <div id="qrSection" class="hidden mt-10">
+
+                    <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+
+                        <h4 class="text-xl text-white font-semibold mb-5">
+
+                            Scan QR Code
+
+                        </h4>
+
+                        <img
+                            src="{{ asset('images/qr.jpg') }}"
+                            alt="QR Code"
+                            class="rounded-xl border border-white/10 w-full">
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- BANK SECTION --}}
+                {{-- ========================================================= --}}
+
+                <div id="bankSection" class="hidden mt-10">
+
+                    <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+
+                        <h4 class="text-xl text-white font-semibold mb-5">
+
+                            Bank Account Details
+
+                        </h4>
+
+                        <img
+                            src="{{ asset('images/bank-details.jpg') }}"
+                            alt="Bank Details"
+                            class="rounded-xl border border-white/10 w-full">
+
+                    </div>
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- PAYMENT PROOF --}}
+                {{-- ========================================================= --}}
+
+                <div id="paymentProofSection" class="hidden mt-8">
+
+                    <label class="block text-white font-medium mb-3">
+
+                        Upload Payment Screenshot
+
+                        <span class="text-red-500">*</span>
+
+                    </label>
+
+                    <input
+                        type="file"
+                        name="payment_proof"
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        class="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white">
+
+                    @error('payment_proof')
+
+                        <p class="text-red-400 mt-2 text-sm">
+
+                            {{ $message }}
+
+                        </p>
+
+                    @enderror
+
+                </div>
+
+
+                {{-- ========================================================= --}}
+                {{-- Submit --}}
+                {{-- ========================================================= --}}
+
+                <button
+                    id="paymentBtn"
+                    type="submit"
+                    class="mt-10 w-full rounded-xl bg-gradient-to-r from-pink-600 to-blue-600 py-4 text-lg font-bold text-white transition duration-300 hover:scale-[1.02]">
+
+                    Pay Securely
+
+                </button>
+
+
             </div>
+
+        </form>
+
+    </div>
+
+</div>
 
         </div>
 

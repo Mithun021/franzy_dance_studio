@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\StudioBooking;
+use App\Models\StudioCategory;
 use App\Models\StudioPayment;
 use Illuminate\Http\Request;
 
@@ -36,61 +37,159 @@ class StudioBookedController extends Controller
     public function index()
     {
         $bookings = StudioBooking::with([
+
+            /*
+            |--------------------------------------------------------------------------
+            | User
+            |--------------------------------------------------------------------------
+            */
             'user:id,name',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Studio + Category
+            |--------------------------------------------------------------------------
+            |
+            | IMPORTANT:
+            | Studio table has:
+            | price_per_day
+            | price_per_hour
+            |
+            */
             'studio' => function ($query) {
+
                 $query->select(
                     'id',
                     'studio_category_id',
-                    'price'
-                )->with('category:id,name');
+                    'price_per_day',
+                    'price_per_hour'
+                )
+                ->with('category:id,name');
+
             },
 
+            /*
+            |--------------------------------------------------------------------------
+            | All Payments
+            |--------------------------------------------------------------------------
+            */
             'payments' => function ($query) {
-                $query->where('payment_status', 'Success')
-                    ->latest('payment_date')
+
+                $query->latest('payment_date')
                     ->latest('id');
+
             }
 
         ])
-        ->latest()
+
+        ->latest('id')
+
         ->get();
 
-        return view('backend.studio-booked.index', compact('bookings'));
+
+        return view(
+            'backend.studio-booked.index',
+            compact('bookings')
+        );
     }
 
     public function paymentHistory(StudioBooking $booking)
     {
         $booking->load([
-
             'user',
-
-            'studio.category',
+            'studio' => function ($query) {
+                $query->select(
+                    'id',
+                    'studio_category_id',
+                    'price_per_day',
+                    'price_per_hour',
+                    'thumbnail',
+                    'description',
+                    'status'
+                )->with('category:id,name');
+            },
 
             'payments' => function ($query) {
-
                 $query->with('creator')
-                    ->orderBy('payment_date')
-                    ->orderBy('id');
-
+                    ->orderBy('payment_date', 'asc')
+                    ->orderBy('id', 'asc');
             }
-
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Successful Payment Total
+        |--------------------------------------------------------------------------
+        */
+
         $totalPayment = $booking->payments
-            ->where('payment_status', 'Success')
+            ->filter(function ($payment) {
+                return strtolower(trim($payment->payment_status ?? '')) === 'success';
+            })
             ->sum('amount');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Failed / Pending / Cancelled Payment Attempts
+        |--------------------------------------------------------------------------
+        */
+
         $failedPayment = $booking->payments
-            ->whereIn('payment_status', ['Pending','Failed','Cancelled'])
+            ->filter(function ($payment) {
+
+                return in_array(
+                    strtolower(trim($payment->payment_status ?? '')),
+                    [
+                        'pending',
+                        'failed',
+                        'cancelled'
+                    ]
+                );
+
+            })
             ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Booking Amount
+        |--------------------------------------------------------------------------
+        */
+
+        $bookingAmount = (float) ($booking->booking_amount ?? 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Due Amount
+        |--------------------------------------------------------------------------
+        */
+
+        $dueAmount = max(
+            0,
+            $bookingAmount - $totalPayment
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Total Payment Attempts
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentAttempts = $booking->payments->count();
+
 
         return view(
             'backend.studio-booked.payment-history',
             compact(
                 'booking',
                 'totalPayment',
-                'failedPayment'
+                'failedPayment',
+                'bookingAmount',
+                'dueAmount',
+                'paymentAttempts'
             )
         );
     }
@@ -98,10 +197,24 @@ class StudioBookedController extends Controller
     public function studioPaymentHistory(Request $request)
     {
         $query = StudioPayment::with([
+
             'booking:id,booking_id,customer_name,email,phone,studio_id,booking_from_date,booking_to_date',
-            'booking.studio:id,studio_category_id,price',
-            'booking.studio.category:id,name',
+
+            'booking.studio' => function ($query) {
+
+                $query->select(
+                    'id',
+                    'studio_category_id',
+                    'price_per_day',
+                    'price_per_hour'
+                )->with([
+                    'category:id,name'
+                ]);
+
+            },
+
             'creator:id,name',
+
         ]);
 
         /*
@@ -111,9 +224,14 @@ class StudioBookedController extends Controller
         */
         if ($request->filled('payment_id')) {
 
-            $query->where('payment_id', 'like', '%' . $request->payment_id . '%');
+            $query->where(
+                'payment_id',
+                'like',
+                '%' . $request->payment_id . '%'
+            );
 
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -134,6 +252,7 @@ class StudioBookedController extends Controller
 
         }
 
+
         /*
         |--------------------------------------------------------------------------
         | Customer Name Filter
@@ -152,6 +271,7 @@ class StudioBookedController extends Controller
             });
 
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -172,6 +292,7 @@ class StudioBookedController extends Controller
 
         }
 
+
         /*
         |--------------------------------------------------------------------------
         | From Date
@@ -186,6 +307,7 @@ class StudioBookedController extends Controller
             );
 
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -202,6 +324,7 @@ class StudioBookedController extends Controller
 
         }
 
+
         /*
         |--------------------------------------------------------------------------
         | Payment Status
@@ -215,6 +338,7 @@ class StudioBookedController extends Controller
             );
 
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -233,8 +357,11 @@ class StudioBookedController extends Controller
         | Studio Categories
         |--------------------------------------------------------------------------
         */
-        $studioCategories = \App\Models\StudioCategory::orderBy('name')
-            ->get(['id', 'name']);
+        $studioCategories = StudioCategory::orderBy('name')
+            ->get([
+                'id',
+                'name'
+            ]);
 
 
         /*
@@ -243,11 +370,47 @@ class StudioBookedController extends Controller
         |--------------------------------------------------------------------------
         */
         $paymentStatuses = [
+
             'Pending',
             'Success',
             'Failed',
             'Refunded',
+            'Cancelled',
+
         ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Summary
+        |--------------------------------------------------------------------------
+        | Summary भी current filters के according रहेगा.
+        |--------------------------------------------------------------------------
+        */
+
+        $summaryQuery = clone $query;
+
+
+        $totalSuccessful = (clone $summaryQuery)
+            ->where('payment_status', 'Success')
+            ->sum('amount');
+
+
+        $totalPending = (clone $summaryQuery)
+            ->where('payment_status', 'Pending')
+            ->sum('amount');
+
+
+        $totalFailedRefunded = (clone $summaryQuery)
+            ->whereIn(
+                'payment_status',
+                [
+                    'Failed',
+                    'Refunded',
+                    'Cancelled'
+                ]
+            )
+            ->sum('amount');
 
 
         return view(
@@ -255,7 +418,10 @@ class StudioBookedController extends Controller
             compact(
                 'payments',
                 'studioCategories',
-                'paymentStatuses'
+                'paymentStatuses',
+                'totalSuccessful',
+                'totalPending',
+                'totalFailedRefunded'
             )
         );
     }

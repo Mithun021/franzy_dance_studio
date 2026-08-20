@@ -285,62 +285,81 @@
 
                             <div>
 
-                                {{-- <span class="inline-flex px-4 py-2 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm">
-
+                                <h2 class="text-4xl font-bold text-white mt-2">
                                     {{ $studio->category->name }}
-
-                                </span> --}}
-
-                                <h2 class="text-4xl font-bold text-white mt-6">
-
-                                    {{ $studio->category->name }}
-
                                 </h2>
 
                                 <div class="w-24 h-1 bg-gradient-to-r from-pink-500 to-blue-500 rounded-full mt-5"></div>
 
                                 <div class="mt-8 text-gray-300 leading-8">
-
                                     {!! nl2br(e($studio->description)) !!}
-
                                 </div>
 
                             </div>
 
-                            <div class="mt-12 flex flex-wrap justify-between items-center gap-6">
+                            <div class="mt-12 flex flex-wrap justify-between items-end gap-6">
 
+                                {{-- Pricing --}}
                                 <div>
 
-                                    <p class="text-gray-500 uppercase tracking-widest text-xs">
-
+                                    <p class="text-gray-500 uppercase tracking-widest text-xs mb-4">
                                         Starting Price
-
                                     </p>
 
-                                    <h3 class="text-5xl font-black mt-2 bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">
+                                    <div class="flex flex-wrap gap-4">
 
-                                        ₹{{ number_format($studio->price,2) }}
+                                        {{-- Per Day --}}
+                                        @if($studio->price_per_day)
+                                            <div class="px-5 py-4 rounded-xl bg-white/5 border border-white/10">
 
-                                    </h3>
+                                                <p class="text-gray-400 text-sm">
+                                                    Per Day
+                                                </p>
+
+                                                <h3 class="text-3xl font-black mt-1 bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">
+                                                    ₹{{ number_format($studio->price_per_day, 2) }}
+                                                </h3>
+
+                                            </div>
+                                        @endif
+
+                                        {{-- Per Hour --}}
+                                        @if($studio->price_per_hour)
+                                            <div class="px-5 py-4 rounded-xl bg-white/5 border border-white/10">
+
+                                                <p class="text-gray-400 text-sm">
+                                                    Per Hour
+                                                </p>
+
+                                                <h3 class="text-3xl font-black mt-1 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
+                                                    ₹{{ number_format($studio->price_per_hour, 2) }}
+                                                </h3>
+
+                                            </div>
+                                        @endif
+
+                                    </div>
 
                                 </div>
 
-                                <a href="{{ route('studio.booking.form',$studio->id) }}"
-
-                                   class="inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-600 to-blue-600 hover:scale-105 duration-300 shadow-lg shadow-pink-500/30">
+                                {{-- Book Button --}}
+                                <a
+                                    href="{{ route('studio.booking.form', $studio->id) }}"
+                                    class="inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-600 to-blue-600 hover:scale-105 duration-300 shadow-lg shadow-pink-500/30">
 
                                     Book Now
 
                                     <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="w-5 h-5"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke="currentColor">
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor">
 
-                                        <path stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M9 5l7 7-7 7"/>
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 5l7 7-7 7"/>
 
                                     </svg>
 
@@ -355,50 +374,64 @@
                 @else
 
                     {{-- No Image Layout --}}
-
                     <div class="p-12">
 
-                        <span class="inline-flex px-4 py-2 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300">
-
+                        <h2 class="text-4xl font-bold text-white">
                             {{ $studio->category->name }}
-
-                        </span>
-
-                        <h2 class="text-4xl font-bold text-white mt-5">
-
-                            {{ $studio->category->name }}
-
                         </h2>
 
                         <div class="w-24 h-1 bg-gradient-to-r from-pink-500 to-blue-500 rounded-full mt-5"></div>
 
                         <div class="mt-8 text-gray-300 leading-8">
-
                             {!! nl2br(e($studio->description)) !!}
-
                         </div>
 
-                        <div class="mt-12 flex flex-wrap justify-between items-center gap-6">
+                        <div class="mt-12 flex flex-wrap justify-between items-end gap-6">
 
+                            {{-- Pricing --}}
                             <div>
 
-                                <p class="text-gray-500 uppercase tracking-widest text-xs">
-
+                                <p class="text-gray-500 uppercase tracking-widest text-xs mb-4">
                                     Starting Price
-
                                 </p>
 
-                                <h3 class="text-5xl font-black mt-2 bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">
+                                <div class="flex flex-wrap gap-4">
 
-                                    ₹{{ number_format($studio->price,2) }}
+                                    @if($studio->price_per_day)
+                                        <div class="px-5 py-4 rounded-xl bg-white/5 border border-white/10">
 
-                                </h3>
+                                            <p class="text-gray-400 text-sm">
+                                                Per Day
+                                            </p>
+
+                                            <h3 class="text-3xl font-black mt-1 bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">
+                                                ₹{{ number_format($studio->price_per_day, 2) }}
+                                            </h3>
+
+                                        </div>
+                                    @endif
+
+                                    @if($studio->price_per_hour)
+                                        <div class="px-5 py-4 rounded-xl bg-white/5 border border-white/10">
+
+                                            <p class="text-gray-400 text-sm">
+                                                Per Hour
+                                            </p>
+
+                                            <h3 class="text-3xl font-black mt-1 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
+                                                ₹{{ number_format($studio->price_per_hour, 2) }}
+                                            </h3>
+
+                                        </div>
+                                    @endif
+
+                                </div>
 
                             </div>
 
-                            <a href="{{ route('studio.booking.form',$studio->id) }}"
-
-                               class="inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-600 to-blue-600 hover:scale-105 duration-300 shadow-lg shadow-pink-500/30">
+                            <a
+                                href="{{ route('studio.booking.form', $studio->id) }}"
+                                class="inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-600 to-blue-600 hover:scale-105 duration-300 shadow-lg shadow-pink-500/30">
 
                                 Book Now
 
@@ -417,21 +450,15 @@
             <div class="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-20 text-center">
 
                 <div class="text-7xl mb-6">
-
                     🎥
-
                 </div>
 
                 <h3 class="text-3xl font-bold text-white">
-
                     No Studio Available
-
                 </h3>
 
                 <p class="text-gray-400 mt-3">
-
                     New studios will be available very soon.
-
                 </p>
 
             </div>

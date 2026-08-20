@@ -42,10 +42,24 @@ return new class extends Migration
                 ->constrained('studios')
                 ->cascadeOnDelete();
 
+            $table->enum('booking_type', [
+                'day',
+                'hour'
+            ])->default('day');
+
             // Booking Date
             $table->date('booking_from_date');
 
+            $table->time('booking_from_time');
+
             $table->date('booking_to_date')->nullable();
+
+            $table->time('booking_to_time');
+
+            $table->decimal('booking_duration', 10, 2)
+                ->default(0);
+
+            $table->decimal('rate', 10, 2);
 
             // Price Snapshot
             $table->decimal('studio_amount',10,2);
@@ -61,6 +75,8 @@ return new class extends Migration
 
             // Remarks
             $table->text('remarks')->nullable();
+
+            $table->text('admin_remarks')->nullable();
             $table->timestamps();
         });
     }

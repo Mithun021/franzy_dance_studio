@@ -17,7 +17,8 @@ return new class extends Migration
                 ->constrained('studio_categories')
                 ->cascadeOnDelete();
 
-            $table->decimal('price',10,2);
+            $table->decimal('price_per_day',10,2);
+            $table->decimal('price_per_hour', 10, 2)->nullable();
 
             $table->string('thumbnail')->nullable();
 

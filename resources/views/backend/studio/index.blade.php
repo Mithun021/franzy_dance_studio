@@ -61,6 +61,7 @@
                             <th>Category</th>
 
                             <th width="140">Price(per day)</th>
+                            <th width="140">Price(per hours)</th>
 
                             <th>Description</th>
 
@@ -112,7 +113,12 @@
 
                                 <td>
 
-                                    ₹ {{ number_format($studio->price,2) }}
+                                    ₹ {{ number_format($studio->price_per_day,2) }}
+
+                                </td>
+                                <td>
+
+                                    ₹ {{ number_format($studio->price_per_hour,2) }}
 
                                 </td>
 

@@ -10,7 +10,8 @@ class Studio extends Model
 
         'studio_category_id',
 
-        'price',
+        'price_per_day',
+        'price_per_hour',
 
         'thumbnail',
 
@@ -31,5 +32,5 @@ class Studio extends Model
         return $this->belongsTo(StudioCategory::class,'studio_category_id');
     }
 
-    
+
 }
