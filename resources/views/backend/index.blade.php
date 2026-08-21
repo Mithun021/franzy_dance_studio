@@ -2,6 +2,6 @@
 @section('title', 'Dashboard')
 @section('backend-content')
 
-@include('backend.dashboard')
+{{-- @include('backend.dashboard') --}}
 
 @endsection

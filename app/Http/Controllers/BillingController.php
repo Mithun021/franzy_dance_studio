@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Course;
+use App\Models\CourseMonthRecord;
 use App\Models\LateFine;
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
@@ -951,82 +952,54 @@ class BillingController extends Controller
 
     public function courseDetails(Request $request)
     {
+        $request->validate([
+            'student_course_id' => [
+                'required',
+                'exists:student_course,id',
+            ],
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Student Course
+        |--------------------------------------------------------------------------
+        */
+
         $studentCourse = StudentCourse::with([
             'course',
             'level',
             'category',
-            'batch'
+            'batch',
         ])->find($request->student_course_id);
+
 
         if (!$studentCourse) {
 
             return response()->json([
                 'status' => false,
-                'message' => 'Course not found.'
+                'message' => 'Student course not found.',
             ]);
 
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Payment Summary
-        |--------------------------------------------------------------------------
-        */
-
-        $paymentCount = StudentPayment::where(
-            'student_course_id',
-            $studentCourse->id
-        )->count();
-
-        $totalPaid = StudentPayment::where(
-            'student_course_id',
-            $studentCourse->id
-        )->sum('amount');
 
         /*
         |--------------------------------------------------------------------------
-        | Remaining Amount
+        | Fee Total
         |--------------------------------------------------------------------------
+        |
+        | Registration Fee
+        | + Admission Fee
+        | + Monthly Fee
+        |
         */
 
-        $remainingAmount = $studentCourse->grand_total - $totalPaid;
+        $totalFee =
+            (float) $studentCourse->registration_fee +
+            (float) $studentCourse->admission_fee +
+            (float) $studentCourse->monthly_fee;
 
-        if ($remainingAmount < 0) {
-
-            $remainingAmount = 0;
-
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Next Payable
-        |--------------------------------------------------------------------------
-        */
-
-        if ($paymentCount == 0) {
-
-            $nextPayable =
-                $studentCourse->registration_fee +
-                $studentCourse->admission_fee +
-                $studentCourse->course_fee;
-
-        } else {
-
-            $nextPayable = $studentCourse->course_fee;
-
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Over Payment Protection
-        |--------------------------------------------------------------------------
-        */
-
-        if ($nextPayable > $remainingAmount) {
-
-            $nextPayable = $remainingAmount;
-
-        }
 
         /*
         |--------------------------------------------------------------------------
@@ -1040,85 +1013,101 @@ class BillingController extends Controller
 
             'data' => [
 
-                'student_course_id' => $studentCourse->id,
+                /*
+                |--------------------------------------------------------------------------
+                | Student Course
+                |--------------------------------------------------------------------------
+                */
 
-                'course_name' => $studentCourse->course->course_name,
+                'student_course_id' => $studentCourse->id,
 
                 'admission_no' => $studentCourse->admission_no,
 
-                'admission_date' => optional($studentCourse->admission_date)->format('d-m-Y'),
+                'admission_date' => optional(
+                    $studentCourse->admission_date
+                )->format('d-m-Y'),
 
-                'course_duration' => $studentCourse->duration,
+
+                /*
+                |--------------------------------------------------------------------------
+                | Course Information
+                |--------------------------------------------------------------------------
+                */
+
+                'course_duration' => $studentCourse->course_duration,
 
                 'duration_type' => $studentCourse->duration_type,
 
-                'level' => optional($studentCourse->level)->name,
+                'course_name' => optional(
+                    $studentCourse->course
+                )->course_name,
 
-                'category' => optional($studentCourse->category)->name,
+                'level' => optional(
+                    $studentCourse->level
+                )->name,
 
-                'batch' => optional($studentCourse->batch)->batch_name,
+                'category' => optional(
+                    $studentCourse->category
+                )->name,
 
-                /*
-                |--------------------------------------------------------------
-                | Fee
-                |--------------------------------------------------------------
-                */
+                'batch' => optional(
+                    $studentCourse->batch
+                )->batch_name,
 
-                'registration_fee' => $studentCourse->registration_fee,
-
-                'admission_fee' => $studentCourse->admission_fee,
-
-                'course_fee' => $studentCourse->course_fee,
-
-                'total_monthly_fee' => $studentCourse->total_monthly_fee,
-
-                'grand_total' => $studentCourse->grand_total,
 
                 /*
-                |--------------------------------------------------------------
-                | Payment Summary
-                |--------------------------------------------------------------
+                |--------------------------------------------------------------------------
+                | Fee Summary
+                |--------------------------------------------------------------------------
                 */
 
-                'payment_count' => $paymentCount,
+                'registration_fee' => (float) $studentCourse->registration_fee,
 
-                'total_paid' => $totalPaid,
+                'admission_fee' => (float) $studentCourse->admission_fee,
 
-                'remaining_amount' => $remainingAmount,
+                'monthly_fee' => (float) $studentCourse->monthly_fee,
 
-                'next_payable' => $nextPayable,
+                'total_fee' => $totalFee,
 
-            ]
+            ],
 
         ]);
     }
 
     public function calculateLateFine(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATION
+        |--------------------------------------------------------------------------
+        */
+
         $request->validate([
             'student_id'        => 'required|integer',
             'student_course_id' => 'required|integer',
+            'billing_from'      => 'required|date',
+            'billing_to'        => 'required|date|after_or_equal:billing_from',
         ]);
 
+
         /*
         |--------------------------------------------------------------------------
-        | BASIC INPUT
+        | BASIC DATA
         |--------------------------------------------------------------------------
         */
 
-        $studentId       = (int) $request->student_id;
+        $studentId = (int) $request->student_id;
+
         $studentCourseId = (int) $request->student_course_id;
 
-        /*
-        |--------------------------------------------------------------------------
-        | CURRENT PAYMENT DATE
-        |--------------------------------------------------------------------------
-        |
-        | Late fine calculation always uses today's server date.
-        |
-        */
+        $billingFrom = Carbon::parse(
+            $request->billing_from
+        )->startOfDay();
 
-        $paymentDate = now()->startOfDay();
+        $billingTo = Carbon::parse(
+            $request->billing_to
+        )->startOfDay();
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1134,104 +1123,47 @@ class BillingController extends Controller
 
             return response()->json([
                 'status'  => false,
+                'apply'   => false,
                 'message' => 'Student course not found.',
             ], 404);
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | SUCCESSFUL PAYMENTS
+        | COURSE FEES
         |--------------------------------------------------------------------------
+        */
+
+        $monthlyFee = (float) $studentCourse->monthly_fee;
+
+        $registrationFee = (float) ($studentCourse->registration_fee ?? 0);
+
+        $admissionFee = (float) ($studentCourse->admission_fee ?? 0);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BILLING MONTH RANGE
         |
-        | Only SUCCESS payments are considered.
+        | Example:
         |
-        */
-
-        $successfulPayments = StudentPayment::where(
-                'student_course_id',
-                $studentCourseId
-            )
-            ->where('user_id', $studentId)
-            ->where('status', 'success')
-            ->whereNotNull('payment_date')
-            ->orderBy('payment_date', 'asc')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | FIRST PAYMENT
+        | 2026-09-01 -> 2026-12-31
+        |
+        | September, October, November, December
+        | = 4 months
         |--------------------------------------------------------------------------
         */
 
-        if ($successfulPayments->isEmpty()) {
+        $billingMonthStart = $billingFrom->copy()->startOfMonth();
 
-            return response()->json([
+        $billingMonthEnd = $billingTo->copy()->startOfMonth();
 
-                'status' => true,
-                'apply'  => false,
+        $billingMonthCount =
+            (($billingMonthEnd->year - $billingMonthStart->year) * 12)
+            + ($billingMonthEnd->month - $billingMonthStart->month)
+            + 1;
 
-                'fine_type' => null,
-                'late_fine' => 0,
-
-                'course_fee' =>
-                    (float) $studentCourse->course_fee,
-
-                'payment_date' =>
-                    $paymentDate->format('Y-m-d'),
-
-                'due_date' => null,
-
-                'previous_payment_date' => null,
-
-                'attendance_month' => null,
-                'attendance_status' => null,
-
-                'month_difference' => 0,
-
-                /*
-                |--------------------------------------------------------------------------
-                | DEBUG
-                |--------------------------------------------------------------------------
-                */
-
-                'debug' => [
-
-                    'student_id' =>
-                        $studentId,
-
-                    'student_course_id' =>
-                        $studentCourseId,
-
-                    'current_payment_date' =>
-                        $paymentDate->format('Y-m-d'),
-
-                    'successful_payment_count' =>
-                        $successfulPayments->count(),
-
-                    'decision' =>
-                        'FIRST_PAYMENT',
-
-                    'reason' =>
-                        'No successful payment found.',
-
-                ],
-
-                'message' =>
-                    'First payment. No late fine applicable.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | LAST SUCCESSFUL PAYMENT
-        |--------------------------------------------------------------------------
-        */
-
-        $lastPayment = $successfulPayments->last();
-
-        $lastPaymentDate = Carbon::parse(
-            $lastPayment->payment_date
-        )->startOfDay();
 
         /*
         |--------------------------------------------------------------------------
@@ -1241,455 +1173,815 @@ class BillingController extends Controller
 
         $lateFineConfig = LateFine::first();
 
-        if (!$lateFineConfig) {
+        $dueDay = $lateFineConfig
+            ? (int) $lateFineConfig->due_date
+            : 5;
 
-            return response()->json([
+        $sameMonthLateFee = $lateFineConfig
+            ? (float) $lateFineConfig->same_month_late_fee
+            : 0;
 
-                'status' => true,
-                'apply'  => false,
+        $nextMonthLateFee = $lateFineConfig
+            ? (float) $lateFineConfig->next_month_late_fee
+            : 0;
 
-                'fine_type' => null,
-                'late_fine' => 0,
+        $absentPercentage = $lateFineConfig
+            ? (float) $lateFineConfig->absent_charge_percentage
+            : 0;
 
-                'course_fee' =>
-                    (float) $studentCourse->course_fee,
 
-                'payment_date' =>
-                    $paymentDate->format('Y-m-d'),
+        /*
+        |--------------------------------------------------------------------------
+        | ADMISSION DATE
+        |--------------------------------------------------------------------------
+        */
 
-                'due_date' => null,
+        $admissionDate = $studentCourse->admission_date
+            ? Carbon::parse($studentCourse->admission_date)->startOfDay()
+            : null;
 
-                'previous_payment_date' =>
-                    $lastPaymentDate->format('Y-m-d'),
 
-                'attendance_month' => null,
-                'attendance_status' => null,
+        /*
+        |--------------------------------------------------------------------------
+        | GET ALL COURSE MONTH RECORDS
+        |
+        | We use fee_month to know:
+        |
+        | Which month has already been billed/paid.
+        |--------------------------------------------------------------------------
+        */
 
-                'month_difference' => 0,
+        $allMonthRecords = CourseMonthRecord::where(
+            'student_course_id',
+            $studentCourseId
+        )
+        ->whereNotNull('fee_month')
+        ->orderBy('fee_month')
+        ->get();
 
-                'debug' => [
 
-                    'student_id' =>
-                        $studentId,
+        /*
+        |--------------------------------------------------------------------------
+        | HELPER
+        |--------------------------------------------------------------------------
+        */
 
-                    'student_course_id' =>
-                        $studentCourseId,
+        $monthKey = function ($date) {
 
-                    'current_payment_date' =>
-                        $paymentDate->format('Y-m-d'),
+            return Carbon::parse($date)
+                ->startOfMonth()
+                ->format('Y-m');
+        };
 
-                    'last_successful_payment' =>
-                        $lastPaymentDate->format('Y-m-d'),
 
-                    'decision' =>
-                        'NO_CONFIGURATION',
+        /*
+        |--------------------------------------------------------------------------
+        | PAID MONTHS
+        |--------------------------------------------------------------------------
+        */
 
-                    'reason' =>
-                        'LateFine configuration not found.',
+        $paidMonths = [];
 
-                ],
+        foreach ($allMonthRecords as $record) {
 
-                'message' =>
-                    'Late fine configuration not found.',
-            ]);
+            $paidAmount = (float) ($record->paid_amount ?? 0);
+
+            $payableAmount = (float) ($record->payable_amount ?? 0);
+
+            if ($payableAmount <= 0) {
+
+                $payableAmount =
+                    (float) ($record->monthly_fee ?? $monthlyFee);
+            }
+
+            if (
+                $paidAmount > 0 &&
+                $payableAmount > 0 &&
+                $paidAmount >= $payableAmount
+            ) {
+
+                $paidMonths[$monthKey($record->fee_month)] = [
+                    'record_id' => $record->id,
+                    'fee_month' => Carbon::parse(
+                        $record->fee_month
+                    )->startOfMonth(),
+                    'paid_amount' => $paidAmount,
+                    'payable_amount' => $payableAmount,
+                    'paid_date' => $record->paid_date
+                        ? Carbon::parse($record->paid_date)
+                        : null,
+                ];
+            }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CONFIGURATION VALUES
-        |--------------------------------------------------------------------------
-        */
-
-        $dueDay = (int) $lateFineConfig->due_date;
-
-        $sameMonthLateFee =
-            (float) $lateFineConfig->same_month_late_fee;
-
-        $nextMonthLateFee =
-            (float) $lateFineConfig->next_month_late_fee;
-
-        $absentPercentage =
-            (float) $lateFineConfig->absent_charge_percentage;
 
         /*
         |--------------------------------------------------------------------------
-        | CURRENT MONTH DUE DATE
-        |--------------------------------------------------------------------------
-        */
-
-        $actualDueDay = min(
-            $dueDay,
-            $paymentDate->copy()->endOfMonth()->day
-        );
-
-        $dueDate = $paymentDate
-            ->copy()
-            ->day($actualDueDay)
-            ->startOfDay();
-
-        /*
-        |--------------------------------------------------------------------------
-        | CALCULATE MONTH DIFFERENCE
-        |--------------------------------------------------------------------------
+        | DETERMINE FIRST PAYMENT
         |
-        | We intentionally calculate this manually.
+        | Agar koi fully paid month nahi hai:
         |
-        | Example:
-        |
-        | July 2026 -> August 2026 = 1
-        | June 2026 -> August 2026 = 2
-        |
+        | FIRST PAYMENT
+        |--------------------------------------------------------------------------
         */
 
-        $lastPaymentMonthNumber =
-            ($lastPaymentDate->year * 12)
-            + $lastPaymentDate->month;
+        $isFirstPayment = count($paidMonths) === 0;
 
-        $currentPaymentMonthNumber =
-            ($paymentDate->year * 12)
-            + $paymentDate->month;
-
-        $monthDifference =
-            $currentPaymentMonthNumber
-            - $lastPaymentMonthNumber;
 
         /*
         |--------------------------------------------------------------------------
-        | COMMON DEBUG DATA
+        | SELECTED BILLING MONTHS
         |--------------------------------------------------------------------------
         */
 
-        $debug = [
+        $selectedMonths = [];
 
-            'student_id' =>
-                $studentId,
+        $cursor = $billingMonthStart->copy();
 
-            'student_course_id' =>
-                $studentCourseId,
-
-            'course_id' =>
-                $studentCourse->course_id,
-
-            'batch_id' =>
-                $studentCourse->batch_id,
-
-            'course_fee' =>
-                (float) $studentCourse->course_fee,
-
-            'current_payment_date' =>
-                $paymentDate->format('Y-m-d'),
-
-            'current_payment_month' =>
-                $paymentDate->format('F Y'),
-
-            'due_configured_day' =>
-                $dueDay,
-
-            'actual_due_date' =>
-                $dueDate->format('Y-m-d'),
-
-            'is_after_due_date' =>
-                $paymentDate->gt($dueDate),
-
-            'last_successful_payment' =>
-                $lastPaymentDate->format('Y-m-d'),
-
-            'last_payment_month' =>
-                $lastPaymentDate->format('F Y'),
-
-            'successful_payment_count' =>
-                $successfulPayments->count(),
-
-            'month_difference' =>
-                $monthDifference,
-
-            'same_month_late_fee' =>
-                $sameMonthLateFee,
-
-            'next_month_late_fee' =>
-                $nextMonthLateFee,
-
-            'absent_charge_percentage' =>
-                $absentPercentage,
-
-        ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | BEFORE / ON DUE DATE
-        |--------------------------------------------------------------------------
-        */
-
-        if ($paymentDate->lte($dueDate)) {
-
-            $debug['decision'] =
-                'NO_FINE_BEFORE_DUE_DATE';
-
-            $debug['reason'] =
-                'Current payment date is on or before due date.';
-
-            return response()->json([
-
-                'status' => true,
-                'apply'  => false,
-
-                'fine_type' => null,
-                'late_fine' => 0,
-
-                'course_fee' =>
-                    (float) $studentCourse->course_fee,
-
-                'payment_date' =>
-                    $paymentDate->format('Y-m-d'),
-
-                'due_date' =>
-                    $dueDate->format('Y-m-d'),
-
-                'previous_payment_date' =>
-                    $lastPaymentDate->format('Y-m-d'),
-
-                'attendance_month' => null,
-                'attendance_status' => null,
-
-                'month_difference' =>
-                    $monthDifference,
-
-                'debug' => $debug,
-
-                'message' =>
-                    'Payment is on or before due date. No late fine.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | MORE THAN ONE MONTH GAP
-        |--------------------------------------------------------------------------
-        */
-
-        if ($monthDifference > 1) {
-
-            $fine = $nextMonthLateFee;
+        while ($cursor->lte($billingMonthEnd)) {
 
             /*
-            |--------------------------------------------------------------------------
-            | Attendance month for information
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------
+            | Admission month se pehle ka month ignore
+            |--------------------------------------------------------------
             */
 
-            $attendanceMonthStart = $lastPaymentDate
-                ->copy()
-                ->startOfMonth();
-
-            $attendanceMonthEnd = $lastPaymentDate
-                ->copy()
-                ->endOfMonth();
-
-            $attendanceMonth =
-                $attendanceMonthStart->format('F Y');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Check attendance anyway for debugging
-            |--------------------------------------------------------------------------
-            */
-
-            $attendanceRecords = Attendance::where(
-                    'user_id',
-                    $studentId
+            if (
+                $admissionDate &&
+                $cursor->lt(
+                    $admissionDate->copy()->startOfMonth()
                 )
-                ->where(
-                    'course_id',
-                    $studentCourse->course_id
-                )
-                ->where(
-                    'batch_id',
-                    $studentCourse->batch_id
-                )
-                ->whereBetween(
-                    'attendance_date',
-                    [
-                        $attendanceMonthStart->format('Y-m-d'),
-                        $attendanceMonthEnd->format('Y-m-d'),
-                    ]
-                )
-                ->get();
+            ) {
 
-            $attendanceStatuses =
-                $attendanceRecords
-                    ->pluck('status')
-                    ->map(function ($status) {
-                        return trim((string) $status);
-                    })
-                    ->values()
-                    ->toArray();
+                $cursor->addMonth();
 
-            $debug['attendance_check'] = [
+                continue;
+            }
 
-                'month' =>
-                    $attendanceMonth,
-
-                'start_date' =>
-                    $attendanceMonthStart->format('Y-m-d'),
-
-                'end_date' =>
-                    $attendanceMonthEnd->format('Y-m-d'),
-
-                'record_count' =>
-                    $attendanceRecords->count(),
-
-                'statuses' =>
-                    $attendanceStatuses,
-
+            $selectedMonths[] = [
+                'key' => $cursor->format('Y-m'),
+                'month' => $cursor->copy(),
+                'name' => $cursor->format('F Y'),
             ];
 
-            $debug['decision'] =
-                'NEXT_MONTH_LATE_FEE';
+            $cursor->addMonth();
+        }
 
-            $debug['reason'] =
-                'Payment gap is greater than one month.';
+
+        /*
+        |--------------------------------------------------------------------------
+        | NO VALID BILLING MONTH
+        |--------------------------------------------------------------------------
+        */
+
+        if (count($selectedMonths) === 0) {
+
+            return response()->json([
+                'status' => true,
+                'apply' => false,
+
+                'is_first_payment' => $isFirstPayment,
+
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' => 0,
+
+                'course_fee' => 0,
+
+                'registration_fee' => 0,
+
+                'admission_fee' => 0,
+
+                'late_fine' => 0,
+
+                'course_penalty_fee' => 0,
+
+                'total_course_fee' => 0,
+
+                'total_billing_amount' => 0,
+
+                'paid_months' => [],
+
+                'pending_months' => [],
+
+                'already_paid_months' => [],
+
+                'fine_type' => null,
+
+                'fine_heading' => 'No Fine',
+
+                'message' =>
+                    'No valid billing month found for the selected billing period.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIND ALREADY PAID / PENDING MONTHS
+        |--------------------------------------------------------------------------
+        */
+
+        $alreadyPaidMonths = [];
+
+        $pendingMonths = [];
+
+        foreach ($selectedMonths as $selectedMonth) {
+
+            $key = $selectedMonth['key'];
+
+            if (isset($paidMonths[$key])) {
+
+                $alreadyPaidMonths[] = [
+                    'month' => $key,
+                    'month_name' => $selectedMonth['name'],
+                    'paid_amount' =>
+                        $paidMonths[$key]['paid_amount'],
+                    'paid_date' =>
+                        $paidMonths[$key]['paid_date']
+                            ? $paidMonths[$key]['paid_date']
+                                ->format('Y-m-d')
+                            : null,
+                ];
+
+            } else {
+
+                $pendingMonths[] = [
+                    'month' => $key,
+                    'month_name' => $selectedMonth['name'],
+                ];
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | COURSE FEE FOR CURRENT BILLING REQUEST
+        |
+        | Already paid months dobara count nahi honge.
+        |--------------------------------------------------------------------------
+        */
+
+        $pendingMonthCount = count($pendingMonths);
+
+        $totalCourseFee =
+            $pendingMonthCount * $monthlyFee;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIRST PAYMENT
+        |
+        | FIRST PAYMENT:
+        |
+        | Registration Fee
+        | Admission Fee
+        | Course Fee
+        |
+        | NO LATE FINE
+        | NO COURSE PENALTY
+        |--------------------------------------------------------------------------
+        */
+
+        if ($isFirstPayment) {
+
+            $totalBillingAmount =
+                $registrationFee
+                + $admissionFee
+                + $totalCourseFee;
+
 
             return response()->json([
 
                 'status' => true,
 
-                'apply' =>
-                    $fine > 0,
+                'apply' => false,
 
-                'fine_type' =>
-                    'next_month_late_fee',
+                'is_first_payment' => true,
 
-                'late_fine' =>
-                    round($fine, 2),
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' =>
+                    count($selectedMonths),
+
+                'pending_month_count' =>
+                    $pendingMonthCount,
+
+                'already_paid_month_count' =>
+                    count($alreadyPaidMonths),
+
+                'billing_months' =>
+                    collect($selectedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
+
+                'already_paid_months' =>
+                    $alreadyPaidMonths,
+
+                'pending_months' =>
+                    $pendingMonths,
 
                 'course_fee' =>
-                    (float) $studentCourse->course_fee,
+                    $monthlyFee,
 
-                'payment_date' =>
-                    $paymentDate->format('Y-m-d'),
+                'total_course_fee' =>
+                    round($totalCourseFee, 2),
 
-                'due_date' =>
-                    $dueDate->format('Y-m-d'),
+                'registration_fee' =>
+                    round($registrationFee, 2),
+
+                'admission_fee' =>
+                    round($admissionFee, 2),
+
+                'late_fine' =>
+                    0,
+
+                'course_penalty_fee' =>
+                    0,
+
+                'fine_type' =>
+                    null,
+
+                'fine_heading' =>
+                    'First Payment',
+
+                'total_billing_amount' =>
+                    round($totalBillingAmount, 2),
+
+                'message' =>
+                    'This is the student\'s first payment. Registration Fee and Admission Fee are applicable. No late fine or course penalty is applied.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | IF ALL SELECTED MONTHS ARE ALREADY PAID
+        |--------------------------------------------------------------------------
+        */
+
+        if ($pendingMonthCount === 0) {
+
+            return response()->json([
+
+                'status' => true,
+
+                'apply' => false,
+
+                'is_first_payment' => false,
+
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' =>
+                    count($selectedMonths),
+
+                'pending_month_count' => 0,
+
+                'already_paid_month_count' =>
+                    count($alreadyPaidMonths),
+
+                'billing_months' =>
+                    collect($selectedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
+
+                'already_paid_months' =>
+                    $alreadyPaidMonths,
+
+                'pending_months' =>
+                    [],
+
+                'course_fee' =>
+                    $monthlyFee,
+
+                'total_course_fee' =>
+                    0,
+
+                'registration_fee' =>
+                    0,
+
+                'admission_fee' =>
+                    0,
+
+                'late_fine' =>
+                    0,
+
+                'course_penalty_fee' =>
+                    0,
+
+                'fine_type' =>
+                    null,
+
+                'fine_heading' =>
+                    'Already Paid',
+
+                'total_billing_amount' =>
+                    0,
+
+                'message' =>
+                    'All selected billing months are already fully paid. No additional amount is applicable.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT BILLING MONTH
+        |
+        | IMPORTANT:
+        |
+        | Billing Date From determines the current billing month.
+        |--------------------------------------------------------------------------
+        */
+
+        $currentBillingMonth =
+            $billingFrom
+                ->copy()
+                ->startOfMonth();
+
+        $currentBillingMonthKey =
+            $currentBillingMonth->format('Y-m');
+
+        $currentBillingMonthName =
+            $currentBillingMonth->format('F Y');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIND PREVIOUS PAID MONTH
+        |
+        | Current billing month se pehle ka latest fully paid month.
+        |--------------------------------------------------------------------------
+        */
+
+        $previousPaidMonthRecord = null;
+
+        foreach ($paidMonths as $key => $record) {
+
+            if ($record['fee_month']->lt($currentBillingMonth)) {
+
+                $previousPaidMonthRecord = $record;
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NO PREVIOUS PAID MONTH
+        |
+        | This situation can happen when old month records exist but
+        | current sequence does not have a previous paid month.
+        |
+        | Treat it as no late fine.
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$previousPaidMonthRecord) {
+
+            return response()->json([
+
+                'status' => true,
+
+                'apply' => false,
+
+                'is_first_payment' => false,
+
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' =>
+                    count($selectedMonths),
+
+                'pending_month_count' =>
+                    $pendingMonthCount,
+
+                'already_paid_month_count' =>
+                    count($alreadyPaidMonths),
+
+                'billing_months' =>
+                    collect($selectedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
+
+                'already_paid_months' =>
+                    $alreadyPaidMonths,
+
+                'pending_months' =>
+                    $pendingMonths,
+
+                'course_fee' =>
+                    $monthlyFee,
+
+                'total_course_fee' =>
+                    round($totalCourseFee, 2),
+
+                'registration_fee' =>
+                    0,
+
+                'admission_fee' =>
+                    0,
+
+                'late_fine' =>
+                    0,
+
+                'course_penalty_fee' =>
+                    0,
+
+                'fine_type' =>
+                    null,
+
+                'fine_heading' =>
+                    'No Fine',
+
+                'total_billing_amount' =>
+                    round($totalCourseFee, 2),
+
+                'previous_paid_month' =>
+                    null,
 
                 'previous_payment_date' =>
-                    $lastPaymentDate->format('Y-m-d'),
+                    null,
 
-                'attendance_month' =>
-                    $attendanceMonth,
+                'month_difference' =>
+                    0,
 
-                'attendance_status' =>
-                    'Payment gap greater than one month',
+                'message' =>
+                    'No previous paid month found. No late fine or course penalty is applied.',
+            ]);
+        }
 
-                'attendance_count' =>
-                    $attendanceRecords->count(),
+
+        /*
+        |--------------------------------------------------------------------------
+        | PREVIOUS PAID MONTH DATA
+        |--------------------------------------------------------------------------
+        */
+
+        $previousPaidMonth =
+            $previousPaidMonthRecord['fee_month'];
+
+        $previousPaidMonthName =
+            $previousPaidMonth->format('F Y');
+
+        $previousPaymentDate =
+            $previousPaidMonthRecord['paid_date']
+                ? $previousPaidMonthRecord['paid_date']->format('Y-m-d')
+                : null;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MONTH DIFFERENCE
+        |--------------------------------------------------------------------------
+        */
+
+        $previousMonthNumber =
+            ($previousPaidMonth->year * 12)
+            + $previousPaidMonth->month;
+
+        $currentMonthNumber =
+            ($currentBillingMonth->year * 12)
+            + $currentBillingMonth->month;
+
+        $monthDifference =
+            $currentMonthNumber - $previousMonthNumber;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADVANCE PAYMENT
+        |
+        | Example:
+        |
+        | August paid
+        | User selects September -> December
+        |
+        | These are future months.
+        |
+        | NO FINE.
+        |--------------------------------------------------------------------------
+        */
+
+        if ($monthDifference <= 0) {
+
+            return response()->json([
+
+                'status' => true,
+
+                'apply' => false,
+
+                'is_first_payment' => false,
+
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' =>
+                    count($selectedMonths),
+
+                'pending_month_count' =>
+                    $pendingMonthCount,
+
+                'already_paid_month_count' =>
+                    count($alreadyPaidMonths),
+
+                'billing_months' =>
+                    collect($selectedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
+
+                'already_paid_months' =>
+                    $alreadyPaidMonths,
+
+                'pending_months' =>
+                    $pendingMonths,
+
+                'course_fee' =>
+                    $monthlyFee,
+
+                'total_course_fee' =>
+                    round($totalCourseFee, 2),
+
+                'registration_fee' =>
+                    0,
+
+                'admission_fee' =>
+                    0,
+
+                'late_fine' =>
+                    0,
+
+                'course_penalty_fee' =>
+                    0,
+
+                'fine_type' =>
+                    null,
+
+                'fine_heading' =>
+                    'Advance Payment',
+
+                'total_billing_amount' =>
+                    round($totalCourseFee, 2),
+
+                'previous_paid_month' =>
+                    $previousPaidMonthName,
+
+                'previous_payment_date' =>
+                    $previousPaymentDate,
 
                 'month_difference' =>
                     $monthDifference,
 
-                'debug' =>
-                    $debug,
-
                 'message' =>
-                    'Payment gap is more than one month. Next month late fee applied.',
+                    'This is an advance payment. No late fine or course penalty is applicable.',
             ]);
         }
 
+
         /*
         |--------------------------------------------------------------------------
-        | EXACTLY ONE MONTH GAP
-        |--------------------------------------------------------------------------
+        | CHECK WHETHER INTERMEDIATE MONTHS WERE MISSED
         |
         | Example:
         |
-        | Previous Payment = 10 July
-        | Current Date     = 11 August
+        | June paid
+        | July unpaid
+        | August current
         |
-        | We MUST check July attendance.
+        | Difference = 2
         |
+        | July is a missed month.
+        |--------------------------------------------------------------------------
         */
 
-        if ($monthDifference === 1) {
+        $missedMonths = [];
 
-            /*
-            |--------------------------------------------------------------------------
-            | PREVIOUS PAYMENT MONTH
-            |--------------------------------------------------------------------------
-            */
-
-            $attendanceMonthStart = $lastPaymentDate
+        $gapCursor =
+            $previousPaidMonth
                 ->copy()
+                ->addMonth()
                 ->startOfMonth();
 
-            $attendanceMonthEnd = $lastPaymentDate
-                ->copy()
-                ->endOfMonth();
+        while ($gapCursor->lt($currentBillingMonth)) {
 
-            $attendanceMonth =
-                $attendanceMonthStart->format('F Y');
+            $gapKey =
+                $gapCursor->format('Y-m');
 
-            /*
-            |--------------------------------------------------------------------------
-            | GET ALL ATTENDANCE RECORDS
-            |--------------------------------------------------------------------------
-            |
-            | IMPORTANT:
-            |
-            | We get ALL records first.
-            |
-            | Then we inspect whether ANY record is Present.
-            |
-            */
+            if (!isset($paidMonths[$gapKey])) {
 
-            $attendanceRecords = Attendance::where(
-                    'user_id',
-                    $studentId
-                )
-                ->where(
-                    'course_id',
-                    $studentCourse->course_id
-                )
-                ->where(
-                    'batch_id',
-                    $studentCourse->batch_id
-                )
-                ->whereBetween(
-                    'attendance_date',
-                    [
-                        $attendanceMonthStart->format('Y-m-d'),
-                        $attendanceMonthEnd->format('Y-m-d'),
-                    ]
-                )
-                ->orderBy('attendance_date', 'asc')
-                ->get();
+                $missedMonths[] = [
+                    'key' =>
+                        $gapKey,
 
-            /*
-            |--------------------------------------------------------------------------
-            | ATTENDANCE STATUS LIST
-            |--------------------------------------------------------------------------
-            */
+                    'month' =>
+                        $gapCursor->copy(),
 
-            $attendanceStatuses =
-                $attendanceRecords
-                    ->pluck('status')
-                    ->map(function ($status) {
+                    'name' =>
+                        $gapCursor->format('F Y'),
+                ];
+            }
 
-                        return trim(
-                            strtolower(
-                                (string) $status
-                            )
-                        );
+            $gapCursor->addMonth();
+        }
 
-                    })
-                    ->values()
-                    ->toArray();
 
-            /*
-            |--------------------------------------------------------------------------
-            | PRESENT RECORDS
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | COURSE PENALTY CHECK
+        |
+        | Rule:
+        |
+        | Previous unpaid month(s) mein attendance completely absent hai
+        | to current payment par Course Penalty Fee lagegi.
+        |
+        | Example:
+        |
+        | June paid
+        | July absent
+        | August absent
+        | September absent
+        | October payment
+        |
+        | October course fee + 50% penalty
+        |--------------------------------------------------------------------------
+        */
 
-            $presentRecords =
+        $coursePenaltyFee = 0;
+
+        $coursePenaltyMonth = null;
+
+        $coursePenaltyAttendanceCount = 0;
+
+        $coursePenaltyPresentCount = 0;
+
+        $coursePenaltyStatus = null;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ONLY CHECK MISSED MONTHS
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($missedMonths as $missedMonth) {
+
+            $attendanceStart =
+                $missedMonth['month']
+                    ->copy()
+                    ->startOfMonth();
+
+            $attendanceEnd =
+                $missedMonth['month']
+                    ->copy()
+                    ->endOfMonth();
+
+
+            $attendanceRecords =
+                Attendance::where('user_id', $studentId)
+                    ->where(
+                        'course_id',
+                        $studentCourse->course_id
+                    )
+                    ->where(
+                        'batch_id',
+                        $studentCourse->batch_id
+                    )
+                    ->whereBetween(
+                        'attendance_date',
+                        [
+                            $attendanceStart->format('Y-m-d'),
+                            $attendanceEnd->format('Y-m-d'),
+                        ]
+                    )
+                    ->get();
+
+
+            $attendanceCount =
+                $attendanceRecords->count();
+
+
+            $presentCount =
                 $attendanceRecords
                     ->filter(function ($attendance) {
 
@@ -1698,333 +1990,607 @@ class BillingController extends Controller
                                 (string) $attendance->status
                             )
                         ) === 'present';
+                    })
+                    ->count();
 
-                    });
-
-            $presentCount =
-                $presentRecords->count();
-
-            $attendanceCount =
-                $attendanceRecords->count();
 
             /*
             |--------------------------------------------------------------------------
-            | DEBUG ATTENDANCE
+            | ABSENT MONTH
+            |
+            | Attendance record ho aur ek bhi Present nahi.
+            |
+            | Ya attendance records hi nahi hain.
             |--------------------------------------------------------------------------
             */
 
-            $debug['attendance_check'] = [
+            if ($presentCount === 0) {
 
-                'month' =>
-                    $attendanceMonth,
+                $coursePenaltyMonth =
+                    $missedMonth['name'];
 
-                'start_date' =>
-                    $attendanceMonthStart->format('Y-m-d'),
+                $coursePenaltyAttendanceCount =
+                    $attendanceCount;
 
-                'end_date' =>
-                    $attendanceMonthEnd->format('Y-m-d'),
+                $coursePenaltyPresentCount =
+                    $presentCount;
 
-                'student_id' =>
-                    $studentId,
+                $coursePenaltyStatus =
+                    $attendanceCount === 0
+                        ? 'No Attendance Record'
+                        : 'Absent';
 
-                'course_id' =>
-                    $studentCourse->course_id,
 
-                'batch_id' =>
-                    $studentCourse->batch_id,
+                /*
+                |--------------------------------------------------------------
+                | IMPORTANT
+                |
+                | Penalty is based on ONE course fee.
+                | It does NOT multiply for every absent month.
+                |--------------------------------------------------------------
+                */
 
-                'total_records' =>
-                    $attendanceCount,
+                $coursePenaltyFee =
+                    (
+                        $monthlyFee *
+                        $absentPercentage
+                    ) / 100;
 
-                'present_records' =>
-                    $presentCount,
 
-                'statuses_found' =>
-                    $attendanceStatuses,
+                /*
+                |--------------------------------------------------------------
+                | Once penalty month found, stop.
+                |--------------------------------------------------------------
+                */
 
-                'all_records' =>
-                    $attendanceRecords->map(function ($attendance) {
+                break;
+            }
+        }
 
-                        return [
 
-                            'id' =>
-                                $attendance->id,
+        /*
+        |--------------------------------------------------------------------------
+        | EXACTLY ONE MONTH GAP
+        |
+        | June paid
+        | July current
+        |
+        | Difference = 1
+        |--------------------------------------------------------------------------
+        */
 
-                            'date' =>
-                                $attendance->attendance_date,
-
-                            'status' =>
-                                $attendance->status,
-
-                            'user_id' =>
-                                $attendance->user_id,
-
-                            'course_id' =>
-                                $attendance->course_id,
-
-                            'batch_id' =>
-                                $attendance->batch_id,
-
-                        ];
-
-                    })->values()->toArray(),
-
-            ];
+        if ($monthDifference === 1) {
 
             /*
             |--------------------------------------------------------------------------
-            | ONE PRESENT = SAME MONTH LATE FEE
+            | CURRENT BILLING MONTH DUE DATE
             |--------------------------------------------------------------------------
             */
 
-            if ($presentCount > 0) {
+            $actualDueDay =
+                min(
+                    $dueDay,
+                    $currentBillingMonth
+                        ->copy()
+                        ->endOfMonth()
+                        ->day
+                );
 
-                $fine =
-                    $sameMonthLateFee;
+            $dueDate =
+                $currentBillingMonth
+                    ->copy()
+                    ->day($actualDueDay)
+                    ->startOfDay();
 
-                $debug['decision'] =
-                    'SAME_MONTH_LATE_FEE';
 
-                $debug['reason'] =
-                    "At least one Present attendance found in {$attendanceMonth}.";
+            /*
+            |--------------------------------------------------------------------------
+            | BEFORE DUE DATE
+            |
+            | 1 - 4 => no fine
+            | 5+    => same_month_late_fee
+            |--------------------------------------------------------------------------
+            */
+
+            if ($billingFrom->lt($dueDate)) {
 
                 return response()->json([
 
                     'status' => true,
 
-                    'apply' =>
-                        $fine > 0,
+                    'apply' => false,
 
-                    'fine_type' =>
-                        'same_month_late_fee',
+                    'is_first_payment' => false,
 
-                    'late_fine' =>
-                        round($fine, 2),
+                    'billing_from' =>
+                        $billingFrom->format('Y-m-d'),
+
+                    'billing_to' =>
+                        $billingTo->format('Y-m-d'),
+
+                    'billing_month_count' =>
+                        count($selectedMonths),
+
+                    'pending_month_count' =>
+                        $pendingMonthCount,
+
+                    'already_paid_month_count' =>
+                        count($alreadyPaidMonths),
+
+                    'billing_months' =>
+                        collect($selectedMonths)
+                            ->pluck('name')
+                            ->values()
+                            ->all(),
+
+                    'already_paid_months' =>
+                        $alreadyPaidMonths,
+
+                    'pending_months' =>
+                        $pendingMonths,
 
                     'course_fee' =>
-                        (float) $studentCourse->course_fee,
+                        $monthlyFee,
 
-                    'payment_date' =>
-                        $paymentDate->format('Y-m-d'),
+                    'total_course_fee' =>
+                        round($totalCourseFee, 2),
+
+                    'registration_fee' =>
+                        0,
+
+                    'admission_fee' =>
+                        0,
+
+                    'late_fine' =>
+                        0,
+
+                    'course_penalty_fee' =>
+                        round($coursePenaltyFee, 2),
+
+                    'fine_type' =>
+                        $coursePenaltyFee > 0
+                            ? 'course_penalty_fee'
+                            : null,
+
+                    'fine_heading' =>
+                        $coursePenaltyFee > 0
+                            ? 'Course Penalty Fee'
+                            : 'No Fine',
+
+                    'total_billing_amount' =>
+                        round(
+                            $totalCourseFee
+                            + $coursePenaltyFee,
+                            2
+                        ),
+
+                    'previous_paid_month' =>
+                        $previousPaidMonthName,
+
+                    'previous_payment_date' =>
+                        $previousPaymentDate,
+
+                    'current_billing_month' =>
+                        $currentBillingMonthName,
 
                     'due_date' =>
                         $dueDate->format('Y-m-d'),
 
-                    'previous_payment_date' =>
-                        $lastPaymentDate->format('Y-m-d'),
+                    'month_difference' =>
+                        $monthDifference,
 
                     'attendance_month' =>
-                        $attendanceMonth,
+                        $coursePenaltyMonth,
 
                     'attendance_status' =>
-                        'Present',
+                        $coursePenaltyStatus,
 
                     'attendance_count' =>
-                        $attendanceCount,
+                        $coursePenaltyAttendanceCount,
 
                     'present_count' =>
-                        $presentCount,
+                        $coursePenaltyPresentCount,
+
+                    'message' =>
+                        $coursePenaltyFee > 0
+                            ? "Payment is before the due date. However, {$coursePenaltyMonth} has no Present attendance, so Course Penalty Fee is applicable."
+                            : "Payment is being made before the {$dueDate->format('d F Y')} due date. No late fine is applicable.",
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | DUE DATE OR AFTER
+            |
+            | User specifically said:
+            |
+            | 5 ya uske baad => same_month_late_fee
+            |--------------------------------------------------------------------------
+            */
+
+            $lateFine =
+                $sameMonthLateFee;
+
+
+            $totalBillingAmount =
+                $totalCourseFee
+                + $lateFine
+                + $coursePenaltyFee;
+
+
+            return response()->json([
+
+                'status' => true,
+
+                'apply' =>
+                    $lateFine > 0 ||
+                    $coursePenaltyFee > 0,
+
+                'is_first_payment' => false,
+
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' =>
+                    count($selectedMonths),
+
+                'pending_month_count' =>
+                    $pendingMonthCount,
+
+                'already_paid_month_count' =>
+                    count($alreadyPaidMonths),
+
+                'billing_months' =>
+                    collect($selectedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
+
+                'already_paid_months' =>
+                    $alreadyPaidMonths,
+
+                'pending_months' =>
+                    $pendingMonths,
+
+                'course_fee' =>
+                    $monthlyFee,
+
+                'total_course_fee' =>
+                    round($totalCourseFee, 2),
+
+                'registration_fee' =>
+                    0,
+
+                'admission_fee' =>
+                    0,
+
+                'late_fine' =>
+                    round($lateFine, 2),
+
+                'course_penalty_fee' =>
+                    round($coursePenaltyFee, 2),
+
+                'fine_type' =>
+                    $coursePenaltyFee > 0
+                        ? 'course_penalty_fee'
+                        : 'same_month_late_fee',
+
+                'fine_heading' =>
+                    $coursePenaltyFee > 0
+                        ? 'Course Penalty Fee'
+                        : 'Same Month Late Fee',
+
+                'total_billing_amount' =>
+                    round($totalBillingAmount, 2),
+
+                'previous_paid_month' =>
+                    $previousPaidMonthName,
+
+                'previous_payment_date' =>
+                    $previousPaymentDate,
+
+                'current_billing_month' =>
+                    $currentBillingMonthName,
+
+                'due_date' =>
+                    $dueDate->format('Y-m-d'),
+
+                'month_difference' =>
+                    $monthDifference,
+
+                'attendance_month' =>
+                    $coursePenaltyMonth,
+
+                'attendance_status' =>
+                    $coursePenaltyStatus,
+
+                'attendance_count' =>
+                    $coursePenaltyAttendanceCount,
+
+                'present_count' =>
+                    $coursePenaltyPresentCount,
+
+                'message' =>
+                    $coursePenaltyFee > 0
+                        ? "Payment is on/after the due date. Same Month Late Fee of ₹{$lateFine} and Course Penalty Fee of ₹" . round($coursePenaltyFee, 2) . " are applicable."
+                        : "Payment is on/after the {$dueDate->format('d F Y')} due date. Same Month Late Fee of ₹{$lateFine} is applicable.",
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MORE THAN ONE MONTH GAP
+        |
+        | Example:
+        |
+        | June paid
+        | July unpaid
+        | August current
+        |
+        | => next_month_late_fee
+        |
+        | User pays:
+        |
+        | July + August Course Fee
+        | + ₹200 Next Month Late Fee
+        |--------------------------------------------------------------------------
+        */
+
+        if ($monthDifference > 1) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | IF COURSE PENALTY EXISTS
+            |
+            | Course Penalty is separate from late fine.
+            |
+            | Example:
+            |
+            | July absent
+            | August absent
+            | September payment
+            |
+            | Course Penalty Fee applies.
+            |
+            | But we don't stack absent penalty and next month late fee
+            | for the same missed situation.
+            |--------------------------------------------------------------------------
+            */
+
+            if ($coursePenaltyFee > 0) {
+
+                $totalBillingAmount =
+                    $totalCourseFee
+                    + $coursePenaltyFee;
+
+
+                return response()->json([
+
+                    'status' => true,
+
+                    'apply' => true,
+
+                    'is_first_payment' => false,
+
+                    'billing_from' =>
+                        $billingFrom->format('Y-m-d'),
+
+                    'billing_to' =>
+                        $billingTo->format('Y-m-d'),
+
+                    'billing_month_count' =>
+                        count($selectedMonths),
+
+                    'pending_month_count' =>
+                        $pendingMonthCount,
+
+                    'already_paid_month_count' =>
+                        count($alreadyPaidMonths),
+
+                    'billing_months' =>
+                        collect($selectedMonths)
+                            ->pluck('name')
+                            ->values()
+                            ->all(),
+
+                    'already_paid_months' =>
+                        $alreadyPaidMonths,
+
+                    'pending_months' =>
+                        $pendingMonths,
+
+                    'course_fee' =>
+                        $monthlyFee,
+
+                    'total_course_fee' =>
+                        round($totalCourseFee, 2),
+
+                    'registration_fee' =>
+                        0,
+
+                    'admission_fee' =>
+                        0,
+
+                    'late_fine' =>
+                        0,
+
+                    'course_penalty_fee' =>
+                        round($coursePenaltyFee, 2),
+
+                    'fine_type' =>
+                        'course_penalty_fee',
+
+                    'fine_heading' =>
+                        'Course Penalty Fee',
+
+                    'total_billing_amount' =>
+                        round($totalBillingAmount, 2),
+
+                    'previous_paid_month' =>
+                        $previousPaidMonthName,
+
+                    'previous_payment_date' =>
+                        $previousPaymentDate,
+
+                    'current_billing_month' =>
+                        $currentBillingMonthName,
 
                     'month_difference' =>
                         $monthDifference,
 
-                    'debug' =>
-                        $debug,
+                    'attendance_month' =>
+                        $coursePenaltyMonth,
+
+                    'attendance_status' =>
+                        $coursePenaltyStatus,
+
+                    'attendance_count' =>
+                        $coursePenaltyAttendanceCount,
+
+                    'present_count' =>
+                        $coursePenaltyPresentCount,
+
+                    'absent_percentage' =>
+                        $absentPercentage,
 
                     'message' =>
-                        "Present attendance found in {$attendanceMonth}. Same month late fee applied.",
+                        "Payment gap is {$monthDifference} month(s). "
+                        . "The missed course month {$coursePenaltyMonth} has no Present attendance. "
+                        . "Therefore Course Penalty Fee of "
+                        . "{$absentPercentage}% of monthly course fee is applied. "
+                        . "No separate late fine is added.",
                 ]);
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | NO PRESENT
-            |--------------------------------------------------------------------------
-            |
-            | Two possibilities:
-            |
-            | 1. Attendance records exist but all are Absent/null
-            | 2. No attendance records exist
-            |
-            | BOTH = absent charge
-            |
-            */
-
-            $courseFee =
-                (float) $studentCourse->course_fee;
-
-            $fine =
-                ($courseFee * $absentPercentage) / 100;
 
             /*
             |--------------------------------------------------------------------------
-            | ATTENDANCE STATUS
+            | NORMAL NEXT MONTH LATE FEE
             |--------------------------------------------------------------------------
             */
 
-            if ($attendanceCount === 0) {
+            $lateFine =
+                $nextMonthLateFee;
 
-                $attendanceStatus =
-                    'No Attendance Record';
 
-            } else {
+            $totalBillingAmount =
+                $totalCourseFee
+                + $lateFine;
 
-                $attendanceStatus =
-                    'Absent / No Present';
-
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | DEBUG DECISION
-            |--------------------------------------------------------------------------
-            */
-
-            $debug['decision'] =
-                'ABSENT_CHARGE_PERCENTAGE';
-
-            $debug['reason'] =
-                $attendanceCount === 0
-                    ? "No attendance records found in {$attendanceMonth}."
-                    : "Attendance records found in {$attendanceMonth}, but no Present record exists.";
-
-            $debug['fine_calculation'] = [
-
-                'course_fee' =>
-                    $courseFee,
-
-                'absent_percentage' =>
-                    $absentPercentage,
-
-                'formula' =>
-                    "{$courseFee} × {$absentPercentage} / 100",
-
-                'calculated_fine' =>
-                    round($fine, 2),
-
-            ];
 
             return response()->json([
 
                 'status' => true,
 
                 'apply' =>
-                    $fine > 0,
+                    $lateFine > 0,
 
-                'fine_type' =>
-                    'absent_charge_percentage',
+                'is_first_payment' => false,
 
-                'late_fine' =>
-                    round($fine, 2),
+                'billing_from' =>
+                    $billingFrom->format('Y-m-d'),
+
+                'billing_to' =>
+                    $billingTo->format('Y-m-d'),
+
+                'billing_month_count' =>
+                    count($selectedMonths),
+
+                'pending_month_count' =>
+                    $pendingMonthCount,
+
+                'already_paid_month_count' =>
+                    count($alreadyPaidMonths),
+
+                'billing_months' =>
+                    collect($selectedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
+
+                'already_paid_months' =>
+                    $alreadyPaidMonths,
+
+                'pending_months' =>
+                    $pendingMonths,
+
+                'missed_months' =>
+                    collect($missedMonths)
+                        ->pluck('name')
+                        ->values()
+                        ->all(),
 
                 'course_fee' =>
-                    $courseFee,
+                    $monthlyFee,
 
-                'absent_percentage' =>
-                    $absentPercentage,
+                'total_course_fee' =>
+                    round($totalCourseFee, 2),
 
-                'payment_date' =>
-                    $paymentDate->format('Y-m-d'),
+                'registration_fee' =>
+                    0,
 
-                'due_date' =>
-                    $dueDate->format('Y-m-d'),
+                'admission_fee' =>
+                    0,
+
+                'late_fine' =>
+                    round($lateFine, 2),
+
+                'course_penalty_fee' =>
+                    0,
+
+                'fine_type' =>
+                    'next_month_late_fee',
+
+                'fine_heading' =>
+                    'Next Month Late Fee',
+
+                'total_billing_amount' =>
+                    round($totalBillingAmount, 2),
+
+                'previous_paid_month' =>
+                    $previousPaidMonthName,
 
                 'previous_payment_date' =>
-                    $lastPaymentDate->format('Y-m-d'),
+                    $previousPaymentDate,
+
+                'current_billing_month' =>
+                    $currentBillingMonthName,
+
+                'month_difference' =>
+                    $monthDifference,
 
                 'attendance_month' =>
-                    $attendanceMonth,
+                    null,
 
                 'attendance_status' =>
-                    $attendanceStatus,
+                    'Payment gap greater than one month',
 
                 'attendance_count' =>
-                    $attendanceCount,
+                    0,
 
                 'present_count' =>
-                    $presentCount,
-
-                'month_difference' =>
-                    $monthDifference,
-
-                'debug' =>
-                    $debug,
+                    0,
 
                 'message' =>
-                    $attendanceCount === 0
-                        ? "No attendance record found in {$attendanceMonth}. Absent charge applied."
-                        : "No Present attendance found in {$attendanceMonth}. Absent charge applied.",
+                    "Previous paid month was {$previousPaidMonthName}. "
+                    . "Current billing month is {$currentBillingMonthName}. "
+                    . "There is a {$monthDifference}-month payment gap. "
+                    . "Next Month Late Fee of ₹{$lateFine} is applied. "
+                    . "Only the applicable late fee is added; billing months are charged separately.",
             ]);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | SAME MONTH
-        |--------------------------------------------------------------------------
-        */
-
-        if ($monthDifference === 0) {
-
-            $fine =
-                $sameMonthLateFee;
-
-            $debug['decision'] =
-                'SAME_MONTH_LATE_FEE';
-
-            $debug['reason'] =
-                'Previous successful payment and current payment are in the same month.';
-
-            return response()->json([
-
-                'status' => true,
-
-                'apply' =>
-                    $fine > 0,
-
-                'fine_type' =>
-                    'same_month_late_fee',
-
-                'late_fine' =>
-                    round($fine, 2),
-
-                'course_fee' =>
-                    (float) $studentCourse->course_fee,
-
-                'payment_date' =>
-                    $paymentDate->format('Y-m-d'),
-
-                'due_date' =>
-                    $dueDate->format('Y-m-d'),
-
-                'previous_payment_date' =>
-                    $lastPaymentDate->format('Y-m-d'),
-
-                'attendance_month' => null,
-
-                'attendance_status' => null,
-
-                'month_difference' =>
-                    $monthDifference,
-
-                'debug' =>
-                    $debug,
-
-                'message' =>
-                    'Same month late payment. Same month late fee applied.',
-            ]);
-        }
 
         /*
         |--------------------------------------------------------------------------
-        | UNEXPECTED / FALLBACK
+        | FALLBACK
         |--------------------------------------------------------------------------
         */
-
-        $debug['decision'] =
-            'UNEXPECTED_FALLBACK';
-
-        $debug['reason'] =
-            'Month difference did not match expected conditions.';
 
         return response()->json([
 
@@ -2032,34 +2598,64 @@ class BillingController extends Controller
 
             'apply' => false,
 
-            'fine_type' => null,
+            'is_first_payment' => false,
 
-            'late_fine' => 0,
+            'billing_from' =>
+                $billingFrom->format('Y-m-d'),
+
+            'billing_to' =>
+                $billingTo->format('Y-m-d'),
+
+            'billing_month_count' =>
+                count($selectedMonths),
+
+            'pending_month_count' =>
+                $pendingMonthCount,
+
+            'already_paid_month_count' =>
+                count($alreadyPaidMonths),
+
+            'billing_months' =>
+                collect($selectedMonths)
+                    ->pluck('name')
+                    ->values()
+                    ->all(),
+
+            'already_paid_months' =>
+                $alreadyPaidMonths,
+
+            'pending_months' =>
+                $pendingMonths,
 
             'course_fee' =>
-                (float) $studentCourse->course_fee,
+                $monthlyFee,
 
-            'payment_date' =>
-                $paymentDate->format('Y-m-d'),
+            'total_course_fee' =>
+                round($totalCourseFee, 2),
 
-            'due_date' =>
-                $dueDate->format('Y-m-d'),
+            'registration_fee' =>
+                0,
 
-            'previous_payment_date' =>
-                $lastPaymentDate->format('Y-m-d'),
+            'admission_fee' =>
+                0,
 
-            'attendance_month' => null,
+            'late_fine' =>
+                0,
 
-            'attendance_status' => null,
+            'course_penalty_fee' =>
+                0,
 
-            'month_difference' =>
-                $monthDifference,
+            'fine_type' =>
+                null,
 
-            'debug' =>
-                $debug,
+            'fine_heading' =>
+                'No Fine',
+
+            'total_billing_amount' =>
+                round($totalCourseFee, 2),
 
             'message' =>
-                'Unexpected late fine calculation condition.',
+                'No late fine or course penalty is applicable.',
         ]);
     }
 

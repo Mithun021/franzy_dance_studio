@@ -80,7 +80,7 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
 
     Route::get('/billing', [BillingController::class,'index'])->name('billing.index');
     Route::get('/billing/create', [BillingController::class,'create'])->name('billing.create');
-    Route::get( '/billing/late-fine', [BillingController::class, 'calculateLateFine'] )->name('billing.late-fine');
+    Route::get( '/billing/late-fine', [BillingController::class, 'calculateLateFine'] )->name('billing.calculate-late-fine');
     Route::post('/billing/store', [BillingController::class,'store'])->name('billing.store');
     Route::get('/billing/manage/{student_course}',[BillingController::class,'manage'])->name('billing.manage');
     Route::post('/billing/update/{student_course}',[BillingController::class,'update'])->name('billing.update');
