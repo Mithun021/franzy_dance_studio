@@ -16,6 +16,10 @@ class SalaryManagement extends Model
 
         'salary_month',
 
+        'assigned_student',
+        'payment_before_calculate',
+        'divided_percentage',
+
         'salary_amount',
 
         'paid_amount',
@@ -34,6 +38,12 @@ class SalaryManagement extends Model
 
         'salary_month'  => 'date',
 
+        'assigned_student' => 'integer',
+
+        'payment_before_calculate' => 'decimal:2',
+
+        'divided_percentage' => 'decimal:2',
+
         'salary_amount' => 'decimal:2',
 
         'paid_amount'   => 'decimal:2',
@@ -51,5 +61,5 @@ class SalaryManagement extends Model
     {
         return $this->belongsTo(User::class,'created_by');
     }
-    
+
 }

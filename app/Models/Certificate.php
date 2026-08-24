@@ -15,6 +15,8 @@ class Certificate extends Model
 
         'course_id',
 
+        'level_id',
+
         'certificate_file',
 
     ];
@@ -33,5 +35,10 @@ class Certificate extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class);
     }
 }

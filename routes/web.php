@@ -174,6 +174,7 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     });
 
     Route::resource('expense', ExpenseController::class);
+    Route::get( '/salary-management/fetch-details', [SalaryManagementController::class, 'fetchSalaryDetails'] )->name('salary-management.fetch-details');
     Route::resource('salary-management', SalaryManagementController::class);
 
     Route::prefix('studio-category')->name('studio-category.')->group(function () {

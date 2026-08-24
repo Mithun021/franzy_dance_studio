@@ -1,6 +1,6 @@
 @extends('backend.partial.master')
 
-@section('title', 'Edit Salary')
+@section('title','Edit Salary')
 
 @section('backend-content')
 
@@ -8,222 +8,625 @@
 
     <div class="col-lg-12">
 
-        <div class="card">
+        <div class="card shadow-sm">
+
+            {{-- =====================================================
+                HEADER
+            ====================================================== --}}
 
             <div class="card-header d-flex justify-content-between align-items-center">
 
-                <h4 class="mb-0">Edit Salary</h4>
+                <div>
 
-                <a href="{{ route('salary-management.index') }}" class="btn btn-secondary">
-                    <i class="fa fa-arrow-left"></i> Back
+                    <h4 class="mb-1">
+                        Edit Salary
+                    </h4>
+
+                    <small class="text-muted">
+                        Update salary payment details
+                    </small>
+
+                </div>
+
+                <a
+                    href="{{ route('salary-management.index') }}"
+                    class="btn btn-secondary">
+
+                    <i class="fa fa-arrow-left"></i>
+
+                    Back
+
                 </a>
 
             </div>
 
-            <form action="{{ route('salary-management.update',$salary->id) }}" method="POST">
+
+            {{-- =====================================================
+                FORM
+            ====================================================== --}}
+
+            <form
+                action="{{ route('salary-management.update', $salary->id) }}"
+                method="POST"
+                id="salaryForm">
 
                 @csrf
+
                 @method('PUT')
+
 
                 <div class="card-body">
 
-                    @if ($errors->any())
+
+                    {{-- =====================================================
+                        ALERTS
+                    ====================================================== --}}
+
+                    @if($errors->any())
+
                         <div class="alert alert-danger alert-dismissible fade show">
+
                             <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
+
+                                @foreach($errors->all() as $error)
+
+                                    <li>
+                                        {{ $error }}
+                                    </li>
+
                                 @endforeach
+
                             </ul>
 
-                            <button type="button"
-                                    class="btn-close"
-                                    data-bs-dismiss="alert"></button>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert">
+                            </button>
+
                         </div>
+
                     @endif
+
 
                     @if(session('error'))
+
                         <div class="alert alert-danger alert-dismissible fade show">
+
                             {{ session('error') }}
 
-                            <button type="button"
-                                    class="btn-close"
-                                    data-bs-dismiss="alert"></button>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert">
+                            </button>
+
                         </div>
+
                     @endif
+
+
+                    {{-- =====================================================
+                        SALARY INFORMATION
+                    ====================================================== --}}
 
                     <div class="row">
 
-                        {{-- Employee --}}
 
-                        <div class="col-md-6 mb-3">
-
-                            <label class="form-label">
-                                Employee / Staff
-                                <span class="text-danger">*</span>
-                            </label>
-
-                            <select name="user_id"
-                                    id="user_id"
-                                    class="form-control">
-
-                                <option value="">Select Employee</option>
-
-                                @foreach($employees as $employee)
-
-                                    <option
-                                        value="{{ $employee->id }}"
-                                        data-monthly-salary="{{ $employee->monthly_salary }}"
-                                        {{ old('user_id',$salary->user_id)==$employee->id ? 'selected' : '' }}>
-
-                                        {{ $employee->user_id }}
-                                        -
-                                        {{ $employee->name }}
-
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
-                        </div>
-
-                        {{-- Salary Month --}}
-
-                        <div class="col-md-6 mb-3">
-
-                            <label class="form-label">
-                                Salary Month
-                                <span class="text-danger">*</span>
-                            </label>
-
-                            <input
-                                type="month"
-                                name="salary_month"
-                                class="form-control"
-                                value="{{ old('salary_month', \Carbon\Carbon::parse($salary->salary_month)->format('Y-m')) }}">
-
-                        </div>
-
-                        {{-- Salary Amount --}}
+                        {{-- Salary ID --}}
 
                         <div class="col-md-4 mb-3">
 
-                            <label class="form-label">
-                                Salary Amount
+                            <label class="form-label fw-semibold">
+                                Salary ID
                             </label>
 
                             <input
-                                type="number"
-                                step="0.01"
-                                id="salary_amount"
-                                name="salary_amount"
-                                class="form-control"
-                                value="{{ old('salary_amount',$salary->salary_amount) }}">
-
-                        </div>
-
-                        {{-- Paid Amount --}}
-
-                        <div class="col-md-4 mb-3">
-
-                            <label class="form-label">
-                                Paid Amount
-                            </label>
-
-                            <input
-                                type="number"
-                                step="0.01"
-                                id="paid_amount"
-                                name="paid_amount"
-                                class="form-control"
-                                value="{{ old('paid_amount',$salary->paid_amount) }}">
-
-                        </div>
-
-                        {{-- Due Amount --}}
-
-                        <div class="col-md-4 mb-3">
-
-                            <label class="form-label">
-                                Due Amount
-                            </label>
-
-                            <input
-                                type="number"
-                                step="0.01"
-                                id="due_amount"
-                                class="form-control bg-light"
-                                value="{{ old('due_amount',$salary->due_amount) }}"
+                                type="text"
+                                class="form-control fw-bold"
+                                value="{{ $salary->salary_id }}"
                                 readonly>
 
                         </div>
 
-                        {{-- Payment Method --}}
 
-                        <div class="col-md-6 mb-3">
+                        {{-- Employee --}}
 
-                            <label class="form-label">
-                                Payment Method
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Employee / Staff
                             </label>
 
-                            <select name="payment_method"
-                                    class="form-control">
-
-                                <option value="">Select</option>
-
-                                <option value="Cash"
-                                    {{ old('payment_method',$salary->payment_method)=='Cash'?'selected':'' }}>
-                                    Cash
-                                </option>
-
-                                <option value="UPI"
-                                    {{ old('payment_method',$salary->payment_method)=='UPI'?'selected':'' }}>
-                                    UPI
-                                </option>
-
-                                <option value="Bank Transfer"
-                                    {{ old('payment_method',$salary->payment_method)=='Bank Transfer'?'selected':'' }}>
-                                    Bank Transfer
-                                </option>
-
-                                <option value="Cheque"
-                                    {{ old('payment_method',$salary->payment_method)=='Cheque'?'selected':'' }}>
-                                    Cheque
-                                </option>
-
-                            </select>
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="{{ optional($salary->user)->user_id }} - {{ optional($salary->user)->name }}"
+                                readonly>
 
                         </div>
 
-                        {{-- Description --}}
 
-                        <div class="col-md-12 mb-3">
+                        {{-- Salary Month --}}
 
-                            <label class="form-label">
-                                Description
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Salary Month
                             </label>
 
-                            <textarea
-                                rows="4"
-                                name="description"
-                                class="form-control">{{ old('description',$salary->description) }}</textarea>
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="{{ $salary->salary_month ? \Carbon\Carbon::parse($salary->salary_month)->format('F Y') : '-' }}"
+                                readonly>
 
                         </div>
 
                     </div>
 
+
+                    {{-- =====================================================
+                        SALARY SUMMARY
+                    ====================================================== --}}
+
+                    <div class="row">
+
+
+                        {{-- Assigned Students --}}
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+
+                            <div class="card border-0 bg-primary text-white shadow-sm">
+
+                                <div class="card-body">
+
+                                    <div class="d-flex justify-content-between">
+
+                                        <div>
+
+                                            <small>
+                                                Assigned Students
+                                            </small>
+
+                                            <h3 class="mb-0 mt-2">
+
+                                                {{ number_format((int) $salary->assigned_student) }}
+
+                                            </h3>
+
+                                        </div>
+
+                                        <i class="fa fa-users fa-2x opacity-50"></i>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        {{-- Payment Before Calculation --}}
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+
+                            <div class="card border-0 bg-info text-white shadow-sm">
+
+                                <div class="card-body">
+
+                                    <div class="d-flex justify-content-between">
+
+                                        <div>
+
+                                            <small>
+                                                Payment Before Calculation
+                                            </small>
+
+                                            <h3 class="mb-0 mt-2">
+
+                                                ₹
+                                                {{ number_format((float) $salary->payment_before_calculate, 2) }}
+
+                                            </h3>
+
+                                        </div>
+
+                                        <i class="fa fa-money fa-2x opacity-50"></i>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        {{-- Total Earning --}}
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+
+                            <div class="card border-0 bg-success text-white shadow-sm">
+
+                                <div class="card-body">
+
+                                    <div class="d-flex justify-content-between">
+
+                                        <div>
+
+                                            <small>
+                                                Total Earning Amount
+                                            </small>
+
+                                            <h3 class="mb-0 mt-2">
+
+                                                ₹
+                                                {{ number_format((float) $salary->salary_amount, 2) }}
+
+                                            </h3>
+
+                                        </div>
+
+                                        <i class="fa fa-line-chart fa-2x opacity-50"></i>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        {{-- Divided Percentage --}}
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+
+                            <div class="card border-0 bg-warning text-dark shadow-sm">
+
+                                <div class="card-body">
+
+                                    <div class="d-flex justify-content-between">
+
+                                        <div>
+
+                                            <small>
+                                                Divided Percentage
+                                            </small>
+
+                                            <h3 class="mb-0 mt-2">
+
+                                                {{ number_format((float) $salary->divided_percentage, 2) }}%
+
+                                            </h3>
+
+                                        </div>
+
+                                        <i class="fa fa-percent fa-2x opacity-50"></i>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- =====================================================
+                        SALARY CALCULATION SNAPSHOT
+                    ====================================================== --}}
+
+                    <div class="card border-primary mb-4">
+
+                        <div class="card-header bg-light">
+
+                            <h5 class="mb-0">
+
+                                <i class="fa fa-database text-primary"></i>
+
+                                Salary Calculation Snapshot
+
+                            </h5>
+
+                            <small class="text-muted">
+
+                                These values were captured when this salary
+                                was originally calculated.
+
+                            </small>
+
+                        </div>
+
+
+                        <div class="card-body">
+
+                            <div class="row">
+
+
+                                {{-- Assigned Students --}}
+
+                                <div class="col-md-4">
+
+                                    <div class="border rounded p-3">
+
+                                        <small class="text-muted">
+                                            Assigned Students
+                                        </small>
+
+                                        <h4 class="mb-0">
+
+                                            {{ number_format((int) $salary->assigned_student) }}
+
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
+
+                                {{-- Payment Before Calculation --}}
+
+                                <div class="col-md-4">
+
+                                    <div class="border rounded p-3">
+
+                                        <small class="text-muted">
+                                            Payment Before Calculation
+                                        </small>
+
+                                        <h4 class="mb-0">
+
+                                            ₹
+                                            {{ number_format((float) $salary->payment_before_calculate, 2) }}
+
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
+
+                                {{-- Divided Percentage --}}
+
+                                <div class="col-md-4">
+
+                                    <div class="border rounded p-3">
+
+                                        <small class="text-muted">
+                                            Divided Percentage
+                                        </small>
+
+                                        <h4 class="mb-0">
+
+                                            {{ number_format((float) $salary->divided_percentage, 2) }}%
+
+                                        </h4>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- =====================================================
+                        SALARY PAYMENT
+                    ====================================================== --}}
+
+                    <div class="card mt-4">
+
+                        <div class="card-header">
+
+                            <h5 class="mb-0">
+
+                                <i class="fa fa-credit-card"></i>
+
+                                Salary Payment
+
+                            </h5>
+
+                        </div>
+
+
+                        <div class="card-body">
+
+                            <div class="row">
+
+
+                                {{-- Total Earning --}}
+
+                                <div class="col-md-4 mb-3">
+
+                                    <label class="form-label fw-semibold">
+
+                                        Total Earning
+
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="display_salary_amount"
+                                        class="form-control fw-bold"
+                                        value="₹ {{ number_format((float) $salary->salary_amount, 2) }}"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Paid Amount --}}
+
+                                <div class="col-md-4 mb-3">
+
+                                    <label class="form-label fw-semibold">
+
+                                        Paid Amount
+
+                                        <span class="text-danger">*</span>
+
+                                    </label>
+
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="{{ number_format((float) $salary->salary_amount, 2, '.', '') }}"
+                                        name="paid_amount"
+                                        id="paid_amount"
+                                        class="form-control"
+                                        value="{{ old('paid_amount', $salary->paid_amount ?? 0) }}"
+                                        required>
+
+                                </div>
+
+
+                                {{-- Due Amount --}}
+
+                                <div class="col-md-4 mb-3">
+
+                                    <label class="form-label fw-semibold">
+
+                                        Due Amount
+
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        id="due_amount"
+                                        class="form-control fw-bold text-danger"
+                                        value="₹ {{ number_format((float) $salary->due_amount, 2) }}"
+                                        readonly>
+
+                                </div>
+
+
+                                {{-- Payment Method --}}
+
+                                <div class="col-md-6 mb-3">
+
+                                    <label class="form-label fw-semibold">
+
+                                        Payment Method
+
+                                    </label>
+
+                                    <select
+                                        name="payment_method"
+                                        class="form-control">
+
+                                        <option value="">
+                                            Select Payment Method
+                                        </option>
+
+                                        <option
+                                            value="Cash"
+                                            {{ old('payment_method', $salary->payment_method) == 'Cash' ? 'selected' : '' }}>
+
+                                            Cash
+
+                                        </option>
+
+                                        <option
+                                            value="UPI"
+                                            {{ old('payment_method', $salary->payment_method) == 'UPI' ? 'selected' : '' }}>
+
+                                            UPI
+
+                                        </option>
+
+                                        <option
+                                            value="Bank Transfer"
+                                            {{ old('payment_method', $salary->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>
+
+                                            Bank Transfer
+
+                                        </option>
+
+                                        <option
+                                            value="Cheque"
+                                            {{ old('payment_method', $salary->payment_method) == 'Cheque' ? 'selected' : '' }}>
+
+                                            Cheque
+
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+
+                                {{-- Description --}}
+
+                                <div class="col-md-6 mb-3">
+
+                                    <label class="form-label fw-semibold">
+
+                                        Description
+
+                                    </label>
+
+                                    <textarea
+                                        name="description"
+                                        rows="2"
+                                        class="form-control"
+                                        placeholder="Optional remarks...">{{ old('description', $salary->description) }}</textarea>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- =====================================================
+                        IMPORTANT INFORMATION
+                    ====================================================== --}}
+
+                    <div class="alert alert-info mt-4 mb-0">
+
+                        <i class="fa fa-info-circle"></i>
+
+                        <strong>Salary Ledger Protection:</strong>
+
+                        Assigned students, payment before calculation,
+                        divided percentage and total earning are historical
+                        snapshot values. Editing this salary only changes
+                        the payment details.
+
+                    </div>
+
                 </div>
 
-                <div class="card-footer text-end">
 
-                    <a href="{{ route('salary-management.index') }}"
-                       class="btn btn-secondary">
+                {{-- =====================================================
+                    FOOTER
+                ====================================================== --}}
+
+                <div class="card-footer d-flex justify-content-end gap-2">
+
+                    <a
+                        href="{{ route('salary-management.index') }}"
+                        class="btn btn-secondary">
+
+                        <i class="fa fa-times"></i>
 
                         Cancel
 
                     </a>
 
-                    <button class="btn btn-primary">
+                    <button
+                        type="submit"
+                        class="btn btn-primary">
 
                         <i class="fa fa-save"></i>
 
@@ -243,63 +646,147 @@
 
 @endsection
 
+
 @push('scripts')
 
 <script>
 
 $(document).ready(function () {
 
-    function calculateDue() {
+    /*
+    |--------------------------------------------------------------------------
+    | Number Helper
+    |--------------------------------------------------------------------------
+    */
 
-        let salary = parseFloat($("#salary_amount").val()) || 0;
+    function number(value)
+    {
+        let result = parseFloat(value);
 
-        let paid = parseFloat($("#paid_amount").val()) || 0;
+        return isNaN(result) ? 0 : result;
+    }
 
-        if (paid > salary) {
 
-            paid = salary;
+    /*
+    |--------------------------------------------------------------------------
+    | Money Helper
+    |--------------------------------------------------------------------------
+    */
 
-            $("#paid_amount").val(salary.toFixed(2));
+    function money(value)
+    {
+        return number(value).toLocaleString(
+            'en-IN',
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Salary Amount
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | Salary amount comes from database snapshot.
+    |
+    */
+
+    const salaryAmount =
+        number(
+            "{{ (float) $salary->salary_amount }}"
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate Due
+    |--------------------------------------------------------------------------
+    */
+
+    function calculateDue()
+    {
+
+        let paid =
+            number(
+                $('#paid_amount').val()
+            );
+
+
+        /*
+        |----------------------------------------------------------------------
+        | Negative Protection
+        |----------------------------------------------------------------------
+        */
+
+        if (paid < 0) {
+
+            paid = 0;
+
+            $('#paid_amount').val('0');
 
         }
 
-        let due = salary - paid;
 
-        $("#due_amount").val(due.toFixed(2));
+        /*
+        |----------------------------------------------------------------------
+        | Over Payment Protection
+        |----------------------------------------------------------------------
+        */
+
+        if (paid > salaryAmount) {
+
+            paid = salaryAmount;
+
+            $('#paid_amount').val(
+                salaryAmount.toFixed(2)
+            );
+
+        }
+
+
+        /*
+        |----------------------------------------------------------------------
+        | Due
+        |----------------------------------------------------------------------
+        */
+
+        let due =
+            salaryAmount - paid;
+
+
+        if (due < 0) {
+
+            due = 0;
+
+        }
+
+
+        $('#due_amount').val(
+            '₹ ' + money(due)
+        );
 
     }
 
+
     /*
     |--------------------------------------------------------------------------
-    | Employee Changed
+    | Paid Amount Change
     |--------------------------------------------------------------------------
     */
 
-    $("#user_id").on("change", function () {
+    $('#paid_amount').on(
+        'input change keyup',
+        function () {
 
-        let monthlySalary = $(this).find(":selected").data("monthly-salary");
-
-        if(monthlySalary){
-
-            $("#salary_amount").val(monthlySalary);
+            calculateDue();
 
         }
+    );
 
-        calculateDue();
-
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Recalculate
-    |--------------------------------------------------------------------------
-    */
-
-    $("#salary_amount,#paid_amount").on("keyup change", function(){
-
-        calculateDue();
-
-    });
 
     /*
     |--------------------------------------------------------------------------
@@ -308,6 +795,51 @@ $(document).ready(function () {
     */
 
     calculateDue();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form Submit Protection
+    |--------------------------------------------------------------------------
+    */
+
+    $('#salaryForm').on(
+        'submit',
+        function (e) {
+
+            let paid =
+                number(
+                    $('#paid_amount').val()
+                );
+
+
+            if (paid < 0) {
+
+                e.preventDefault();
+
+                alert(
+                    'Paid amount cannot be negative.'
+                );
+
+                return false;
+
+            }
+
+
+            if (paid > salaryAmount) {
+
+                e.preventDefault();
+
+                alert(
+                    'Paid amount cannot be greater than total earning amount.'
+                );
+
+                return false;
+
+            }
+
+        }
+    );
 
 });
 

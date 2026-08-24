@@ -54,6 +54,10 @@
                                 </th>
 
                                 <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-300">
+                                    Level
+                                </th>
+
+                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-300">
                                     Uploaded On
                                 </th>
 
@@ -86,6 +90,16 @@
                                         <span class="font-semibold text-white">
 
                                             {{ $certificate->course->course_name ?? '-' }}
+
+                                        </span>
+
+                                    </td>
+
+                                    <td class="px-6 py-4">
+
+                                        <span class="font-semibold text-white">
+
+                                            {{ $certificate->level->name ?? '-' }}
 
                                         </span>
 

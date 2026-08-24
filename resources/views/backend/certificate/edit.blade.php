@@ -6,7 +6,10 @@
 
 <div class="container-fluid">
 
-    {{-- Heading --}}
+    {{-- =====================================================
+        PAGE HEADER
+    ====================================================== --}}
+
     <div class="row mb-3">
 
         <div class="col-md-12">
@@ -15,13 +18,38 @@
 
                 <div class="card-body">
 
-                    <h4 class="mb-0">
+                    <div class="d-flex justify-content-between align-items-center">
 
-                        <i data-feather="edit"></i>
+                        <div>
 
-                        Edit Certificate
+                            <h4 class="mb-1">
 
-                    </h4>
+                                <i data-feather="award"></i>
+
+                                Edit Certificate
+
+                            </h4>
+
+                            <small class="text-muted">
+
+                                Update student certificate details
+
+                            </small>
+
+                        </div>
+
+
+                        <a
+                            href="{{ route('certificate.index') }}"
+                            class="btn btn-secondary">
+
+                            <i class="fa fa-arrow-left"></i>
+
+                            Back
+
+                        </a>
+
+                    </div>
 
                 </div>
 
@@ -31,161 +59,520 @@
 
     </div>
 
-    {{-- Form --}}
-    <div class="card shadow-sm">
 
-        <div class="card-header bg-primary text-white">
+    {{-- =====================================================
+        ALERTS
+    ====================================================== --}}
 
-            Update Certificate
+    @if($errors->any())
+
+        <div class="alert alert-danger alert-dismissible fade show">
+
+            <strong>
+                Please fix the following errors:
+            </strong>
+
+            <ul class="mb-0 mt-2">
+
+                @foreach($errors->all() as $error)
+
+                    <li>
+                        {{ $error }}
+                    </li>
+
+                @endforeach
+
+            </ul>
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
 
         </div>
 
-        <div class="card-body">
+    @endif
 
-            <form
-                action="{{ route('certificate.update',$certificate->id) }}"
-                method="POST"
-                enctype="multipart/form-data">
 
-                @csrf
-                @method('PUT')
+    @if(session('error'))
 
-                <div class="row">
+        <div class="alert alert-danger alert-dismissible fade show">
 
-                    {{-- Student --}}
-                    <div class="col-md-6 mb-3">
+            {{ session('error') }}
 
-                        <label class="form-label">
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
 
-                            Student Name
+        </div>
 
-                        </label>
+    @endif
 
-                        <input
-                            type="text"
-                            class="form-control"
-                            value="{{ $certificate->student->name }}"
-                            readonly>
 
-                    </div>
+    @if(session('success'))
 
-                    {{-- Course --}}
-                    <div class="col-md-6 mb-3">
+        <div class="alert alert-success alert-dismissible fade show">
 
-                        <label class="form-label">
+            {{ session('success') }}
 
-                            Course
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
 
-                        </label>
+        </div>
 
-                        <input
-                            type="text"
-                            class="form-control"
-                            value="{{ $certificate->course->course_name }}"
-                            readonly>
+    @endif
 
-                    </div>
+
+    {{-- =====================================================
+        FORM
+    ====================================================== --}}
+
+    <div class="row">
+
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    <h5 class="mb-0">
+
+                        <i data-feather="edit"></i>
+
+                        Certificate Information
+
+                    </h5>
 
                 </div>
 
-                <div class="row">
 
-                    {{-- Existing Certificate --}}
-                    <div class="col-md-6 mb-3">
+                <form
+                    action="{{ route('certificate.update', $certificate->id) }}"
+                    method="POST"
+                    enctype="multipart/form-data">
 
-                        <label class="form-label">
+                    @csrf
 
-                            Existing Certificate
+                    @method('PUT')
 
-                        </label>
 
-                        <br>
+                    <div class="card-body">
+
+
+                        {{-- =================================================
+                            STUDENT
+                        ================================================== --}}
+
+                        <div class="mb-4">
+
+                            <label
+                                for="user_id"
+                                class="form-label fw-semibold">
+
+                                Student
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <select
+                                name="user_id"
+                                id="user_id"
+                                class="form-control @error('user_id') is-invalid @enderror"
+                                required>
+
+                                <option value="">
+
+                                    Select Student
+
+                                </option>
+
+
+                                @foreach($students as $student)
+
+                                    <option
+                                        value="{{ $student->id }}"
+                                        {{ old('user_id', $certificate->user_id) == $student->id ? 'selected' : '' }}>
+
+                                        {{ $student->user_id }}
+                                        -
+                                        {{ $student->name }}
+
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+
+                            @error('user_id')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
+                            COURSE
+                        ================================================== --}}
+
+                        <div class="mb-4">
+
+                            <label
+                                for="course_id"
+                                class="form-label fw-semibold">
+
+                                Course
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <select
+                                name="course_id"
+                                id="course_id"
+                                class="form-control @error('course_id') is-invalid @enderror"
+                                required>
+
+                                <option value="">
+
+                                    Select Course
+
+                                </option>
+
+
+                                @foreach($courses as $course)
+
+                                    <option
+                                        value="{{ $course->id }}"
+                                        {{ old('course_id', $certificate->course_id) == $course->id ? 'selected' : '' }}>
+
+                                        {{ $course->course_name }}
+
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+
+                            @error('course_id')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
+                            LEVEL
+                        ================================================== --}}
+
+                        <div class="mb-4">
+
+                            <label
+                                for="level_id"
+                                class="form-label fw-semibold">
+
+                                Level
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <select
+                                name="level_id"
+                                id="level_id"
+                                class="form-control @error('level_id') is-invalid @enderror"
+                                required>
+
+                                <option value="">
+
+                                    Select Level
+
+                                </option>
+
+
+                                @foreach($levels as $level)
+
+                                    <option
+                                        value="{{ $level->id }}"
+                                        {{ old('level_id', $certificate->level_id) == $level->id ? 'selected' : '' }}>
+
+                                        {{ $level->name }}
+
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+
+                            @error('level_id')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
+                            CURRENT CERTIFICATE
+                        ================================================== --}}
 
                         @if($certificate->certificate_file)
 
-                            <a
-                                href="{{ asset('uploads/certificates/'.$certificate->certificate_file) }}"
-                                target="_blank"
-                                class="btn btn-success">
+                            <div class="mb-4">
 
-                                <i data-feather="eye"></i>
+                                <label class="form-label fw-semibold">
 
-                                View Certificate
+                                    Current Certificate
 
-                            </a>
+                                </label>
 
-                        @else
 
-                            <span class="badge bg-danger">
+                                <div class="border rounded p-3 bg-light">
 
-                                No Certificate Uploaded
+                                    <div class="d-flex justify-content-between align-items-center">
 
-                            </span>
+                                        <div>
 
-                        @endif
+                                            <i
+                                                data-feather="file"
+                                                class="text-primary">
+                                            </i>
 
-                    </div>
+                                            <span class="ms-2">
 
-                    {{-- Upload --}}
-                    <div class="col-md-6 mb-3">
+                                                {{ $certificate->certificate_file }}
 
-                        <label class="form-label">
+                                            </span>
 
-                            Upload New Certificate
+                                        </div>
 
-                        </label>
 
-                        <input
-                            type="file"
-                            name="certificate_file"
-                            class="form-control @error('certificate_file') is-invalid @enderror"
-                            accept=".pdf,.jpg,.jpeg,.png">
+                                        <a
+                                            href="{{ asset('uploads/certificates/' . $certificate->certificate_file) }}"
+                                            target="_blank"
+                                            class="btn btn-sm btn-outline-primary">
 
-                        @error('certificate_file')
+                                            <i class="fa fa-eye"></i>
 
-                            <div class="invalid-feedback">
+                                            View
 
-                                {{ $message }}
+                                        </a>
+
+                                    </div>
+
+                                </div>
 
                             </div>
 
-                        @enderror
+                        @endif
+
+
+                        {{-- =================================================
+                            NEW CERTIFICATE FILE
+                        ================================================== --}}
+
+                        <div class="mb-3">
+
+                            <label
+                                for="certificate_file"
+                                class="form-label fw-semibold">
+
+                                Replace Certificate File
+
+                            </label>
+
+
+                            <input
+                                type="file"
+                                name="certificate_file"
+                                id="certificate_file"
+                                class="form-control @error('certificate_file') is-invalid @enderror"
+                                accept=".pdf,.jpg,.jpeg,.png">
+
+
+                            @error('certificate_file')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+
+                            <small class="text-muted">
+
+                                Leave this empty if you do not want to
+                                replace the current certificate.
+
+                                Accepted formats:
+                                PDF, JPG, JPEG, PNG.
+                                Maximum size: 5 MB.
+
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- =====================================================
+                        FOOTER
+                    ====================================================== --}}
+
+                    <div class="card-footer d-flex justify-content-end gap-2">
+
+                        <a
+                            href="{{ route('certificate.index') }}"
+                            class="btn btn-secondary">
+
+                            <i class="fa fa-times"></i>
+
+                            Cancel
+
+                        </a>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary">
+
+                            <i class="fa fa-save"></i>
+
+                            Update Certificate
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+
+        {{-- =====================================================
+            INFORMATION
+        ====================================================== --}}
+
+        <div class="col-lg-4 col-xl-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    <h5 class="mb-0">
+
+                        <i data-feather="info"></i>
+
+                        Certificate Information
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="mb-4">
 
                         <small class="text-muted">
-
-                            Allowed: PDF, JPG, JPEG, PNG (Max: 5 MB)
-
+                            Student
                         </small>
+
+                        <h6 class="mb-0">
+
+                            {{ $certificate->student->name ?? '-' }}
+
+                        </h6>
+
+                    </div>
+
+
+                    <div class="mb-4">
+
+                        <small class="text-muted">
+                            Course
+                        </small>
+
+                        <h6 class="mb-0">
+
+                            {{ $certificate->course->course_name ?? '-' }}
+
+                        </h6>
+
+                    </div>
+
+
+                    <div class="mb-4">
+
+                        <small class="text-muted">
+                            Level
+                        </small>
+
+                        <h6 class="mb-0">
+
+                            {{ $certificate->level->name ?? '-' }}
+
+                        </h6>
+
+                    </div>
+
+
+                    <div>
+
+                        <small class="text-muted">
+                            Certificate
+                        </small>
+
+                        <h6 class="mb-0">
+
+                            {{ $certificate->certificate_file ?? '-' }}
+
+                        </h6>
 
                     </div>
 
                 </div>
 
-                <div class="text-end">
-
-                    <a
-                        href="{{ route('certificate.index') }}"
-                        class="btn btn-secondary">
-
-                        <i data-feather="arrow-left"></i>
-
-                        Back
-
-                    </a>
-
-                    <button
-                        type="submit"
-                        class="btn btn-primary">
-
-                        <i data-feather="save"></i>
-
-                        Update Certificate
-
-                    </button>
-
-                </div>
-
-            </form>
+            </div>
 
         </div>
 
@@ -195,10 +582,21 @@
 
 @endsection
 
+
 @push('scripts')
 
 <script>
-    feather.replace();
+
+$(document).ready(function () {
+
+    if (typeof feather !== 'undefined') {
+
+        feather.replace();
+
+    }
+
+});
+
 </script>
 
 @endpush

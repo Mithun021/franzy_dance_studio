@@ -21,9 +21,13 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            $table->foreignId('level_id')
+                ->constrained('levels')
+                ->cascadeOnDelete();
+
             $table->string('certificate_file')->nullable();
             $table->timestamps();
-            $table->unique(['user_id','course_id']);
+            $table->unique(['user_id','course_id','level_id']);
         });
     }
 

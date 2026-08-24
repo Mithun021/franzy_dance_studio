@@ -6,7 +6,10 @@
 
 <div class="container-fluid">
 
-    {{-- Page Heading --}}
+    {{-- =====================================================
+        PAGE HEADER
+    ====================================================== --}}
+
     <div class="row mb-3">
 
         <div class="col-md-12">
@@ -15,99 +18,38 @@
 
                 <div class="card-body">
 
-                    <h4 class="mb-0">
+                    <div class="d-flex justify-content-between align-items-center">
 
-                        <i data-feather="award"></i>
+                        <div>
 
-                        Student Certificate Upload
+                            <h4 class="mb-1">
 
-                    </h4>
+                                <i data-feather="award"></i>
 
-                </div>
+                                Upload Certificate
 
-            </div>
+                            </h4>
 
-        </div>
+                            <small class="text-muted">
 
-    </div>
+                                Upload certificate for a student
 
-    {{-- Search Card --}}
-    <div class="card shadow-sm">
+                            </small>
 
-        <div class="card-header bg-primary text-white">
+                        </div>
 
-            Select Course
 
-        </div>
+                        <a
+                            href="{{ route('certificate.index') }}"
+                            class="btn btn-secondary">
 
-        <div class="card-body">
+                            <i class="fa fa-arrow-left"></i>
 
-            <div class="row">
+                            Back
 
-                <div class="col-md-6">
+                        </a>
 
-                    <label class="form-label">
-
-                        Course <span class="text-danger">*</span>
-
-                    </label>
-
-                    <select
-                        id="course_id"
-                        class="form-control">
-
-                        <option value="">
-
-                            Select Course
-
-                        </option>
-
-                        @foreach($courses as $course)
-
-                            <option value="{{ $course->id }}">
-
-                                {{ $course->course_name }}
-
-                            </option>
-
-                        @endforeach
-
-                    </select>
-
-                </div>
-
-                {{-- <div class="col-md-4">
-                    <label for="">Level <span class="text-danger">*</span></label>
-                    <select name="level_id" class="form-select" required>
-
-                        <option value="">Select Level</option>
-
-                        @foreach($levels as $level)
-
-                            <option value="{{ $level->id }}"
-                                {{ old('level_id') == $level->id ? 'selected' : '' }}>
-
-                                {{ $level->name }}
-
-                            </option>
-
-                        @endforeach
-
-                    </select>
-                </div> --}}
-
-                <div class="col-md-2 d-flex align-items-end">
-
-                    <button
-                        type="button"
-                        id="searchStudent"
-                        class="btn btn-primary w-100">
-
-                        <i data-feather="search"></i>
-
-                        Search
-
-                    </button>
+                    </div>
 
                 </div>
 
@@ -117,10 +59,509 @@
 
     </div>
 
-    {{-- Student List --}}
-    <div
-        id="studentList"
-        class="mt-4">
+
+    {{-- =====================================================
+        ALERTS
+    ====================================================== --}}
+
+    @if($errors->any())
+
+        <div class="alert alert-danger alert-dismissible fade show">
+
+            <strong>
+                Please fix the following errors:
+            </strong>
+
+            <ul class="mb-0 mt-2">
+
+                @foreach($errors->all() as $error)
+
+                    <li>
+                        {{ $error }}
+                    </li>
+
+                @endforeach
+
+            </ul>
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+    @endif
+
+
+    @if(session('success'))
+
+        <div class="alert alert-success alert-dismissible fade show">
+
+            {{ session('success') }}
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+    @endif
+
+
+    @if(session('error'))
+
+        <div class="alert alert-danger alert-dismissible fade show">
+
+            {{ session('error') }}
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
+
+        </div>
+
+    @endif
+
+
+    {{-- =====================================================
+        CERTIFICATE FORM
+    ====================================================== --}}
+
+    <div class="row">
+
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    <h5 class="mb-0">
+
+                        <i data-feather="upload"></i>
+
+                        Certificate Information
+
+                    </h5>
+
+                </div>
+
+
+                <form
+                    action="{{ route('certificate.store') }}"
+                    method="POST"
+                    enctype="multipart/form-data">
+
+                    @csrf
+
+
+                    <div class="card-body">
+
+                        {{-- =================================================
+                            STUDENT
+                        ================================================== --}}
+
+                        <div class="mb-4">
+
+                            <label
+                                for="user_id"
+                                class="form-label fw-semibold">
+
+                                Student
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <select
+                                name="user_id"
+                                id="user_id"
+                                class="form-control @error('user_id') is-invalid @enderror"
+                                required>
+
+                                <option value="">
+
+                                    Select Student
+
+                                </option>
+
+
+                                @foreach($students as $student)
+
+                                    <option
+                                        value="{{ $student->id }}"
+                                        {{ old('user_id') == $student->id ? 'selected' : '' }}>
+
+                                        {{ $student->user_id }}
+                                        -
+                                        {{ $student->name }}
+
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+
+                            @error('user_id')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
+                            COURSE
+                        ================================================== --}}
+
+                        <div class="mb-4">
+
+                            <label
+                                for="course_id"
+                                class="form-label fw-semibold">
+
+                                Course
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <select
+                                name="course_id"
+                                id="course_id"
+                                class="form-control @error('course_id') is-invalid @enderror"
+                                required>
+
+                                <option value="">
+
+                                    Select Course
+
+                                </option>
+
+
+                                @foreach($courses as $course)
+
+                                    <option
+                                        value="{{ $course->id }}"
+                                        {{ old('course_id') == $course->id ? 'selected' : '' }}>
+
+                                        {{ $course->course_name }}
+
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+
+                            @error('course_id')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
+                            LEVEL
+                        ================================================== --}}
+
+                        <div class="mb-4">
+
+                            <label
+                                for="level_id"
+                                class="form-label fw-semibold">
+
+                                Level
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <select
+                                name="level_id"
+                                id="level_id"
+                                class="form-control @error('level_id') is-invalid @enderror"
+                                required>
+
+                                <option value="">
+
+                                    Select Level
+
+                                </option>
+
+
+                                @foreach($levels as $level)
+
+                                    <option
+                                        value="{{ $level->id }}"
+                                        {{ old('level_id') == $level->id ? 'selected' : '' }}>
+
+                                        {{ $level->name }}
+
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+
+                            @error('level_id')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+
+                        {{-- =================================================
+                            CERTIFICATE FILE
+                        ================================================== --}}
+
+                        <div class="mb-3">
+
+                            <label
+                                for="certificate_file"
+                                class="form-label fw-semibold">
+
+                                Certificate File
+
+                                <span class="text-danger">
+                                    *
+                                </span>
+
+                            </label>
+
+
+                            <input
+                                type="file"
+                                name="certificate_file"
+                                id="certificate_file"
+                                class="form-control @error('certificate_file') is-invalid @enderror"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                required>
+
+
+                            @error('certificate_file')
+
+                                <div class="invalid-feedback">
+
+                                    {{ $message }}
+
+                                </div>
+
+                            @enderror
+
+
+                            <small class="text-muted">
+
+                                Accepted formats:
+                                PDF, JPG, JPEG, PNG
+
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- =====================================================
+                        FOOTER
+                    ====================================================== --}}
+
+                    <div class="card-footer d-flex justify-content-end gap-2">
+
+                        <a
+                            href="{{ route('certificate.index') }}"
+                            class="btn btn-secondary">
+
+                            <i class="fa fa-times"></i>
+
+                            Cancel
+
+                        </a>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary">
+
+                            <i class="fa fa-upload"></i>
+
+                            Upload Certificate
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+
+        {{-- =====================================================
+            INFORMATION CARD
+        ====================================================== --}}
+
+        <div class="col-lg-4 col-xl-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header">
+
+                    <h5 class="mb-0">
+
+                        <i data-feather="info"></i>
+
+                        Certificate Details
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="d-flex mb-3">
+
+                        <div class="me-3 text-primary">
+
+                            <i data-feather="user"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Student
+                            </strong>
+
+                            <div class="text-muted small">
+
+                                Select the student for whom
+                                the certificate is being uploaded.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex mb-3">
+
+                        <div class="me-3 text-primary">
+
+                            <i data-feather="book-open"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Course
+                            </strong>
+
+                            <div class="text-muted small">
+
+                                Select the course associated
+                                with the certificate.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex mb-3">
+
+                        <div class="me-3 text-primary">
+
+                            <i data-feather="layers"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Level
+                            </strong>
+
+                            <div class="text-muted small">
+
+                                Select the completed level
+                                of the course.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex">
+
+                        <div class="me-3 text-primary">
+
+                            <i data-feather="file"></i>
+
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                Certificate File
+                            </strong>
+
+                            <div class="text-muted small">
+
+                                Upload the student's certificate
+                                in PDF or image format.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
 
@@ -133,56 +574,19 @@
 
 <script>
 
-$(document).on('click','#searchStudent',function(){
+$(document).ready(function () {
 
-    let course_id = $('#course_id').val();
+    /*
+    |--------------------------------------------------------------------------
+    | Feather Icons
+    |--------------------------------------------------------------------------
+    */
 
-    if(course_id=='')
-    {
-        alert('Please select course.');
-        return;
+    if (typeof feather !== 'undefined') {
+
+        feather.replace();
+
     }
-
-    $.ajax({
-
-        url:"{{ route('certificate.fetch-students') }}",
-
-        type:"POST",
-
-        data:{
-            _token:"{{ csrf_token() }}",
-            course_id:course_id
-        },
-
-        beforeSend:function(){
-
-            $('#studentList').html(
-
-                '<div class="card shadow-sm">'+
-                    '<div class="card-body text-center">'+
-                        'Loading Students...'+
-                    '</div>'+
-                '</div>'
-
-            );
-
-        },
-
-        success:function(response){
-
-            $('#studentList').html(response);
-
-            feather.replace();
-
-        },
-
-        error:function(){
-
-            alert('Something went wrong.');
-
-        }
-
-    });
 
 });
 

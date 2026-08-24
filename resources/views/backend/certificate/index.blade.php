@@ -95,6 +95,8 @@
 
                         <th>Course</th>
 
+                        <th>Level</th>
+
                         <th>Certificate</th>
 
                         <th width="180">Action</th>
@@ -128,9 +130,11 @@
                         </td>
 
                         <td>
-
                             {{ $certificate->course->course_name ?? '-' }}
+                        </td>
 
+                        <td>
+                            {{ $certificate->level->name ?? '-' }}
                         </td>
 
                         <td>

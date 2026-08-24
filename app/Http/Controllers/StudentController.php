@@ -347,7 +347,7 @@ class StudentController extends Controller
             abort(403);
         }
 
-        $certificates = Certificate::with('course')
+        $certificates = Certificate::with('course','level')
             ->where('user_id', Auth::id())
             ->latest()
             ->get();
@@ -513,6 +513,6 @@ class StudentController extends Controller
         );
     }
 
-    
+
 
 }

@@ -171,7 +171,7 @@
 
             <div class="table-responsive">
 
-                <table class="table table-bordered table-hover align-middle">
+                <table class="table table-bordered table-hover align-middle" id="responsive-datatable">
 
                     <thead class="table-light">
 
