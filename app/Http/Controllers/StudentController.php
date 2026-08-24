@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Certificate;
 use App\Models\CoursePaymentRecord;
 use App\Models\StudentCourse;
-use App\Models\StudentPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -268,27 +267,6 @@ class StudentController extends Controller
         );
     }
 
-    // public function myCourses()
-    // {
-    //     $student = Auth::user();
-
-    //     $courses = StudentCourse::with([
-    //         'course',
-    //         'level',
-    //         'category',
-    //         'batch',
-    //         'instructor'
-    //     ])
-    //     ->where('user_id', $student->id)
-    //     ->latest()
-    //     ->get();
-
-    //     return view(
-    //         'student.my-courses',
-    //         compact('student', 'courses')
-    //     );
-    // }
-
     public function myCourses()
     {
         $student = Auth::user();
@@ -401,27 +379,6 @@ class StudentController extends Controller
         );
     }
 
-    // public function paymentInvoice($id)
-    // {
-    //     $payment = StudentPayment::with([
-    //         'student',
-    //         'studentCourse.course',
-    //         'studentCourse.batch',
-    //         'studentCourse.level',
-    //         'studentCourse.category',
-    //         'studentCourse.instructor',
-    //     ])
-    //     ->where('id',$id)
-    //     ->where('user_id',Auth::id())
-    //     ->where('status','success')
-    //     ->firstOrFail();
-
-    //     return view(
-    //         'student.payment-invoice',
-    //         compact('payment')
-    //     );
-    // }
-
     public function paymentInvoice($id)
     {
         /*
@@ -512,7 +469,5 @@ class StudentController extends Controller
             )
         );
     }
-
-
 
 }
