@@ -5,18 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\Batch;
 use App\Models\Category;
 use App\Models\Course;
+use App\Models\CourseMonthRecord;
+use App\Models\CoursePaymentRecord;
+use App\Models\LateFineRecord;
 use App\Models\Level;
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class UsersController extends Controller
 {
+    private function generateAdmissionNo()
+    {
+        $lastAdmissionNo = StudentCourse::max('admission_no');
+
+        if (!$lastAdmissionNo) {
+            return 1001;
+        }
+
+        return (int) $lastAdmissionNo + 1;
+    }
+
     public function createStudent()
     {
         return view('backend.students.create');
@@ -516,23 +532,96 @@ class UsersController extends Controller
 
     public function studentCourses($id)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Find Student
+        |--------------------------------------------------------------------------
+        */
+
         $student = User::findOrFail($id);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get Student Courses
+        |--------------------------------------------------------------------------
+        */
 
         $courses = StudentCourse::with([
             'course',
             'level',
             'category',
-            'batch',
             'instructor',
+            'batch',
         ])
         ->where('user_id', $student->id)
-        ->latest()
+        ->latest('id')
         ->get();
 
-        return view('backend.students.courses', compact(
-            'student',
-            'courses'
-        ));
+
+        /*
+        |--------------------------------------------------------------------------
+        | Batch Statistics
+        |--------------------------------------------------------------------------
+        |
+        | Calculate enrolled/current/available students for each course batch.
+        |
+        */
+
+        foreach ($courses as $studentCourse) {
+
+            if ($studentCourse->batch) {
+
+                $enrolledStudents = StudentCourse::where(
+                    'batch_id',
+                    $studentCourse->batch->id
+                )
+                ->where('is_enroll', 1)
+                ->where('status', 'ongoing')
+                ->count();
+
+
+                $capacity = (int) ($studentCourse->batch->capacity ?? 0);
+
+
+                $availableSeats = max(
+                    0,
+                    $capacity - $enrolledStudents
+                );
+
+
+                /*
+                | Store temporary values for Blade
+                */
+
+                $studentCourse->batch_enrolled_count =
+                    $enrolledStudents;
+
+                $studentCourse->batch_available_seats =
+                    $availableSeats;
+            }
+            else {
+
+                $studentCourse->batch_enrolled_count = 0;
+
+                $studentCourse->batch_available_seats = 0;
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return View
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.students.courses',
+            compact(
+                'student',
+                'courses'
+            )
+        );
     }
 
     public function addCourse($id)
@@ -563,209 +652,1040 @@ class UsersController extends Controller
 
     public function storeCourse(Request $request, $id)
     {
-        // dd($request->all());
-        $validator = Validator::make($request->all(), [
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
 
-            'admission_date' => 'required|date',
+        $validated = $request->validate([
 
-            'course_id'      => 'required|exists:courses,id',
-            'level_id'       => 'required|exists:levels,id',
-            'category_id'    => 'required|exists:categories,id',
-            'batch_id'       => 'required|exists:batches,id',
-            'instructor_id'    => 'nullable|exists:users,id',
+            'admission_date' => [
+                'required',
+                'date',
+            ],
 
-            'registration_fee' => 'required|numeric|min:0',
-            'admission_fee'    => 'required|numeric|min:0',
-            'monthly_fee'      => 'required|numeric|min:0',
+            'is_enroll' => [
+                'required',
+                'in:0,1',
+            ],
 
-            'is_enroll'      => 'required|boolean',
+            'course_id' => [
+                'required',
+                'exists:courses,id',
+            ],
+
+            'level_id' => [
+                'required',
+                'exists:levels,id',
+            ],
+
+            'category_id' => [
+                'required',
+                'exists:categories,id',
+            ],
+
+            'instructor_id' => [
+                'nullable',
+                'exists:users,id',
+            ],
+
+            'batch_id' => [
+                'required',
+                'exists:batches,id',
+            ],
+
+            'registration_fee' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'admission_fee' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'monthly_fee' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'first_month_fee' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'billing_month' => [
+                'required',
+                'date_format:Y-m',
+            ],
+
+            'billing_date' => [
+                'required',
+                'date',
+            ],
+
+            'payment_percentage' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:100',
+            ],
+
+            'payment_rule' => [
+                'required',
+                'string',
+            ],
+
+            'total_monthly_fee' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'grand_total' => [
+                'required',
+                'numeric',
+                'min:0',
+            ],
+
+            'payment_mode' => [
+                'nullable',
+                'array',
+            ],
+
+            'payment_mode.*' => [
+                'nullable',
+                'in:Cash,UPI,Card,Bank Transfer,Cheque',
+            ],
+
+            'amount' => [
+                'nullable',
+                'array',
+            ],
+
+            'amount.*' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'transaction_id' => [
+                'nullable',
+                'array',
+            ],
+
+            'transaction_id.*' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'remarks' => [
+                'nullable',
+                'array',
+            ],
+
+            'remarks.*' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
 
         ]);
 
-        if ($validator->fails()) {
 
-            return back()
-                ->withErrors($validator)
-                ->withInput();
+        /*
+        |--------------------------------------------------------------------------
+        | Find Student
+        |--------------------------------------------------------------------------
+        */
+
+        $student = User::find($id);
+
+        if (!$student) {
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Student not found.');
+
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check Already Active Enrollment
+        |--------------------------------------------------------------------------
+        */
+
+        $alreadyEnrolled = StudentCourse::where(
+            'user_id',
+            $student->id
+        )
+        ->where('is_enroll', 1)
+        ->where('status', 'ongoing')
+        ->exists();
+
+
+        if ($alreadyEnrolled) {
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'This student is already enrolled in an active course.'
+                );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get Course
+        |--------------------------------------------------------------------------
+        */
+
+        $course = Course::find($validated['course_id']);
+
+        if (!$course) {
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Selected course not found.'
+                );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fee Values
+        |--------------------------------------------------------------------------
+        */
+
+        $registrationFee = round(
+            (float) ($validated['registration_fee'] ?? 0),
+            2
+        );
+
+        $admissionFee = round(
+            (float) ($validated['admission_fee'] ?? 0),
+            2
+        );
+
+        $monthlyFee = round(
+            (float) $validated['monthly_fee'],
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Course Duration
+        |
+        | IMPORTANT:
+        | Duration sirf student_course mein store hoga.
+        | CourseMonthRecord banane ke liye iska use nahi hoga.
+        |--------------------------------------------------------------------------
+        */
+
+        $courseDuration = (int) ($course->duration ?? 0);
+
+        $durationType = strtolower(
+            trim($course->duration_type ?? '')
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admission Date
+        |--------------------------------------------------------------------------
+        */
+
+        $admissionDate = Carbon::parse(
+            $validated['admission_date']
+        )->startOfDay();
+
+        $day = $admissionDate->day;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIRST BILLING RULE
+        |
+        | 1 - 15  = Current Month 100%
+        | 16 - 25 = Current Month 50%
+        | 26-End  = Next Month 100%
+        |--------------------------------------------------------------------------
+        */
+
+        if ($day >= 1 && $day <= 15) {
+
+            $paymentPercentage = 100;
+
+            $paymentRule = 'Full Month Payment';
+
+            $billingDate = $admissionDate
+                ->copy()
+                ->startOfMonth();
+
+        }
+        elseif ($day >= 16 && $day <= 25) {
+
+            $paymentPercentage = 50;
+
+            $paymentRule = 'Half Month Payment';
+
+            $billingDate = $admissionDate
+                ->copy()
+                ->startOfMonth();
+
+        }
+        else {
+
+            $paymentPercentage = 100;
+
+            $paymentRule = 'Next Month Full Payment';
+
+            $billingDate = $admissionDate
+                ->copy()
+                ->addMonthNoOverflow()
+                ->startOfMonth();
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | First Month Payable
+        |--------------------------------------------------------------------------
+        */
+
+        $firstMonthFee = round(
+            $monthlyFee *
+            ($paymentPercentage / 100),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Calculated Grand Total
+        |
+        | Registration
+        | + Admission
+        | + First Month
+        |--------------------------------------------------------------------------
+        */
+
+        $calculatedGrandTotal = round(
+            $registrationFee +
+            $admissionFee +
+            $firstMonthFee,
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Verify Browser Grand Total
+        |--------------------------------------------------------------------------
+        */
+
+        $browserGrandTotal = round(
+            (float) $validated['grand_total'],
+            2
+        );
+
+
+        if (
+            abs(
+                $browserGrandTotal -
+                $calculatedGrandTotal
+            ) > 0.01
+        ) {
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Billing amount mismatch. Please refresh the page and try again.'
+                );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Entries
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentModes = $request->input(
+            'payment_mode',
+            []
+        );
+
+        $paymentAmounts = $request->input(
+            'amount',
+            []
+        );
+
+        $transactionIds = $request->input(
+            'transaction_id',
+            []
+        );
+
+        $paymentRemarks = $request->input(
+            'remarks',
+            []
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prepare Payment Rows
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPaid = 0;
+
+        $paymentRows = [];
+
+
+        foreach (
+            $paymentAmounts as $index => $amount
+        ) {
+
+            $amount = round(
+                (float) $amount,
+                2
+            );
+
+
+            /*
+            | Ignore empty rows
+            */
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+
+            $mode =
+                $paymentModes[$index] ?? null;
+
+
+            $transactionId =
+                trim(
+                    $transactionIds[$index] ?? ''
+                );
+
+
+            $remarks =
+                trim(
+                    $paymentRemarks[$index] ?? ''
+                );
+
+
+            /*
+            | Payment Mode Required
+            */
+
+            if (!$mode) {
+
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'Payment mode is required for every payment entry.'
+                    );
+
+            }
+
+
+            /*
+            | Transaction ID Required
+            | Except Cash
+            */
+
+            if (
+                $mode !== 'Cash' &&
+                $transactionId === ''
+            ) {
+
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        "Transaction / Reference No. is required for {$mode} payment."
+                    );
+
+            }
+
+
+            /*
+            | Cash does not need transaction ID
+            */
+
+            if ($mode === 'Cash') {
+
+                $transactionId = '';
+
+            }
+
+
+            /*
+            | Add Payment
+            */
+
+            $totalPaid += $amount;
+
+
+            $paymentRows[] = [
+
+                'payment_mode' =>
+                    $mode,
+
+                'amount' =>
+                    $amount,
+
+                'transaction_id' =>
+                    $transactionId,
+
+                'remarks' =>
+                    $remarks,
+
+            ];
+
+        }
+
+
+        $totalPaid = round(
+            $totalPaid,
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Cannot Exceed Grand Total
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $totalPaid >
+            ($calculatedGrandTotal + 0.01)
+        ) {
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Total payment cannot be greater than total payable amount of ₹'
+                    . number_format(
+                        $calculatedGrandTotal,
+                        2
+                    )
+                    . '.'
+                );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Database Transaction
+        |--------------------------------------------------------------------------
+        */
 
         DB::beginTransaction();
 
+
         try {
 
-            $student = User::findOrFail($id);
-
-            $course = Course::findOrFail($request->course_id);
-
             /*
             |--------------------------------------------------------------------------
-            | Admission No
-            |--------------------------------------------------------------------------
-            */
-
-            $lastAdmission = StudentCourse::max('admission_no');
-
-            $admissionNo = $lastAdmission
-                ? $lastAdmission + 1
-                : 1001;
-
-            /*
-            |--------------------------------------------------------------------------
-            | Duplicate Check
-            |--------------------------------------------------------------------------
-            */
-
-            $exists = StudentCourse::where('user_id', $student->id)
-                        ->where('course_id', $request->course_id)
-                        ->where('status', 'ongoing')
-                        ->exists();
-
-            if ($exists) {
-
-                DB::rollBack();
-
-                return back()
-                    ->withInput()
-                    ->with('error', 'Student already has this course.');
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Batch Capacity
-            |--------------------------------------------------------------------------
-            */
-
-            $batch = Batch::withCount([
-                'studentCourses as enrolled_students_count' => function ($q) {
-
-                    $q->activeEnroll();
-
-                }
-            ])->findOrFail($request->batch_id);
-
-            if (
-                $request->is_enroll == 1 &&
-                $batch->capacity &&
-                $batch->enrolled_students_count >= $batch->capacity
-            ) {
-
-                DB::rollBack();
-
-                return back()
-                    ->withInput()
-                    ->with('error', 'Selected batch is full.');
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Save Student Course
+            | Create Student Course
             |--------------------------------------------------------------------------
             */
 
             $studentCourse = StudentCourse::create([
 
-                'user_id'           => $student->id,
+                'user_id' =>
+                    $student->id,
 
-                'course_id'         => $request->course_id,
-                'course_duration'   => $request->course_duration,
-                'duration_type'     => $request->duration_type,
+                /*
+                | Admission Number
+                */
 
-                'level_id'          => $request->level_id,
+                'admission_no' =>
+                    $this->generateAdmissionNo(),
 
-                'category_id'       => $request->category_id,
+                'admission_date' =>
+                    $admissionDate->format('Y-m-d'),
 
-                'batch_id'          => $request->batch_id,
+                'course_id' =>
+                    $validated['course_id'],
 
-                'admission_no'      => $admissionNo,
+                /*
+                | Course Duration ONLY stored here.
+                | No billing logic based on duration.
+                */
 
-                'admission_date'    => $request->admission_date,
+                'course_duration' =>
+                    $courseDuration,
 
-                'registration_fee'  => $request->registration_fee,
+                'duration_type' =>
+                    $durationType,
 
-                'admission_fee'     => $request->admission_fee,
+                'level_id' =>
+                    $validated['level_id'],
 
-                'course_fee'        => $request->monthly_fee,
+                'category_id' =>
+                    $validated['category_id'],
 
-                'total_monthly_fee'  => $request->total_monthly_fee,
+                'batch_id' =>
+                    $validated['batch_id'],
 
-                'grand_total'        => $request->grand_total,
+                'instructor_id' =>
+                    $validated['instructor_id'] ?? null,
 
-                'is_enroll'         => $request->is_enroll,
+                'registration_fee' =>
+                    $registrationFee,
 
-                'instructor_id'         => $request->instructor_id,
+                'admission_fee' =>
+                    $admissionFee,
 
-                'status'            => 'ongoing',
+                'monthly_fee' =>
+                    $monthlyFee,
+
+                'is_enroll' =>
+                    (int) $validated['is_enroll'],
+
+                /*
+                | Status always ongoing
+                */
+
+                'status' =>
+                    'ongoing',
+
+                'completion_date' =>
+                    null,
 
             ]);
 
+
             /*
             |--------------------------------------------------------------------------
-            | Save Payments
+            | Create ONLY FIRST Course Month Record
+            |
+            | IMPORTANT:
+            |
+            | Future months ke records yahan create nahi honge.
+            |
+            | Sirf admission date ke according first billing month create hoga.
             |--------------------------------------------------------------------------
             */
 
-            if ($request->has('payment_mode')) {
+            $feeMonth = $billingDate
+                ->copy()
+                ->startOfMonth();
 
-                foreach ($request->payment_mode as $index => $mode) {
 
-                    $amount = $request->amount[$index] ?? null;
+            $dueDate = $feeMonth
+                ->copy()
+                ->endOfMonth();
 
-                    // Blank row skip
-                    if (
-                        empty($mode) &&
-                        empty($amount)
-                    ) {
-                        continue;
-                    }
 
-                    // Amount 0 skip
-                    if (!$amount || $amount <= 0) {
-                        continue;
-                    }
+            /*
+            |--------------------------------------------------------------------------
+            | Create First Month Record
+            |--------------------------------------------------------------------------
+            */
 
-                    StudentPayment::create([
+            $firstMonthRecord = CourseMonthRecord::create([
 
-                        'student_course_id' => $studentCourse->id,
+                'student_course_id' =>
+                    $studentCourse->id,
 
-                        'user_id' => $student->id,
+                'fee_month' =>
+                    $feeMonth->format('Y-m-d'),
 
-                        'registration_fee'  => $request->registration_fee,
+                /*
+                | IMPORTANT:
+                | Standard Monthly Fee
+                */
 
-                        'admission_fee'     => $request->admission_fee,
+                'monthly_fee' =>
+                    $monthlyFee,
 
-                        'course_fee'        => $request->monthly_fee,
+                'waiver_amount' =>
+                    0,
 
-                        'payment_date' => now(),
+                /*
+                | IMPORTANT:
+                | Actual payable according to admission date
+                |
+                | 1-15  = 100%
+                | 16-25 = 50%
+                | 26-end = next month 100%
+                */
 
-                        'payment_mode' => $mode,
+                'payable_amount' =>
+                    $firstMonthFee,
 
-                        'amount' => $amount,
+                'paid_amount' =>
+                    0,
 
-                        'transaction_id' => $request->transaction_id[$index] ?? null,
+                'due_date' =>
+                    $dueDate->format('Y-m-d'),
 
-                        'remarks' => $request->remarks[$index] ?? null,
+                'paid_date' =>
+                    null,
 
-                        'status' => 'success',
+                'payment_percentage' =>
+                    $paymentPercentage,
 
-                    ]);
+                'payment_rule' =>
+                    $paymentRule,
 
-                }
+                'status' =>
+                    'unpaid',
+
+                'remarks' =>
+                    null,
+
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Save Payment Records
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (
+                $paymentRows as $payment
+            ) {
+
+                CoursePaymentRecord::create([
+
+                    'student_course_id' =>
+                        $studentCourse->id,
+
+                    'user_id' =>
+                        $student->id,
+
+                    'payment_date' =>
+                        now()->format('Y-m-d'),
+
+                    'payment_mode' =>
+                        $payment['payment_mode'],
+
+                    'amount' =>
+                        $payment['amount'],
+
+                    'platform_fee_percentage' =>
+                        0,
+
+                    'platform_fee_amount' =>
+                        0,
+
+                    'transaction_id' =>
+                        $payment['transaction_id'],
+
+                    'payment_proof' =>
+                        null,
+
+                    'status' =>
+                        'Success',
+
+                    'remarks' =>
+                        $payment['remarks'],
+
+                ]);
 
             }
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Allocate Payment
+            |
+            | Priority:
+            |
+            | 1. Registration Fee
+            | 2. Admission Fee
+            | 3. First Month Fee
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $firstMonthRecord &&
+                $totalPaid > 0
+            ) {
+
+                $remainingPayment =
+                    $totalPaid;
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Registration Fee
+                |--------------------------------------------------------------------------
+                */
+
+                $registrationPaid =
+                    min(
+                        $remainingPayment,
+                        $registrationFee
+                    );
+
+
+                $remainingPayment =
+                    round(
+                        $remainingPayment -
+                        $registrationPaid,
+                        2
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Admission Fee
+                |--------------------------------------------------------------------------
+                */
+
+                $admissionPaid =
+                    min(
+                        $remainingPayment,
+                        $admissionFee
+                    );
+
+
+                $remainingPayment =
+                    round(
+                        $remainingPayment -
+                        $admissionPaid,
+                        2
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | First Month Payment
+                |--------------------------------------------------------------------------
+                */
+
+                $firstMonthPaid =
+                    min(
+                        $remainingPayment,
+                        (float) $firstMonthRecord->payable_amount
+                    );
+
+
+                $firstMonthPaid =
+                    round(
+                        $firstMonthPaid,
+                        2
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Remaining First Month Due
+                |--------------------------------------------------------------------------
+                */
+
+                $remainingMonthDue =
+                    round(
+                        (float) $firstMonthRecord->payable_amount
+                        - $firstMonthPaid,
+                        2
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Determine Status
+                |--------------------------------------------------------------------------
+                */
+
+                if ($remainingMonthDue <= 0) {
+
+                    $monthStatus =
+                        'paid';
+
+                    $paidDate =
+                        now()->format('Y-m-d');
+
+                }
+                elseif ($firstMonthPaid > 0) {
+
+                    $monthStatus =
+                        'partial';
+
+                    $paidDate =
+                        now()->format('Y-m-d');
+
+                }
+                else {
+
+                    $monthStatus =
+                        'unpaid';
+
+                    $paidDate =
+                        null;
+
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update First Month
+                |--------------------------------------------------------------------------
+                */
+
+                $firstMonthRecord->update([
+
+                    'paid_amount' =>
+                        $firstMonthPaid,
+
+                    'paid_date' =>
+                        $paidDate,
+
+                    'status' =>
+                        $monthStatus,
+
+                ]);
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Commit
+            |--------------------------------------------------------------------------
+            */
+
             DB::commit();
 
-            return redirect()
-                ->route('students.courses', $student->id)
-                ->with('success', 'Course assigned successfully.');
 
-        } catch (\Exception $e) {
+            /*
+            |--------------------------------------------------------------------------
+            | Final Due
+            |--------------------------------------------------------------------------
+            */
+
+            $dueAmount =
+                round(
+                    $calculatedGrandTotal -
+                    $totalPaid,
+                    2
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Success
+            |--------------------------------------------------------------------------
+            */
+
+            return redirect()
+                ->route(
+                    'students.courses',
+                    $student->id
+                )
+                ->with(
+                    'success',
+                    'Course enrolled successfully.'
+                    . ' First billing month: '
+                    . $billingDate->format('F Y')
+                    . ' | Payable: ₹'
+                    . number_format(
+                        $calculatedGrandTotal,
+                        2
+                    )
+                    . ' | Paid: ₹'
+                    . number_format(
+                        $totalPaid,
+                        2
+                    )
+                    . ' | Due: ₹'
+                    . number_format(
+                        max(0, $dueAmount),
+                        2
+                    )
+                );
+
+
+        }
+        catch (\Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Rollback
+            |--------------------------------------------------------------------------
+            */
 
             DB::rollBack();
 
-            return back()
+
+            /*
+            |--------------------------------------------------------------------------
+            | Log Error
+            |--------------------------------------------------------------------------
+            */
+
+            Log::error(
+                'Student Course Store Error',
+                [
+
+                    'student_id' =>
+                        $student->id,
+
+                    'error' =>
+                        $e->getMessage(),
+
+                    'file' =>
+                        $e->getFile(),
+
+                    'line' =>
+                        $e->getLine(),
+
+                ]
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Error
+            |--------------------------------------------------------------------------
+            */
+
+            return redirect()
+                ->back()
                 ->withInput()
-                ->with('error', $e->getMessage());
+                ->with(
+                    'error',
+                    'Course could not be saved. '
+                    . $e->getMessage()
+                );
+
         }
     }
 
@@ -931,6 +1851,207 @@ class UsersController extends Controller
                 ->withInput()
                 ->with('error',$e->getMessage());
 
+        }
+    }
+
+    public function enrollCourses()
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Get All Enrolled Student Courses
+        |--------------------------------------------------------------------------
+        | One StudentCourse = One Row
+        |--------------------------------------------------------------------------
+        */
+
+        $courses = StudentCourse::with([
+            'student',
+            'course',
+            'level',
+            'category',
+            'instructor',
+            'batch',
+        ])
+        ->where('is_enroll', 1)
+        ->latest('id')
+        ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Batch Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($courses as $studentCourse) {
+
+            if ($studentCourse->batch) {
+
+                $enrolledStudents = StudentCourse::where(
+                    'batch_id',
+                    $studentCourse->batch->id
+                )
+                ->where('is_enroll', 1)
+                ->where('status', 'ongoing')
+                ->count();
+
+
+                $capacity = (int) ($studentCourse->batch->capacity ?? 0);
+
+
+                $availableSeats = max(
+                    0,
+                    $capacity - $enrolledStudents
+                );
+
+
+                $studentCourse->batch_enrolled_count =
+                    $enrolledStudents;
+
+                $studentCourse->batch_available_seats =
+                    $availableSeats;
+            }
+            else {
+
+                $studentCourse->batch_enrolled_count = 0;
+
+                $studentCourse->batch_available_seats = 0;
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return View
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.students.enroll-courses',
+            compact('courses')
+        );
+    }
+
+    public function deleteCourse($id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Find Student Course
+            |--------------------------------------------------------------------------
+            */
+
+            $studentCourse = StudentCourse::findOrFail($id);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Late Fine Records
+            |--------------------------------------------------------------------------
+            | First delete late fines because they are related to
+            | CourseMonthRecord as well as StudentCourse.
+            |--------------------------------------------------------------------------
+            */
+
+            LateFineRecord::where(
+                'student_course_id',
+                $studentCourse->id
+            )->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Late Fines Through Monthly Records
+            |--------------------------------------------------------------------------
+            | Safety deletion in case any late fine is linked through
+            | course_month_record_id.
+            |--------------------------------------------------------------------------
+            */
+
+            $monthRecordIds = CourseMonthRecord::where(
+                'student_course_id',
+                $studentCourse->id
+            )->pluck('id');
+
+
+            if ($monthRecordIds->count()) {
+
+                LateFineRecord::whereIn(
+                    'course_month_record_id',
+                    $monthRecordIds
+                )->delete();
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Monthly Fee Records
+            |--------------------------------------------------------------------------
+            */
+
+            CourseMonthRecord::where(
+                'student_course_id',
+                $studentCourse->id
+            )->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Course Payment Records
+            |--------------------------------------------------------------------------
+            */
+
+            CoursePaymentRecord::where(
+                'student_course_id',
+                $studentCourse->id
+            )->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Student Course
+            |--------------------------------------------------------------------------
+            */
+
+            $studentCourse->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Commit
+            |--------------------------------------------------------------------------
+            */
+
+            DB::commit();
+
+
+            return redirect()
+                ->back()
+                ->with(
+                    'success',
+                    'Course enrollment and all related payment records deleted successfully.'
+                );
+
+        } catch (\Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Rollback
+            |--------------------------------------------------------------------------
+            */
+
+            DB::rollBack();
+
+
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Unable to delete course enrollment. ' . $e->getMessage()
+                );
         }
     }
 

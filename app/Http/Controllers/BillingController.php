@@ -3,31 +3,890 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Batch;
 use App\Models\Course;
 use App\Models\CourseMonthRecord;
+use App\Models\CoursePaymentRecord;
 use App\Models\LateFine;
+use App\Models\LateFineRecord;
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class BillingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $billings = StudentCourse::with([
+        /*
+        |--------------------------------------------------------------------------
+        | 1. GET STUDENT COURSES
+        |--------------------------------------------------------------------------
+        */
+
+        $query = StudentCourse::query()
+            ->with([
                 'student',
                 'course',
-                'batch'
+                'batch',
+
+                'monthRecords' => function ($query) {
+
+                    $query
+                        ->where('status', 'paid')
+                        ->orderBy('fee_month', 'asc');
+
+                },
+
+                /*
+                |--------------------------------------------------------------------------
+                | Latest Payment
+                |--------------------------------------------------------------------------
+                */
+
+                'paymentRecords' => function ($query) {
+
+                    $query
+                        ->where('status', 'success')
+                        ->latest('payment_date')
+                        ->latest('id')
+                        ->limit(1);
+
+                },
             ])
-            // ->where('is_enroll',1)
-            ->latest()
+
+            ->withSum(
+                'paymentRecords as total_paid_amount',
+                'amount'
+            )
+
+            ->withCount(
+                'paymentRecords as payment_count'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. SEARCH
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+
+            $search = trim($request->search);
+
+            $query->where(function ($q) use ($search) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Student Search
+                |--------------------------------------------------------------------------
+                */
+
+                $q->whereHas('student', function ($studentQuery) use ($search) {
+
+                    $studentQuery
+                        ->where(
+                            'name',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'admission_no',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'phone',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'email',
+                            'like',
+                            "%{$search}%"
+                        );
+
+                });
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Course Search
+                |--------------------------------------------------------------------------
+                */
+
+                $q->orWhereHas('course', function ($courseQuery) use ($search) {
+
+                    $courseQuery->where(
+                        'course_name',
+                        'like',
+                        "%{$search}%"
+                    );
+
+                });
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Batch Search
+                |--------------------------------------------------------------------------
+                */
+
+                $q->orWhereHas('batch', function ($batchQuery) use ($search) {
+
+                    $batchQuery->where(
+                        'batch_name',
+                        'like',
+                        "%{$search}%"
+                    );
+
+                });
+
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. GET RECORDS
+        |--------------------------------------------------------------------------
+        */
+
+        $studentCourses = $query
+            ->latest('id')
             ->get();
 
-        return view('backend.billing.index',compact('billings'));
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. PREPARE PAID MONTH INFORMATION
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($studentCourses as $studentCourse) {
+
+            $paidMonths = $studentCourse->monthRecords
+                ->filter(function ($monthRecord) {
+
+                    $payable = round(
+                        (float) $monthRecord->payable_amount,
+                        2
+                    );
+
+                    $paid = round(
+                        (float) $monthRecord->paid_amount,
+                        2
+                    );
+
+                    return $payable > 0 && $paid >= $payable;
+
+                })
+                ->sortBy('fee_month')
+                ->values();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | No Paid Month
+            |--------------------------------------------------------------------------
+            */
+
+            if ($paidMonths->isEmpty()) {
+
+                $studentCourse->paid_month_label =
+                    'No payment yet';
+
+                $studentCourse->paid_month_count =
+                    0;
+
+                continue;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | First Paid Month
+            |--------------------------------------------------------------------------
+            */
+
+            $firstPaidMonth = Carbon::parse(
+                $paidMonths->first()->fee_month
+            )->startOfMonth();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Last Paid Month
+            |--------------------------------------------------------------------------
+            */
+
+            $lastPaidMonth = Carbon::parse(
+                $paidMonths->last()->fee_month
+            )->startOfMonth();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Count Paid Months
+            |--------------------------------------------------------------------------
+            */
+
+            $paidMonthCount =
+                $paidMonths->count();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Check Continuous Months
+            |--------------------------------------------------------------------------
+            */
+
+            $isContinuous = true;
+
+            $expectedMonth =
+                $firstPaidMonth->copy();
+
+
+            foreach ($paidMonths as $monthRecord) {
+
+                $currentMonth = Carbon::parse(
+                    $monthRecord->fee_month
+                )->startOfMonth();
+
+
+                if (
+                    !$currentMonth->equalTo(
+                        $expectedMonth
+                    )
+                ) {
+
+                    $isContinuous = false;
+
+                    break;
+                }
+
+
+                $expectedMonth->addMonth();
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Generate Display Label
+            |--------------------------------------------------------------------------
+            */
+
+            if ($isContinuous) {
+
+                if (
+                    $firstPaidMonth->equalTo(
+                        $lastPaidMonth
+                    )
+                ) {
+
+                    $paidMonthLabel =
+                        $firstPaidMonth->format('M Y');
+
+                } else {
+
+                    $paidMonthLabel =
+                        $firstPaidMonth->format('M Y')
+                        . ' - '
+                        . $lastPaidMonth->format('M Y');
+                }
+
+            } else {
+
+                $paidMonthLabel = $paidMonths
+                    ->map(function ($monthRecord) {
+
+                        return Carbon::parse(
+                            $monthRecord->fee_month
+                        )->format('M Y');
+
+                    })
+                    ->implode(', ');
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Attach Data
+            |--------------------------------------------------------------------------
+            */
+
+            $studentCourse->paid_month_label =
+                $paidMonthLabel;
+
+            $studentCourse->paid_month_count =
+                $paidMonthCount;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.billing.index',
+            compact('studentCourses')
+        );
+    }
+    // public function index(Request $request)
+    // {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 1. GET STUDENT COURSES
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $query = StudentCourse::query()
+    //         ->with([
+    //             'student',
+    //             'course',
+    //             'batch',
+    //             'monthRecords' => function ($query) {
+    //                 $query
+    //                     ->where('status', 'paid')
+    //                     ->orderBy('fee_month', 'asc');
+    //             },
+    //         ])
+    //         ->withSum(
+    //             'paymentRecords as total_paid_amount',
+    //             'amount'
+    //         )
+    //         ->withCount(
+    //             'paymentRecords as payment_count'
+    //         );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 2. SEARCH
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if ($request->filled('search')) {
+
+    //         $search = trim($request->search);
+
+    //         $query->where(function ($q) use ($search) {
+
+    //             /*
+    //             | Student Search
+    //             */
+
+    //             $q->whereHas('student', function ($studentQuery) use ($search) {
+
+    //                 $studentQuery
+    //                     ->where('name', 'like', "%{$search}%")
+    //                     ->orWhere(
+    //                         'admission_no',
+    //                         'like',
+    //                         "%{$search}%"
+    //                     )
+    //                     ->orWhere(
+    //                         'phone',
+    //                         'like',
+    //                         "%{$search}%"
+    //                     )
+    //                     ->orWhere(
+    //                         'email',
+    //                         'like',
+    //                         "%{$search}%"
+    //                     );
+    //             });
+
+
+    //             /*
+    //             | Course Search
+    //             */
+
+    //             $q->orWhereHas('course', function ($courseQuery) use ($search) {
+
+    //                 $courseQuery->where(
+    //                     'course_name',
+    //                     'like',
+    //                     "%{$search}%"
+    //                 );
+    //             });
+
+
+    //             /*
+    //             | Batch Search
+    //             */
+
+    //             $q->orWhereHas('batch', function ($batchQuery) use ($search) {
+
+    //                 $batchQuery->where(
+    //                     'batch_name',
+    //                     'like',
+    //                     "%{$search}%"
+    //                 );
+    //             });
+
+    //         });
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 3. GET RECORDS
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | DataTables is already being used on the page.
+    //     | Therefore get() is better than Laravel paginate()
+    //     | if DataTables handles pagination/search.
+    //     |
+    //     */
+
+    //     $studentCourses = $query
+    //         ->latest('id')
+    //         ->get();
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 4. PREPARE PAID MONTH INFORMATION
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Example:
+    //     |
+    //     | Jun 2026 - Sep 2026
+    //     | 4 Months
+    //     |
+    //     */
+
+    //     foreach ($studentCourses as $studentCourse) {
+
+    //         $paidMonths = $studentCourse->monthRecords
+    //             ->filter(function ($monthRecord) {
+
+    //                 $payable = round(
+    //                     (float) $monthRecord->payable_amount,
+    //                     2
+    //                 );
+
+    //                 $paid = round(
+    //                     (float) $monthRecord->paid_amount,
+    //                     2
+    //                 );
+
+    //                 /*
+    //                 | Fully paid month
+    //                 */
+
+    //                 return $payable > 0 && $paid >= $payable;
+    //             })
+    //             ->sortBy('fee_month')
+    //             ->values();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | No Paid Month
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($paidMonths->isEmpty()) {
+
+    //             $studentCourse->paid_month_label =
+    //                 'No payment yet';
+
+    //             $studentCourse->paid_month_count =
+    //                 0;
+
+    //             continue;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | First Paid Month
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $firstPaidMonth = Carbon::parse(
+    //             $paidMonths->first()->fee_month
+    //         )->startOfMonth();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Last Paid Month
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $lastPaidMonth = Carbon::parse(
+    //             $paidMonths->last()->fee_month
+    //         )->startOfMonth();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Count Paid Months
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $paidMonthCount = $paidMonths->count();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Check Continuous Months
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Example:
+    //         |
+    //         | Jun, Jul, Aug, Sep
+    //         |
+    //         | => Jun 2026 - Sep 2026
+    //         |
+    //         */
+
+    //         $isContinuous = true;
+
+    //         $expectedMonth = $firstPaidMonth->copy();
+
+
+    //         foreach ($paidMonths as $monthRecord) {
+
+    //             $currentMonth = Carbon::parse(
+    //                 $monthRecord->fee_month
+    //             )->startOfMonth();
+
+
+    //             if (!$currentMonth->equalTo($expectedMonth)) {
+
+    //                 $isContinuous = false;
+
+    //                 break;
+    //             }
+
+
+    //             $expectedMonth->addMonth();
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Generate Display Label
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($isContinuous) {
+
+    //             if ($firstPaidMonth->equalTo($lastPaidMonth)) {
+
+    //                 $paidMonthLabel =
+    //                     $firstPaidMonth->format('M Y');
+
+    //             } else {
+
+    //                 $paidMonthLabel =
+    //                     $firstPaidMonth->format('M Y')
+    //                     . ' - '
+    //                     . $lastPaidMonth->format('M Y');
+    //             }
+
+    //         } else {
+
+    //             /*
+    //             | Non-continuous months
+    //             |
+    //             | Example:
+    //             | Jun 2026, Aug 2026, Sep 2026
+    //             */
+
+    //             $paidMonthLabel = $paidMonths
+    //                 ->map(function ($monthRecord) {
+
+    //                     return Carbon::parse(
+    //                         $monthRecord->fee_month
+    //                     )->format('M Y');
+
+    //                 })
+    //                 ->implode(', ');
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Attach Data To Model
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $studentCourse->paid_month_label =
+    //             $paidMonthLabel;
+
+    //         $studentCourse->paid_month_count =
+    //             $paidMonthCount;
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 5. RETURN VIEW
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     return view(
+    //         'backend.billing.index',
+    //         compact('studentCourses')
+    //     );
+    // }
+
+    public function paymentDetails($studentCourseId)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. LOAD STUDENT COURSE
+        |--------------------------------------------------------------------------
+        */
+
+        $studentCourse = StudentCourse::query()
+            ->with([
+                'student',
+                'course',
+                'level',
+                'category',
+                'batch',
+            ])
+            ->findOrFail($studentCourseId);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. PAYMENT HISTORY
+        |--------------------------------------------------------------------------
+        */
+
+        $payments = CoursePaymentRecord::query()
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. MONTHLY BILLING RECORDS
+        |--------------------------------------------------------------------------
+        */
+
+        $monthRecords = CourseMonthRecord::query()
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+            ->orderBy('fee_month', 'asc')
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. LATE FINES / PENALTIES
+        |--------------------------------------------------------------------------
+        */
+
+        $lateFines = LateFineRecord::query()
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+            ->orderByDesc('fine_date')
+            ->orderByDesc('id')
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. TOTAL PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPaid = round(
+            (float) $payments->sum('amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. TOTAL COURSE FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $totalCourseFee = round(
+            (float) $monthRecords->sum('payable_amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. TOTAL LATE FINE / PENALTY
+        |--------------------------------------------------------------------------
+        */
+
+        $totalFine = round(
+            (float) $lateFines->sum('fine_amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. REGISTRATION + ADMISSION
+        |--------------------------------------------------------------------------
+        |
+        | These are charged only on first billing.
+        |
+        */
+
+        $registrationFee = round(
+            (float) ($studentCourse->registration_fee ?? 0),
+            2
+        );
+
+        $admissionFee = round(
+            (float) ($studentCourse->admission_fee ?? 0),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. FIRST PAYMENT CHECK
+        |--------------------------------------------------------------------------
+        */
+
+        $hasPayment = $payments->isNotEmpty();
+
+
+        $totalRegistrationAdmission = $hasPayment
+            ? $registrationFee + $admissionFee
+            : 0;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. TOTAL BILLING
+        |--------------------------------------------------------------------------
+        */
+
+        $totalBilling = round(
+            $totalCourseFee
+            + $totalRegistrationAdmission
+            + $totalFine,
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. DUE
+        |--------------------------------------------------------------------------
+        */
+
+        $totalDue = max(
+            0,
+            round(
+                $totalBilling - $totalPaid,
+                2
+            )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 12. PAID MONTHS
+        |--------------------------------------------------------------------------
+        */
+
+        $paidMonths = $monthRecords
+            ->filter(function ($record) {
+
+                return
+                    (float) $record->payable_amount > 0
+                    &&
+                    (float) $record->paid_amount
+                        >=
+                    (float) $record->payable_amount;
+            })
+            ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 13. PAYMENT MONTH RANGE
+        |--------------------------------------------------------------------------
+        */
+
+        $paidMonthLabel = 'No payment yet';
+        $paidMonthCount = $paidMonths->count();
+
+        if ($paidMonths->isNotEmpty()) {
+
+            $firstMonth = Carbon::parse(
+                $paidMonths->first()->fee_month
+            )->startOfMonth();
+
+            $lastMonth = Carbon::parse(
+                $paidMonths->last()->fee_month
+            )->startOfMonth();
+
+
+            if ($firstMonth->equalTo($lastMonth)) {
+
+                $paidMonthLabel =
+                    $firstMonth->format('M Y');
+
+            } else {
+
+                $paidMonthLabel =
+                    $firstMonth->format('M Y')
+                    . ' - '
+                    . $lastMonth->format('M Y');
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 14. RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.billing.payments-detail',
+            compact(
+                'studentCourse',
+                'payments',
+                'monthRecords',
+                'lateFines',
+                'totalPaid',
+                'totalCourseFee',
+                'totalFine',
+                'registrationFee',
+                'admissionFee',
+                'totalBilling',
+                'totalDue',
+                'paidMonthLabel',
+                'paidMonthCount'
+            )
+        );
     }
 
     public function create()
@@ -43,474 +902,1182 @@ class BillingController extends Controller
         );
     }
 
-
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'student_id'        => 'required|exists:users,id',
-    //         'student_course_id' => 'required|exists:student_course,id',
-
-    //         'payment_date.*' => 'required|date',
-    //         'payment_mode.*' => 'required|string',
-    //         'amount.*'       => 'required|numeric|min:0.01',
-    //         'transaction_id.*' => 'nullable|string|max:255',
-    //         'remarks.*'        => 'nullable|string|max:500',
-    //         // Late Fine
-    //         'late_fine'        => 'nullable|numeric|min:0',
-    //         'late_fine_type'   => 'nullable|string|max:255',
-    //     ]);
-
-    //     DB::beginTransaction();
-
-    //     try {
-
-    //         $studentCourse = StudentCourse::findOrFail($request->student_course_id);
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Previous Payment Summary
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $paymentCount = StudentPayment::where(
-    //             'student_course_id',
-    //             $studentCourse->id
-    //         )->count();
-
-    //         $totalPaid = StudentPayment::where(
-    //             'student_course_id',
-    //             $studentCourse->id
-    //         )->sum('amount');
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Current Payment Total
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $currentPayment = array_sum($request->amount);
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Remaining Amount Check
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         $remaining = $studentCourse->grand_total - $totalPaid;
-
-    //         if ($currentPayment > $remaining) {
-
-    //             return back()
-    //                 ->withInput()
-    //                 ->with('error', 'Payment cannot exceed remaining due amount.');
-
-    //         }
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Fee Apply Logic
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         if ($paymentCount == 0) {
-
-    //             // First Payment
-    //             $registrationFee = $studentCourse->registration_fee;
-    //             $admissionFee    = $studentCourse->admission_fee;
-
-    //         } else {
-
-    //             // Second Payment Onwards
-    //             $registrationFee = 0;
-    //             $admissionFee    = 0;
-
-    //         }
-
-    //         /*
-    //         |--------------------------------------------------------------------------
-    //         | Save Payment Rows
-    //         |--------------------------------------------------------------------------
-    //         */
-
-    //         foreach ($request->payment_mode as $key => $mode) {
-
-    //             if (
-    //                 empty($mode) ||
-    //                 empty($request->amount[$key]) ||
-    //                 $request->amount[$key] <= 0
-    //             ) {
-    //                 continue;
-    //             }
-
-    //             StudentPayment::create([
-
-    //                 'student_course_id' => $studentCourse->id,
-
-    //                 'user_id' => $request->student_id,
-
-    //                 'registration_fee' => $registrationFee,
-
-    //                 'admission_fee' => $admissionFee,
-
-    //                 // Every payment carries monthly fee
-    //                 'course_fee' => $studentCourse->course_fee,
-
-    //                 'payment_date' => $request->payment_date[$key],
-
-    //                 'payment_mode' => $mode,
-
-    //                 'amount' => $request->amount[$key],
-
-    //                 'transaction_id' => $request->transaction_id[$key] ?? null,
-
-    //                 'remarks' => $request->remarks[$key] ?? null,
-
-    //                 'status' => 'success',
-
-    //             ]);
-
-    //             /*
-    //             |--------------------------------------------------------------------------
-    //             | Registration & Admission only once
-    //             |--------------------------------------------------------------------------
-    //             */
-
-    //             $registrationFee = 0;
-    //             $admissionFee    = 0;
-    //         }
-
-    //         DB::commit();
-
-    //         return redirect()
-    //             ->route('billing.index')
-    //             ->with('success', 'Payment added successfully.');
-
-    //     } catch (\Exception $e) {
-
-    //         DB::rollBack();
-
-    //         return back()
-    //             ->withInput()
-    //             ->with('error', $e->getMessage());
-    //     }
-    // }
-
-
-
     public function store(Request $request)
     {
-        $request->validate([
-            'student_id'        => 'required|exists:users,id',
-            'student_course_id' => 'required|exists:student_course,id',
+        /*
+        |--------------------------------------------------------------------------
+        | 1. VALIDATE REQUEST
+        |--------------------------------------------------------------------------
+        */
 
-            'payment_date.*'    => 'required|date',
-            'payment_mode.*'    => 'required|string',
-            'amount.*'          => 'required|numeric|min:0.01',
-            'transaction_id.*' => 'nullable|string|max:255',
-            'remarks.*'        => 'nullable|string|max:500',
+        $validated = $request->validate([
 
-            // Late Fine
-            'late_fine'        => 'nullable|numeric|min:0',
-            'late_fine_type'   => 'nullable|string|max:255',
+            'student_id' => [
+                'required',
+                'integer',
+                'exists:users,id',
+            ],
+
+            'student_course_id' => [
+                'required',
+                'integer',
+                'exists:student_course,id',
+            ],
+
+            'billing_from' => [
+                'required',
+                'date',
+            ],
+
+            'billing_to' => [
+                'required',
+                'date',
+                'after_or_equal:billing_from',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Entries
+            |--------------------------------------------------------------------------
+            */
+
+            'payment_date' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'payment_date.*' => [
+                'required',
+                'date',
+            ],
+
+            'payment_mode' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'payment_mode.*' => [
+                'required',
+                'in:Cash,UPI,Card,Bank Transfer,Cheque',
+            ],
+
+            'amount' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'amount.*' => [
+                'required',
+                'numeric',
+                'gt:0',
+            ],
+
+            'transaction_id' => [
+                'nullable',
+                'array',
+            ],
+
+            'transaction_id.*' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
+            'remarks' => [
+                'nullable',
+                'array',
+            ],
+
+            'remarks.*' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Displayed Billing Values
+            |--------------------------------------------------------------------------
+            |
+            | These are NOT trusted blindly.
+            | They are only used as submitted calculation information.
+            |
+            */
+
+            'late_fine' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'course_penalty_fee' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'fine_type' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'fine_current_month' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'total_course_fee' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'total_billing_amount' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
         ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. LOAD STUDENT COURSE
+        |--------------------------------------------------------------------------
+        */
+
+        $studentCourse = StudentCourse::query()
+            ->with([
+                'student',
+                'course',
+                'level',
+                'category',
+                'batch',
+            ])
+            ->where('id', $validated['student_course_id'])
+            ->where('user_id', $validated['student_id'])
+            ->first();
+
+        if (!$studentCourse) {
+
+            throw ValidationException::withMessages([
+                'student_course_id' =>
+                    'The selected course does not belong to the selected student.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. DATE OBJECTS
+        |--------------------------------------------------------------------------
+        */
+
+        $billingFrom = Carbon::parse(
+            $validated['billing_from']
+        )->startOfDay();
+
+        $billingTo = Carbon::parse(
+            $validated['billing_to']
+        )->startOfDay();
+
+
+        if ($billingTo->lt($billingFrom)) {
+
+            throw ValidationException::withMessages([
+                'billing_to' =>
+                    'Billing To date cannot be before Billing From date.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. PAYMENT DATA
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentDates = $validated['payment_date'] ?? [];
+        $paymentModes = $validated['payment_mode'] ?? [];
+        $paymentAmounts = $validated['amount'] ?? [];
+        $transactionIds = $validated['transaction_id'] ?? [];
+        $paymentRemarks = $validated['remarks'] ?? [];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. NORMALIZE PAYMENT ROWS
+        |--------------------------------------------------------------------------
+        */
+
+        $payments = [];
+
+        foreach ($paymentAmounts as $index => $amount) {
+
+            $amount = round((float) $amount, 2);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $mode = $paymentModes[$index] ?? null;
+
+            $transactionId =
+                isset($transactionIds[$index])
+                    ? trim((string) $transactionIds[$index])
+                    : null;
+
+            $remark =
+                isset($paymentRemarks[$index])
+                    ? trim((string) $paymentRemarks[$index])
+                    : null;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Cash does not require transaction ID
+            |--------------------------------------------------------------------------
+            */
+
+            if ($mode !== 'Cash' && empty($transactionId)) {
+
+                throw ValidationException::withMessages([
+                    "transaction_id.$index" =>
+                        "Transaction / Reference No is required for {$mode} payment.",
+                ]);
+            }
+
+
+            $payments[] = [
+
+                'payment_date' =>
+                    $paymentDates[$index] ?? now()->toDateString(),
+
+                'payment_mode' =>
+                    $mode,
+
+                'amount' =>
+                    $amount,
+
+                'transaction_id' =>
+                    $transactionId ?: null,
+
+                'remarks' =>
+                    $remark ?: null,
+            ];
+        }
+
+
+        if (empty($payments)) {
+
+            throw ValidationException::withMessages([
+                'amount' =>
+                    'At least one valid payment entry is required.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. TOTAL PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPayment = round(
+            collect($payments)->sum('amount'),
+            2
+        );
+
+
+        if ($totalPayment <= 0) {
+
+            throw ValidationException::withMessages([
+                'amount' =>
+                    'Total payment amount must be greater than zero.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. GENERATE BILLING MONTHS
+        |--------------------------------------------------------------------------
+        */
+
+        $billingMonths = [];
+
+        $monthCursor = $billingFrom->copy()->startOfMonth();
+
+        $lastMonth = $billingTo->copy()->startOfMonth();
+
+        while ($monthCursor->lte($lastMonth)) {
+
+            $billingMonths[] = $monthCursor->copy();
+
+            $monthCursor->addMonth();
+        }
+
+
+        if (empty($billingMonths)) {
+
+            throw ValidationException::withMessages([
+                'billing_from' =>
+                    'Unable to generate billing months.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. CHECK EXISTING MONTH RECORDS
+        |--------------------------------------------------------------------------
+        |
+        | We do not create duplicate fully-paid month records.
+        |
+        */
+
+        $existingMonths = CourseMonthRecord::query()
+            ->where('student_course_id', $studentCourse->id)
+            ->whereIn(
+                'fee_month',
+                collect($billingMonths)
+                    ->map(fn ($month) => $month->format('Y-m-01'))
+                    ->values()
+                    ->all()
+            )
+            ->get()
+            ->keyBy(
+                fn ($record) =>
+                    Carbon::parse($record->fee_month)
+                        ->format('Y-m')
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. FIRST PAYMENT DETECTION
+        |--------------------------------------------------------------------------
+        */
+
+        $hasPreviousPayment = CoursePaymentRecord::query()
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+            ->exists();
+
+
+        $isFirstPayment = !$hasPreviousPayment;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. FIRST PAYMENT RULE
+        |--------------------------------------------------------------------------
+        |
+        | 1 - 15  => 100%
+        | 16 - 25 => 50%
+        | 26-End  => 100%, but next month
+        |
+        */
+
+        $firstPaymentDate = Carbon::parse(
+            $payments[0]['payment_date']
+        )->startOfDay();
+
+        $firstPaymentMultiplier = 1;
+
+        $firstPaymentRule = null;
+
+        $actualBillingMonths = $billingMonths;
+
+
+        if ($isFirstPayment) {
+
+            $day = $firstPaymentDate->day;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 1 - 15
+            |--------------------------------------------------------------------------
+            */
+
+            if ($day >= 1 && $day <= 15) {
+
+                $firstPaymentMultiplier = 1;
+
+                $firstPaymentRule =
+                    '1-15: Full Course Fee';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 16 - 25
+            |--------------------------------------------------------------------------
+            */
+
+            } elseif ($day >= 16 && $day <= 25) {
+
+                $firstPaymentMultiplier = 0.50;
+
+                $firstPaymentRule =
+                    '16-25: 50% Course Fee';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 26 - Month End
+            |--------------------------------------------------------------------------
+            */
+
+            } else {
+
+                $firstPaymentMultiplier = 1;
+
+                $firstPaymentRule =
+                    '26-End: Full Course Fee, Next Month Billing';
+
+
+                /*
+                | Move billing to next month.
+                */
+
+                $nextMonth =
+                    $firstPaymentDate
+                        ->copy()
+                        ->addMonth()
+                        ->startOfMonth();
+
+
+                $actualBillingMonths = [
+                    $nextMonth,
+                ];
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. CALCULATE COURSE FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $monthlyFee = round(
+            (float) $studentCourse->monthly_fee,
+            2
+        );
+
+
+        $registrationFee = round(
+            (float) ($studentCourse->registration_fee ?? 0),
+            2
+        );
+
+
+        $admissionFee = round(
+            (float) ($studentCourse->admission_fee ?? 0),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | First payment:
+        |
+        | Only FIRST monthly record gets the first-payment multiplier.
+        |
+        | Example:
+        |
+        | Monthly Fee = 1000
+        |
+        | First payment 20th
+        |
+        | Month 1 = 500
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        $monthPayables = [];
+
+        foreach ($actualBillingMonths as $index => $month) {
+
+            $fee = $monthlyFee;
+
+
+            if ($isFirstPayment && $index === 0) {
+
+                $fee =
+                    round(
+                        $monthlyFee *
+                        $firstPaymentMultiplier,
+                        2
+                    );
+            }
+
+
+            $monthPayables[] = [
+
+                'month' =>
+                    $month->copy(),
+
+                'monthly_fee' =>
+                    $monthlyFee,
+
+                'payable_amount' =>
+                    $fee,
+
+                'payment_rule' =>
+                    $isFirstPayment
+                        ? $firstPaymentRule
+                        : 'Regular Monthly Fee',
+            ];
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 12. TOTAL COURSE FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $totalCourseFee = round(
+            collect($monthPayables)
+                ->sum('payable_amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 13. LATE FINE / PENALTY
+        |--------------------------------------------------------------------------
+        |
+        | At this stage these values come from the calculation already
+        | performed by your billing calculation AJAX.
+        |
+        | IMPORTANT:
+        | Ideally the exact same calculation should be moved into a
+        | shared BillingService and called here as well.
+        |
+        */
+
+        $lateFine = round(
+            (float) ($validated['late_fine'] ?? 0),
+            2
+        );
+
+
+        $penaltyFee = round(
+            (float) ($validated['course_penalty_fee'] ?? 0),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 14. TOTAL BILLING
+        |--------------------------------------------------------------------------
+        |
+        | Registration + Admission are charged only on first payment.
+        |--------------------------------------------------------------------------
+        */
+
+        $billingRegistrationFee =
+            $isFirstPayment
+                ? $registrationFee
+                : 0;
+
+
+        $billingAdmissionFee =
+            $isFirstPayment
+                ? $admissionFee
+                : 0;
+
+
+        $totalBillingAmount = round(
+
+            $totalCourseFee
+            + $billingRegistrationFee
+            + $billingAdmissionFee
+            + $lateFine
+            + $penaltyFee,
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 15. PAYMENT MUST MATCH BILLING
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            abs(
+                $totalPayment -
+                $totalBillingAmount
+            ) > 0.009
+        ) {
+
+            throw ValidationException::withMessages([
+                'amount' =>
+                    'Total payment ₹' .
+                    number_format($totalPayment, 2) .
+                    ' does not match billing amount ₹' .
+                    number_format($totalBillingAmount, 2) .
+                    '.',
+            ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 16. DATABASE TRANSACTION
+        |--------------------------------------------------------------------------
+        */
 
         DB::beginTransaction();
 
         try {
 
-            $studentCourse = StudentCourse::findOrFail(
-                $request->student_course_id
-            );
-
             /*
             |--------------------------------------------------------------------------
-            | Previous Payment Summary
+            | A. CREATE / UPDATE MONTH RECORDS
             |--------------------------------------------------------------------------
             */
 
-            $paymentCount = StudentPayment::where(
-                'student_course_id',
-                $studentCourse->id
-            )->count();
-
-            $totalPaid = StudentPayment::where(
-                'student_course_id',
-                $studentCourse->id
-            )->sum('amount');
+            $monthRecords = [];
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Current Payment Total
-            |--------------------------------------------------------------------------
-            */
+            foreach ($monthPayables as $monthData) {
 
-            $currentPayment = array_sum(
-                array_map(
-                    'floatval',
-                    $request->amount ?? []
-                )
-            );
+                $month =
+                    $monthData['month'];
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Late Fine
-            |--------------------------------------------------------------------------
-            */
-
-            $lateFine = (float) ($request->late_fine ?? 0);
-
-            $lateFine = max($lateFine, 0);
+                $monthKey =
+                    $month->format('Y-m');
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Remaining Course Amount
-            |--------------------------------------------------------------------------
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | Existing Record
+                |--------------------------------------------------------------------------
+                */
 
-            $remaining = max(
-                (float) $studentCourse->grand_total - $totalPaid,
-                0
-            );
+                $monthRecord =
+                    $existingMonths->get($monthKey);
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Total Payable Including Late Fine
-            |--------------------------------------------------------------------------
-            */
+                if ($monthRecord) {
 
-            $totalPayable = $remaining + $lateFine;
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Prevent duplicate payment for already-paid month
+                    |--------------------------------------------------------------------------
+                    */
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Payment Amount Validation
-            |--------------------------------------------------------------------------
-            */
-
-            if ($currentPayment > ($totalPayable + 0.009)) {
-
-                DB::rollBack();
-
-                return back()
-                    ->withInput()
-                    ->with(
-                        'error',
-                        'Payment cannot exceed total payable amount of ₹' .
-                        number_format($totalPayable, 2)
-                    );
-            }
+                    $existingPayable =
+                        round(
+                            (float) $monthRecord->payable_amount,
+                            2
+                        );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Fee Apply Logic
-            |--------------------------------------------------------------------------
-            */
-
-            if ($paymentCount == 0) {
-
-                // First Payment
-                $registrationFee = (float) $studentCourse->registration_fee;
-                $admissionFee    = (float) $studentCourse->admission_fee;
-
-            } else {
-
-                // Second Payment Onwards
-                $registrationFee = 0;
-                $admissionFee    = 0;
-            }
+                    $existingPaid =
+                        round(
+                            (float) $monthRecord->paid_amount,
+                            2
+                        );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Late Fine Allocation
-            |--------------------------------------------------------------------------
-            |
-            | Late fine should be stored only once for this billing/payment.
-            |
-            */
+                    if (
+                        $existingPayable > 0 &&
+                        $existingPaid >= $existingPayable
+                    ) {
 
-            $remainingLateFine = $lateFine;
+                        throw ValidationException::withMessages([
+                            'billing_from' =>
+                                'The billing month ' .
+                                $month->format('F Y') .
+                                ' is already fully paid.',
+                        ]);
+                    }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Save Payment Rows
-            |--------------------------------------------------------------------------
-            */
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Use existing record
+                    |--------------------------------------------------------------------------
+                    */
 
-            foreach ($request->payment_mode as $key => $mode) {
+                    $monthRecords[] = $monthRecord;
 
-                $amount = (float) ($request->amount[$key] ?? 0);
-
-                if (
-                    empty($mode) ||
-                    $amount <= 0
-                ) {
                     continue;
                 }
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Late Fine
+                | Due Date
                 |--------------------------------------------------------------------------
                 |
-                | If multiple payment rows are added in the same billing,
-                | late fine is attached only to the first actual payment row.
+                | Monthly fee due date = billing month date.
+                | You can change this to your actual studio due-date rule.
                 |
                 */
 
-                $rowLateFine = 0;
-
-                if ($remainingLateFine > 0) {
-
-                    $rowLateFine = $remainingLateFine;
-
-                    $remainingLateFine = 0;
-                }
+                $dueDate =
+                    $month->copy()->endOfMonth();
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Save Payment
+                | Create Month Record
                 |--------------------------------------------------------------------------
                 */
 
-                StudentPayment::create([
+                $monthRecord =
+                    CourseMonthRecord::create([
 
-                    'order_id' => 'ORD-' . strtoupper(Str::random(12)),
+                        'student_course_id' =>
+                            $studentCourse->id,
 
-                    'student_course_id' => $studentCourse->id,
+                        'fee_month' =>
+                            $month->format('Y-m-01'),
 
-                    'user_id' => $request->student_id,
+                        'monthly_fee' =>
+                            $monthData['monthly_fee'],
 
+                        'waiver_amount' =>
+                            0,
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Fees
-                    |--------------------------------------------------------------------------
-                    */
+                        'payable_amount' =>
+                            $monthData['payable_amount'],
 
-                    'registration_fee' => $registrationFee,
+                        'paid_amount' =>
+                            0,
 
-                    'admission_fee' => $admissionFee,
+                        'due_date' =>
+                            $dueDate->format('Y-m-d'),
 
-                    'course_fee' => $studentCourse->course_fee,
+                        'paid_date' =>
+                            null,
 
+                        'payment_percentage' =>
+                            0,
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Payment
-                    |--------------------------------------------------------------------------
-                    */
+                        'payment_rule' =>
+                            $monthData['payment_rule'],
 
-                    'payment_date' => $request->payment_date[$key],
+                        'status' =>
+                            'unpaid',
 
-                    'payment_mode' => $mode,
-
-                    // 'payment_type' => 'student',
-
-                    'amount' => $amount,
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Late Fine
-                    |--------------------------------------------------------------------------
-                    */
-
-                    'late_fine' => $rowLateFine,
+                        'remarks' =>
+                            $isFirstPayment
+                                ? 'First payment billing'
+                                : 'Regular billing',
+                    ]);
 
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Platform Fee
-                    |--------------------------------------------------------------------------
-                    */
-
-                    'platform_fee_percentage' => 0,
-
-                    'platform_fee_amount' => 0,
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Total Amount
-                    |--------------------------------------------------------------------------
-                    |
-                    | Amount already contains the actual amount received.
-                    | Late fine is kept separately as a breakup.
-                    |
-                    */
-
-                    'total_amount' => $amount,
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Transaction
-                    |--------------------------------------------------------------------------
-                    */
-
-                    'transaction_id' =>
-                        $request->transaction_id[$key] ?? null,
-
-                    'remarks' =>
-                        $request->remarks[$key] ?? null,
-
-                    'status' => 'success',
-
-                ]);
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Registration & Admission Only Once
-                |--------------------------------------------------------------------------
-                */
-
-                $registrationFee = 0;
-
-                $admissionFee = 0;
+                $monthRecords[] =
+                    $monthRecord;
             }
 
 
             /*
             |--------------------------------------------------------------------------
-            | Commit
+            | B. ALLOCATE COURSE FEE FROM PAYMENT
+            |--------------------------------------------------------------------------
+            |
+            | Registration / Admission / Fine / Penalty are not added
+            | to monthly paid_amount.
+            |
+            | First the monthly course fee portion is allocated.
+            |--------------------------------------------------------------------------
+            */
+
+            $remainingCourseFee =
+                $totalCourseFee;
+
+
+            foreach ($monthRecords as $monthRecord) {
+
+                if ($remainingCourseFee <= 0) {
+                    break;
+                }
+
+
+                $payable =
+                    round(
+                        (float) $monthRecord->payable_amount,
+                        2
+                    );
+
+
+                $alreadyPaid =
+                    round(
+                        (float) $monthRecord->paid_amount,
+                        2
+                    );
+
+
+                $outstanding =
+                    max(
+                        0,
+                        $payable - $alreadyPaid
+                    );
+
+
+                if ($outstanding <= 0) {
+                    continue;
+                }
+
+
+                $allocated =
+                    min(
+                        $remainingCourseFee,
+                        $outstanding
+                    );
+
+
+                $newPaid =
+                    round(
+                        $alreadyPaid + $allocated,
+                        2
+                    );
+
+
+                $percentage =
+                    $payable > 0
+                        ? round(
+                            ($newPaid / $payable) * 100,
+                            2
+                        )
+                        : 0;
+
+
+                $isFullyPaid =
+                    $newPaid >= $payable;
+
+
+                $monthRecord->update([
+
+                    'paid_amount' =>
+                        $newPaid,
+
+                    'payment_percentage' =>
+                        min(100, $percentage),
+
+                    'paid_date' =>
+                        $isFullyPaid
+                            ? $payments[0]['payment_date']
+                            : null,
+
+                    'status' =>
+                        $isFullyPaid
+                            ? 'paid'
+                            : 'partial',
+                ]);
+
+
+                $remainingCourseFee =
+                    round(
+                        $remainingCourseFee -
+                        $allocated,
+                        2
+                    );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | C. SAVE LATE FINE
+            |--------------------------------------------------------------------------
+            */
+
+            if ($lateFine > 0) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Find month to which fine belongs.
+                |--------------------------------------------------------------------------
+                */
+
+                $fineMonth = null;
+
+
+                if (!empty($validated['fine_current_month'])) {
+
+                    try {
+
+                        $fineMonth =
+                            Carbon::parse(
+                                $validated['fine_current_month'] . '-01'
+                            )->startOfMonth();
+
+                    } catch (\Throwable $e) {
+
+                        $fineMonth =
+                            $actualBillingMonths[0] ?? null;
+                    }
+
+                } else {
+
+                    $fineMonth =
+                        $actualBillingMonths[0] ?? null;
+                }
+
+
+                $fineMonthRecord = null;
+
+
+                if ($fineMonth) {
+
+                    $fineMonthRecord =
+                        CourseMonthRecord::query()
+                            ->where(
+                                'student_course_id',
+                                $studentCourse->id
+                            )
+                            ->whereDate(
+                                'fee_month',
+                                $fineMonth->format('Y-m-01')
+                            )
+                            ->first();
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Due Date
+                |--------------------------------------------------------------------------
+                */
+
+                $fineDueDate =
+                    $fineMonthRecord?->due_date
+                    ?? (
+                        $fineMonth
+                            ? $fineMonth->copy()->endOfMonth()
+                            : $billingFrom
+                    );
+
+
+                LateFineRecord::create([
+
+                    'student_course_id' =>
+                        $studentCourse->id,
+
+                    'course_month_record_id' =>
+                        $fineMonthRecord?->id,
+
+                    'fine_date' =>
+                        now()->toDateString(),
+
+                    'due_date' =>
+                        $fineDueDate,
+
+                    'fine_amount' =>
+                        $lateFine,
+
+                    'paid_amount' =>
+                        $lateFine,
+
+                    'waived_amount' =>
+                        0,
+
+                    'status' =>
+                        'paid',
+
+                    'remarks' =>
+                        $validated['fine_type']
+                            ?? 'Late Fine',
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | D. SAVE COURSE PENALTY
+            |--------------------------------------------------------------------------
+            |
+            | Your model does not have a separate CoursePenaltyRecord table.
+            | Therefore penalty is stored in LateFineRecord.
+            |
+            */
+
+            if ($penaltyFee > 0) {
+
+                $penaltyMonth =
+                    $actualBillingMonths[0] ?? null;
+
+
+                $penaltyMonthRecord = null;
+
+
+                if ($penaltyMonth) {
+
+                    $penaltyMonthRecord =
+                        CourseMonthRecord::query()
+                            ->where(
+                                'student_course_id',
+                                $studentCourse->id
+                            )
+                            ->whereDate(
+                                'fee_month',
+                                $penaltyMonth->format('Y-m-01')
+                            )
+                            ->first();
+                }
+
+
+                LateFineRecord::create([
+
+                    'student_course_id' =>
+                        $studentCourse->id,
+
+                    'course_month_record_id' =>
+                        $penaltyMonthRecord?->id,
+
+                    'fine_date' =>
+                        now()->toDateString(),
+
+                    'due_date' =>
+                        $penaltyMonthRecord?->due_date
+                        ?? now()->toDateString(),
+
+                    'fine_amount' =>
+                        $penaltyFee,
+
+                    'paid_amount' =>
+                        $penaltyFee,
+
+                    'waived_amount' =>
+                        0,
+
+                    'status' =>
+                        'paid',
+
+                    'remarks' =>
+                        'Course Penalty Fee',
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | E. SAVE PAYMENT ENTRIES
+            |--------------------------------------------------------------------------
+            */
+
+            foreach ($payments as $payment) {
+
+                CoursePaymentRecord::create([
+
+                    'student_course_id' =>
+                        $studentCourse->id,
+
+                    'user_id' =>
+                        $studentCourse->user_id,
+
+                    'payment_date' =>
+                        $payment['payment_date'],
+
+                    'payment_mode' =>
+                        $payment['payment_mode'],
+
+                    'amount' =>
+                        $payment['amount'],
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | No platform fee for now
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'platform_fee_percentage' =>
+                        0,
+
+                    'platform_fee_amount' =>
+                        0,
+
+                    'transaction_id' =>
+                        $payment['transaction_id'],
+
+                    'payment_proof' =>
+                        null,
+
+                    'status' =>
+                        'success',
+
+                    'remarks' =>
+                        $payment['remarks'],
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | F. COMMIT
             |--------------------------------------------------------------------------
             */
 
             DB::commit();
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS
+            |--------------------------------------------------------------------------
+            */
+
             return redirect()
                 ->route('billing.index')
                 ->with(
                     'success',
-                    'Payment added successfully.' .
-                    ($lateFine > 0
-                        ? ' Late fine of ₹' .
-                        number_format($lateFine, 2) .
-                        ' applied.'
-                        : '')
+                    'Billing saved successfully. Total amount ₹' .
+                    number_format($totalBillingAmount, 2)
                 );
+        }
 
 
-        } catch (\Exception $e) {
+        /*
+        |--------------------------------------------------------------------------
+        | ROLLBACK ON ERROR
+        |--------------------------------------------------------------------------
+        */
+
+        catch (ValidationException $e) {
 
             DB::rollBack();
+
+            throw $e;
+        }
+
+
+        catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            Log::error('BILLING STORE ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->except(['_token']),
+            ]);
 
             return back()
                 ->withInput()
                 ->with(
                     'error',
-                    $e->getMessage()
+                    'Billing Save Error: ' . $e->getMessage()
                 );
         }
     }
@@ -784,112 +2351,364 @@ class BillingController extends Controller
 
     }
 
-    public function deletePayment(StudentPayment $payment)
+    public function deletePayment($paymentId)
     {
         DB::beginTransaction();
 
         try {
 
-            $studentCourseId = $payment->student_course_id;
+            /*
+            |--------------------------------------------------------------------------
+            | 1. FIND PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            $payment = CoursePaymentRecord::query()
+                ->findOrFail($paymentId);
+
 
             /*
             |--------------------------------------------------------------------------
-            | Delete Selected Payment
+            | 2. STUDENT COURSE
+            |--------------------------------------------------------------------------
+            */
+
+            $studentCourse = StudentCourse::query()
+                ->findOrFail(
+                    $payment->student_course_id
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. DELETE PAYMENT
             |--------------------------------------------------------------------------
             */
 
             $payment->delete();
 
+
             /*
             |--------------------------------------------------------------------------
-            | Reorder Remaining Payments
+            | 4. GET REMAINING PAYMENTS
             |--------------------------------------------------------------------------
             */
 
-            $payments = StudentPayment::where(
+            $remainingPayments = CoursePaymentRecord::query()
+                ->where(
                     'student_course_id',
-                    $studentCourseId
+                    $studentCourse->id
                 )
-                ->orderBy('payment_date')
-                ->orderBy('id')
                 ->get();
 
-            $studentCourse = StudentCourse::find($studentCourseId);
 
-            if ($studentCourse) {
+            $totalRemainingPayment = round(
+                (float) $remainingPayments->sum('amount'),
+                2
+            );
 
-                foreach ($payments as $index => $row) {
 
-                    if ($index == 0) {
+            /*
+            |--------------------------------------------------------------------------
+            | 5. GET MONTH RECORDS
+            |--------------------------------------------------------------------------
+            */
 
-                        // First payment carries registration & admission fee
-                        $row->registration_fee = $studentCourse->registration_fee;
-                        $row->admission_fee    = $studentCourse->admission_fee;
+            $monthRecords = CourseMonthRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->orderBy('fee_month', 'asc')
+                ->get();
 
-                    } else {
 
-                        $row->registration_fee = 0;
-                        $row->admission_fee    = 0;
+            /*
+            |--------------------------------------------------------------------------
+            | 6. TOTAL FINE / PENALTY
+            |--------------------------------------------------------------------------
+            */
 
-                    }
+            $totalFine = round(
+                (float) LateFineRecord::query()
+                    ->where(
+                        'student_course_id',
+                        $studentCourse->id
+                    )
+                    ->sum('fine_amount'),
+                2
+            );
 
-                    $row->course_fee = $studentCourse->course_fee;
 
-                    $row->save();
-                }
+            /*
+            |--------------------------------------------------------------------------
+            | 7. FIRST PAYMENT FEES
+            |--------------------------------------------------------------------------
+            */
+
+            $registrationFee = round(
+                (float) ($studentCourse->registration_fee ?? 0),
+                2
+            );
+
+            $admissionFee = round(
+                (float) ($studentCourse->admission_fee ?? 0),
+                2
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 8. NON COURSE PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            $nonCourseAmount = 0;
+
+            /*
+            | Registration + Admission are applicable
+            | only when at least one payment exists.
+            */
+
+            if ($remainingPayments->isNotEmpty()) {
+
+                $nonCourseAmount +=
+                    $registrationFee +
+                    $admissionFee;
             }
+
+
+            /*
+            | Fine / penalty is already paid in the
+            | existing billing structure.
+            */
+
+            $nonCourseAmount += $totalFine;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 9. COURSE FEE AVAILABLE FOR MONTH RECORDS
+            |--------------------------------------------------------------------------
+            */
+
+            $remainingCoursePayment = max(
+                0,
+                round(
+                    $totalRemainingPayment
+                    - $nonCourseAmount,
+                    2
+                )
+            );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 10. RESET MONTH RECORDS
+            |--------------------------------------------------------------------------
+            */
+
+            foreach ($monthRecords as $monthRecord) {
+
+                $payable = round(
+                    (float) $monthRecord->payable_amount,
+                    2
+                );
+
+
+                if ($remainingCoursePayment <= 0) {
+
+                    $monthRecord->update([
+
+                        'paid_amount' =>
+                            0,
+
+                        'payment_percentage' =>
+                            0,
+
+                        'paid_date' =>
+                            null,
+
+                        'status' =>
+                            'unpaid',
+                    ]);
+
+                    continue;
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Allocate remaining payment
+                |--------------------------------------------------------------------------
+                */
+
+                $allocated = min(
+                    $remainingCoursePayment,
+                    $payable
+                );
+
+
+                $percentage = $payable > 0
+                    ? round(
+                        ($allocated / $payable) * 100,
+                        2
+                    )
+                    : 0;
+
+
+                $isFullyPaid =
+                    $allocated >= $payable;
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update Month
+                |--------------------------------------------------------------------------
+                */
+
+                $monthRecord->update([
+
+                    'paid_amount' =>
+                        round($allocated, 2),
+
+                    'payment_percentage' =>
+                        min(100, $percentage),
+
+                    'paid_date' =>
+                        $isFullyPaid
+                            ? now()->toDateString()
+                            : null,
+
+                    'status' =>
+                        $isFullyPaid
+                            ? 'paid'
+                            : (
+                                $allocated > 0
+                                    ? 'partial'
+                                    : 'unpaid'
+                            ),
+                ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Reduce Remaining
+                |--------------------------------------------------------------------------
+                */
+
+                $remainingCoursePayment =
+                    round(
+                        $remainingCoursePayment
+                        - $allocated,
+                        2
+                    );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 11. COMMIT
+            |--------------------------------------------------------------------------
+            */
 
             DB::commit();
 
-            return response()->json([
 
-                'status'  => true,
+            /*
+            |--------------------------------------------------------------------------
+            | 12. SUCCESS
+            |--------------------------------------------------------------------------
+            */
 
-                'message' => 'Payment deleted successfully.'
+            return redirect()
+                ->route(
+                    'billing.payments',
+                    $studentCourse->id
+                )
+                ->with(
+                    'success',
+                    'Payment deleted successfully and billing records recalculated.'
+                );
+        }
 
-            ]);
 
-        } catch (\Exception $e) {
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATION ERROR
+        |--------------------------------------------------------------------------
+        */
+
+        catch (ValidationException $e) {
 
             DB::rollBack();
 
-            return response()->json([
+            throw $e;
+        }
 
-                'status'  => false,
 
-                'message' => $e->getMessage()
+        /*
+        |--------------------------------------------------------------------------
+        | OTHER ERROR
+        |--------------------------------------------------------------------------
+        */
 
-            ], 500);
+        catch (\Throwable $e) {
 
+            DB::rollBack();
+
+
+            Log::error(
+                'BILLING PAYMENT DELETE ERROR',
+                [
+                    'message' =>
+                        $e->getMessage(),
+
+                    'file' =>
+                        $e->getFile(),
+
+                    'line' =>
+                        $e->getLine(),
+
+                    'payment_id' =>
+                        $paymentId,
+                ]
+            );
+
+
+            return back()
+                ->with(
+                    'error',
+                    'Payment delete failed: '
+                    . $e->getMessage()
+                );
         }
     }
 
-    public function confirmPayment(Request $request, $paymentId)
+    public function confirmPayment(CoursePaymentRecord $payment)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Already Successful
+        |--------------------------------------------------------------------------
+        */
+
+        if ($payment->status === 'success') {
+
+            return back()->with(
+                'info',
+                'This payment is already confirmed.'
+            );
+        }
+
+
         DB::beginTransaction();
 
         try {
 
-            $payment = StudentPayment::findOrFail($paymentId);
-
             /*
             |--------------------------------------------------------------------------
-            | Check Payment Status
-            |--------------------------------------------------------------------------
-            */
-
-            if ($payment->status !== 'pending') {
-
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Only pending payments can be confirmed.'
-                ], 422);
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Confirm Payment
+            | Update Payment Status
             |--------------------------------------------------------------------------
             */
 
@@ -898,41 +2717,692 @@ class BillingController extends Controller
             ]);
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Commit
+            |--------------------------------------------------------------------------
+            */
+
             DB::commit();
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Payment confirmed successfully.',
-                'payment_id' => $payment->id,
-                'payment_status' => $payment->status,
-            ]);
 
-        } catch (\Exception $e) {
+            return back()->with(
+                'success',
+                'Payment confirmed successfully.'
+            );
+        }
+
+
+        catch (\Throwable $e) {
 
             DB::rollBack();
 
-            return response()->json([
-                'status' => false,
-                'message' => 'Payment confirmation failed.'
-            ], 500);
+
+            Log::error(
+                'PAYMENT CONFIRM ERROR',
+                [
+                    'payment_id' => $payment->id,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]
+            );
+
+
+            return back()->with(
+                'error',
+                'Unable to confirm payment: ' .
+                $e->getMessage()
+            );
         }
     }
 
-    public function invoice(StudentPayment $payment)
+    public function invoice($paymentId)
     {
-        $payment->load([
+        /*
+        |--------------------------------------------------------------------------
+        | 1. LOAD SINGLE PAYMENT
+        |--------------------------------------------------------------------------
+        */
 
-            'studentCourse.student',
-            'studentCourse.course',
-            'studentCourse.batch',
-            'studentCourse.level',
-            'studentCourse.category',
+        $payment = CoursePaymentRecord::query()
+            ->with([
+                'studentCourse.student',
+                'studentCourse.course',
+                'studentCourse.level',
+                'studentCourse.category',
+                'studentCourse.batch',
+                'studentCourse.instructor',
+            ])
+            ->findOrFail($paymentId);
 
-        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. STUDENT COURSE
+        |--------------------------------------------------------------------------
+        */
+
+        $studentCourse = $payment->studentCourse;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. MONTH RECORDS
+        |--------------------------------------------------------------------------
+        |
+        | These are used only for calculating billing summary.
+        | They are NOT displayed as individual payment records.
+        |
+        */
+
+        $monthRecords = CourseMonthRecord::query()
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+            ->orderBy('fee_month', 'asc')
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. TOTAL PAID
+        |--------------------------------------------------------------------------
+        |
+        | Cumulative total paid for this course.
+        |
+        */
+
+        $totalPaid = round(
+            (float) CoursePaymentRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->where('status', 'success')
+                ->sum('amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. COURSE FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $totalCourseFee = round(
+            (float) $monthRecords->sum('payable_amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. LATE FINE / PENALTY
+        |--------------------------------------------------------------------------
+        */
+
+        $totalFine = round(
+            (float) LateFineRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->sum('fine_amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. REGISTRATION / ADMISSION
+        |--------------------------------------------------------------------------
+        */
+
+        $registrationFee = round(
+            (float) ($studentCourse->registration_fee ?? 0),
+            2
+        );
+
+        $admissionFee = round(
+            (float) ($studentCourse->admission_fee ?? 0),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. TOTAL BILLING
+        |--------------------------------------------------------------------------
+        */
+
+        $totalBilling = round(
+
+            $totalCourseFee
+            + $registrationFee
+            + $admissionFee
+            + $totalFine,
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. REMAINING
+        |--------------------------------------------------------------------------
+        */
+
+        $remaining = max(
+            0,
+            round(
+                $totalBilling - $totalPaid,
+                2
+            )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. PAID MONTHS
+        |--------------------------------------------------------------------------
+        */
+
+        $paidMonths = $monthRecords
+            ->filter(function ($record) {
+
+                return
+                    (float) $record->payable_amount > 0
+                    &&
+                    (float) $record->paid_amount >=
+                    (float) $record->payable_amount;
+
+            })
+            ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. PAID MONTH LABEL
+        |--------------------------------------------------------------------------
+        */
+
+        $paidMonthLabel = 'No payment yet';
+
+        $paidMonthCount = $paidMonths->count();
+
+
+        if ($paidMonths->isNotEmpty()) {
+
+            $firstMonth = Carbon::parse(
+                $paidMonths->first()->fee_month
+            )->startOfMonth();
+
+
+            $lastMonth = Carbon::parse(
+                $paidMonths->last()->fee_month
+            )->startOfMonth();
+
+
+            if ($firstMonth->equalTo($lastMonth)) {
+
+                $paidMonthLabel =
+                    $firstMonth->format('M Y');
+
+            } else {
+
+                $paidMonthLabel =
+                    $firstMonth->format('M Y')
+                    . ' - '
+                    . $lastMonth->format('M Y');
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 12. RETURN SINGLE PAYMENT INVOICE
+        |--------------------------------------------------------------------------
+        */
 
         return view(
             'backend.billing.invoice',
-            compact('payment')
+            compact(
+                'payment',
+                'studentCourse',
+                'monthRecords',
+                'totalPaid',
+                'totalCourseFee',
+                'registrationFee',
+                'admissionFee',
+                'totalFine',
+                'totalBilling',
+                'remaining',
+                'paidMonthLabel',
+                'paidMonthCount'
+            )
+        );
+    }
+
+    public function overallInvoice($payment)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. LOAD PAYMENT
+        |--------------------------------------------------------------------------
+        */
+
+        $payment = CoursePaymentRecord::query()
+
+            ->with([
+                'studentCourse.student',
+                'studentCourse.course',
+                'studentCourse.batch',
+                'studentCourse.level',
+                'studentCourse.category',
+                'studentCourse.instructor',
+            ])
+
+            ->findOrFail($payment);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. STUDENT COURSE
+        |--------------------------------------------------------------------------
+        */
+
+        $studentCourse =
+            $payment->studentCourse;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3. ALL SUCCESSFUL PAYMENTS
+        |--------------------------------------------------------------------------
+        */
+
+        $payments = CoursePaymentRecord::query()
+
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+
+            ->where(
+                'status',
+                'success'
+            )
+
+            ->orderBy(
+                'payment_date',
+                'asc'
+            )
+
+            ->orderBy(
+                'id',
+                'asc'
+            )
+
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 4. MONTH RECORDS
+        |--------------------------------------------------------------------------
+        */
+
+        $monthRecords = CourseMonthRecord::query()
+
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+
+            ->orderBy(
+                'fee_month',
+                'asc'
+            )
+
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. PAID MONTHS
+        |--------------------------------------------------------------------------
+        */
+
+        $paidMonths = $monthRecords
+
+            ->filter(function ($record) {
+
+                $payable = round(
+                    (float) $record->payable_amount,
+                    2
+                );
+
+                $paid = round(
+                    (float) $record->paid_amount,
+                    2
+                );
+
+                return $payable > 0
+                    && $paid >= $payable;
+
+            })
+
+            ->sortBy('fee_month')
+            ->values();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 6. PAID MONTH LABEL
+        |--------------------------------------------------------------------------
+        */
+
+        $paidMonthLabel =
+            'No payment yet';
+
+        $paidMonthCount =
+            $paidMonths->count();
+
+
+        if ($paidMonths->isNotEmpty()) {
+
+            $firstPaidMonth = Carbon::parse(
+                $paidMonths->first()->fee_month
+            )->startOfMonth();
+
+
+            $lastPaidMonth = Carbon::parse(
+                $paidMonths->last()->fee_month
+            )->startOfMonth();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Check continuous months
+            |--------------------------------------------------------------------------
+            */
+
+            $isContinuous = true;
+
+            $expectedMonth =
+                $firstPaidMonth->copy();
+
+
+            foreach ($paidMonths as $monthRecord) {
+
+                $currentMonth = Carbon::parse(
+                    $monthRecord->fee_month
+                )->startOfMonth();
+
+
+                if (
+                    !$currentMonth->equalTo(
+                        $expectedMonth
+                    )
+                ) {
+
+                    $isContinuous = false;
+
+                    break;
+                }
+
+
+                $expectedMonth->addMonth();
+            }
+
+
+            if ($isContinuous) {
+
+                if (
+                    $firstPaidMonth->equalTo(
+                        $lastPaidMonth
+                    )
+                ) {
+
+                    $paidMonthLabel =
+                        $firstPaidMonth->format('M Y');
+
+                } else {
+
+                    $paidMonthLabel =
+                        $firstPaidMonth->format('M Y')
+                        . ' - '
+                        . $lastPaidMonth->format('M Y');
+                }
+
+            } else {
+
+                $paidMonthLabel =
+                    $paidMonths
+                        ->map(function ($record) {
+
+                            return Carbon::parse(
+                                $record->fee_month
+                            )->format('M Y');
+
+                        })
+                        ->implode(', ');
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 7. TOTAL COURSE FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $totalCourseFee = round(
+
+            (float) $monthRecords->sum(
+                'payable_amount'
+            ),
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 8. REGISTRATION FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $registrationFee = round(
+
+            (float) (
+                $studentCourse->registration_fee
+                ?? 0
+            ),
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. ADMISSION FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $admissionFee = round(
+
+            (float) (
+                $studentCourse->admission_fee
+                ?? 0
+            ),
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. LATE FINE / PENALTY
+        |--------------------------------------------------------------------------
+        */
+
+        $lateFines = LateFineRecord::query()
+
+            ->where(
+                'student_course_id',
+                $studentCourse->id
+            )
+
+            ->orderBy(
+                'fine_date',
+                'asc'
+            )
+
+            ->orderBy(
+                'id',
+                'asc'
+            )
+
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. TOTAL FINE
+        |--------------------------------------------------------------------------
+        */
+
+        $totalFine = round(
+
+            (float) $lateFines->sum(
+                'fine_amount'
+            ),
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 12. TOTAL BILLING
+        |--------------------------------------------------------------------------
+        */
+
+        $totalBilling = round(
+
+            $totalCourseFee
+            + $registrationFee
+            + $admissionFee
+            + $totalFine,
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 13. TOTAL PAID
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPaid = round(
+
+            (float) $payments->sum(
+                'amount'
+            ),
+
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 14. REMAINING
+        |--------------------------------------------------------------------------
+        */
+
+        $remaining = max(
+
+            0,
+
+            round(
+                $totalBilling - $totalPaid,
+                2
+            )
+
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 15. PAYMENT COUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $paymentCount =
+            $payments->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 16. AMOUNT IN WORDS
+        |--------------------------------------------------------------------------
+        */
+
+        $amountInWords = '';
+
+        try {
+
+            $formatter =
+                \NumberFormatter::create(
+                    'en',
+                    \NumberFormatter::SPELLOUT
+                );
+
+
+            $amountInWords =
+                $formatter->format(
+                    $totalPaid
+                );
+
+        } catch (\Throwable $e) {
+
+            $amountInWords = '';
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 17. RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'backend.billing.overall-invoice',
+            compact(
+                'payment',
+                'studentCourse',
+                'payments',
+                'monthRecords',
+                'paidMonths',
+                'paidMonthLabel',
+                'paidMonthCount',
+                'lateFines',
+                'totalCourseFee',
+                'registrationFee',
+                'admissionFee',
+                'totalFine',
+                'totalBilling',
+                'totalPaid',
+                'remaining',
+                'paymentCount',
+                'amountInWords'
+            )
         );
     }
 
@@ -2663,173 +5133,314 @@ class BillingController extends Controller
     {
         /*
         |--------------------------------------------------------------------------
-        | Filters
+        | 1. PAYMENT QUERY
         |--------------------------------------------------------------------------
         */
 
-        $studentId = $request->student_id;
-        $courseId  = $request->course_id;
-        $status    = $request->status;
-        $fromDate  = $request->from_date;
-        $toDate    = $request->to_date;
+        $query = CoursePaymentRecord::query()
+            ->with([
+                'studentCourse.student',
+                'studentCourse.course',
+                'studentCourse.batch',
+                'studentCourse.level',
+                'studentCourse.category',
+            ]);
 
 
         /*
         |--------------------------------------------------------------------------
-        | Payment Query
-        |--------------------------------------------------------------------------
-        |
-        | Every StudentPayment record will be shown separately.
-        |
-        */
-
-        $payments = StudentPayment::with([
-            'student:id,name,email,phone',
-            'studentCourse:id,user_id,course_id,level_id,category_id,batch_id,admission_no,course_duration,duration_type',
-            'studentCourse.course:id,course_name,duration,duration_type',
-            'studentCourse.level:id,name',
-            'studentCourse.category:id,name',
-            'studentCourse.batch:id,batch_name',
-        ])
-        /*
-        |--------------------------------------------------------------------------
-        | Student Filter
+        | 2. STUDENT FILTER
         |--------------------------------------------------------------------------
         */
 
-        ->when($studentId, function ($query) use ($studentId) {
+        if ($request->filled('student_id')) {
 
-            $query->where('user_id', $studentId);
+            $query->whereHas('studentCourse', function ($q) use ($request) {
 
-        })
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Course Filter
-        |--------------------------------------------------------------------------
-        */
-
-        ->when($courseId, function ($query) use ($courseId) {
-
-            $query->whereHas('studentCourse', function ($q) use ($courseId) {
-
-                $q->where('course_id', $courseId);
+                $q->where('user_id', $request->student_id);
 
             });
-
-        })
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Status Filter
+        | 3. COURSE FILTER
         |--------------------------------------------------------------------------
         */
 
-        ->when($status, function ($query) use ($status) {
+        if ($request->filled('course_id')) {
 
-            $query->where('status', $status);
+            $query->whereHas('studentCourse', function ($q) use ($request) {
 
-        })
+                $q->where('course_id', $request->course_id);
+
+            });
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | From Date
+        | 4. BATCH FILTER
         |--------------------------------------------------------------------------
         */
 
-        ->when($fromDate, function ($query) use ($fromDate) {
+        if ($request->filled('batch_id')) {
 
-            $query->whereDate('payment_date', '>=', $fromDate);
+            $query->whereHas('studentCourse', function ($q) use ($request) {
 
-        })
+                $q->where('batch_id', $request->batch_id);
+
+            });
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | To Date
+        | 5. FROM DATE
         |--------------------------------------------------------------------------
         */
 
-        ->when($toDate, function ($query) use ($toDate) {
+        if ($request->filled('from_date')) {
 
-            $query->whereDate('payment_date', '<=', $toDate);
-
-        })
+            $query->whereDate(
+                'payment_date',
+                '>=',
+                $request->from_date
+            );
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Latest Payment First
+        | 6. TO DATE
         |--------------------------------------------------------------------------
         */
 
-        ->orderByDesc('payment_date')
-        ->orderByDesc('id')
+        if ($request->filled('to_date')) {
+
+            $query->whereDate(
+                'payment_date',
+                '<=',
+                $request->to_date
+            );
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Pagination
+        | 7. PAYMENT STATUS
         |--------------------------------------------------------------------------
         */
 
-        ->paginate(25)
+        if ($request->filled('status')) {
 
-        ->withQueryString();
+            $query->where(
+                'status',
+                $request->status
+            );
+        }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Students
+        | 8. PAYMENT MODE
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('payment_mode')) {
+
+            $query->where(
+                'payment_mode',
+                $request->payment_mode
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 9. SEARCH
         |--------------------------------------------------------------------------
         |
-        | Only users whose use_type is student.
+        | Search:
+        | - Student Name
+        | - Student User ID
+        | - Student Phone
+        | - Student Email
+        | - Course
+        | - Batch
+        | - Transaction ID
         |
         */
 
-        $students = User::where('user_type', 'student')
+        if ($request->filled('search')) {
+
+            $search = trim($request->search);
+
+            $query->where(function ($q) use ($search) {
+
+                /*
+                | Student
+                */
+
+                $q->whereHas(
+                    'studentCourse.student',
+                    function ($studentQuery) use ($search) {
+
+                        $studentQuery
+                            ->where(
+                                'name',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'user_id',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'phone',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'email',
+                                'like',
+                                "%{$search}%"
+                            );
+                    }
+                );
+
+
+                /*
+                | Course
+                */
+
+                $q->orWhereHas(
+                    'studentCourse.course',
+                    function ($courseQuery) use ($search) {
+
+                        $courseQuery->where(
+                            'course_name',
+                            'like',
+                            "%{$search}%"
+                        );
+                    }
+                );
+
+
+                /*
+                | Batch
+                */
+
+                $q->orWhereHas(
+                    'studentCourse.batch',
+                    function ($batchQuery) use ($search) {
+
+                        $batchQuery->where(
+                            'batch_name',
+                            'like',
+                            "%{$search}%"
+                        );
+                    }
+                );
+
+
+                /*
+                | Transaction
+                */
+
+                $q->orWhere(
+                    'transaction_id',
+                    'like',
+                    "%{$search}%"
+                );
+
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 10. GET PAYMENTS
+        |--------------------------------------------------------------------------
+        */
+
+        $payments = $query
+            ->latest('payment_date')
+            ->latest('id')
+            ->get();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. FILTER DATA
+        |--------------------------------------------------------------------------
+        */
+
+        $students = User::query()
+            ->whereHas('studentCourses')
             ->orderBy('name')
             ->get([
                 'id',
+                'user_id',
                 'name',
                 'email',
                 'phone',
             ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Courses
-        |--------------------------------------------------------------------------
-        */
-
-        $courses = Course::orderBy('course_name')
+        $courses = Course::query()
+            ->orderBy('course_name')
             ->get([
                 'id',
                 'course_name',
             ]);
 
 
+        $batches = Batch::query()
+            ->orderBy('batch_name')
+            ->get([
+                'id',
+                'batch_name',
+            ]);
+
+
         /*
         |--------------------------------------------------------------------------
-        | Payment Statuses
+        | 12. PAYMENT MODES
         |--------------------------------------------------------------------------
         */
 
-        $statuses = StudentPayment::query()
-            ->whereNotNull('status')
-            ->where('status', '!=', '')
+        $paymentModes = CoursePaymentRecord::query()
+            ->whereNotNull('payment_mode')
+            ->where('payment_mode', '!=', '')
             ->distinct()
-            ->orderBy('status')
-            ->pluck('status');
+            ->orderBy('payment_mode')
+            ->pluck('payment_mode');
 
 
         /*
         |--------------------------------------------------------------------------
-        | Return View
+        | 13. SUMMARY
+        |--------------------------------------------------------------------------
+        */
+
+        $successfulPayments = $payments->where(
+            'status',
+            'success'
+        );
+
+        $totalPayments = $payments->count();
+
+        $successfulAmount = $successfulPayments->sum(
+            'amount'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 14. RETURN VIEW
         |--------------------------------------------------------------------------
         */
 
@@ -2839,8 +5450,130 @@ class BillingController extends Controller
                 'payments',
                 'students',
                 'courses',
-                'statuses'
+                'batches',
+                'paymentModes',
+                'totalPayments',
+                'successfulAmount'
             )
         );
+    }
+
+    public function destroy(StudentCourse $studentCourse)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | DELETE COMPLETE BILLING / PAYMENT HISTORY
+        |--------------------------------------------------------------------------
+        |
+        | This will remove:
+        |
+        | 1. Course Payment Records
+        | 2. Late Fine Records
+        | 3. Course Month Records
+        |
+        | StudentCourse itself will NOT be deleted.
+        |
+        */
+
+        DB::beginTransaction();
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | 1. DELETE PAYMENT RECORDS
+            |--------------------------------------------------------------------------
+            */
+
+            CoursePaymentRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. DELETE LATE FINE / PENALTY RECORDS
+            |--------------------------------------------------------------------------
+            */
+
+            LateFineRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. DELETE MONTHLY BILLING RECORDS
+            |--------------------------------------------------------------------------
+            */
+
+            CourseMonthRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->delete();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 4. COMMIT
+            |--------------------------------------------------------------------------
+            */
+
+            DB::commit();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | 5. SUCCESS
+            |--------------------------------------------------------------------------
+            */
+
+            return redirect()
+                ->route('billing.index')
+                ->with(
+                    'success',
+                    'Complete billing and payment history deleted successfully.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ROLLBACK
+        |--------------------------------------------------------------------------
+        */
+
+        catch (\Throwable $e) {
+
+            DB::rollBack();
+
+
+            Log::error(
+                'COMPLETE BILLING DELETE ERROR',
+                [
+                    'student_course_id' => $studentCourse->id,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]
+            );
+
+
+            return redirect()
+                ->route('billing.index')
+                ->with(
+                    'error',
+                    'Unable to delete billing history: ' .
+                    $e->getMessage()
+                );
+        }
     }
 }

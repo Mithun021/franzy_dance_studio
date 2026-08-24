@@ -10,34 +10,58 @@
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show">
             {{ session('success') }}
-            <button class="btn-close" data-bs-dismiss="alert"></button>
+
+            <button
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
         </div>
     @endif
 
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show">
             {{ session('error') }}
-            <button class="btn-close" data-bs-dismiss="alert"></button>
+
+            <button
+                class="btn-close"
+                data-bs-dismiss="alert">
+            </button>
         </div>
     @endif
 
     @if($errors->any())
+
         <div class="alert alert-danger">
+
             <ul class="mb-0">
+
                 @foreach($errors->all() as $error)
+
                     <li>{{ $error }}</li>
+
                 @endforeach
+
             </ul>
+
         </div>
+
     @endif
 
-    <form action="{{ route('students.update-course',$studentCourse->id) }}"
-          method="POST">
+
+    <form
+        action="{{ route('students.update-course',$studentCourse->id) }}"
+        method="POST">
 
         @csrf
         @method('PUT')
 
+
         <div class="card shadow">
+
+
+            {{-- ============================================================
+                Header
+            ============================================================= --}}
 
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
 
@@ -58,8 +82,12 @@
 
                 </div>
 
-                <a href="{{ route('students.courses',$student->id) }}"
-                   class="btn btn-light">
+
+                <a
+                    href="{{ route('students.courses',$student->id) }}"
+                    class="btn btn-light">
+
+                    <i class="fa fa-arrow-left me-1"></i>
 
                     Back
 
@@ -67,11 +95,19 @@
 
             </div>
 
+
             <div class="card-body">
+
+
+                {{-- ========================================================
+                    Admission Details
+                ========================================================= --}}
 
                 <div class="row">
 
+
                     {{-- Admission Date --}}
+
                     <div class="col-md-6 mb-3">
 
                         <label class="form-label">
@@ -86,12 +122,17 @@
                             type="date"
                             name="admission_date"
                             class="form-control"
-                            value="{{ old('admission_date',\Carbon\Carbon::parse($studentCourse->admission_date)->format('Y-m-d')) }}"
+                            value="{{ old(
+                                'admission_date',
+                                \Carbon\Carbon::parse($studentCourse->admission_date)->format('Y-m-d')
+                            ) }}"
                             required>
 
                     </div>
 
+
                     {{-- Admission Status --}}
+
                     <div class="col-md-6 mb-3">
 
                         <label class="form-label">
@@ -107,19 +148,31 @@
                             class="form-select"
                             required>
 
-                            <option value="">Select Status</option>
+                            <option value="">
+
+                                Select Status
+
+                            </option>
+
 
                             <option
                                 value="0"
-                                {{ old('is_enroll',$studentCourse->is_enroll)==0?'selected':'' }}>
+                                {{ old(
+                                    'is_enroll',
+                                    $studentCourse->is_enroll
+                                ) == 0 ? 'selected' : '' }}>
 
                                 Not Enroll
 
                             </option>
 
+
                             <option
                                 value="1"
-                                {{ old('is_enroll',$studentCourse->is_enroll)==1?'selected':'' }}>
+                                {{ old(
+                                    'is_enroll',
+                                    $studentCourse->is_enroll
+                                ) == 1 ? 'selected' : '' }}>
 
                                 Enroll
 
@@ -131,7 +184,13 @@
 
                 </div>
 
+
                 <hr>
+
+
+                {{-- ========================================================
+                    Course
+                ========================================================= --}}
 
                 <h5 class="mb-3">
 
@@ -139,13 +198,15 @@
 
                 </h5>
 
+
                 <div class="row">
 
                     @foreach($courses as $course)
 
                         <div class="col-lg-4 col-md-6 mb-3">
 
-                            <label class="card border cursor-pointer">
+                            <label
+                                class="card border cursor-pointer h-100">
 
                                 <div class="card-body">
 
@@ -156,22 +217,17 @@
                                             type="radio"
                                             name="course_id"
                                             value="{{ $course->id }}"
-                                            {{ old('course_id',$studentCourse->course_id)==$course->id?'checked':'' }}>
+                                            {{ old(
+                                                'course_id',
+                                                $studentCourse->course_id
+                                            ) == $course->id ? 'checked' : '' }}>
+
 
                                         <label class="form-check-label fw-bold">
 
                                             {{ $course->course_name }}
 
                                         </label>
-
-                                        <p class="m-0 course-duration"
-                                            data-duration="{{ $course->duration }}"
-                                            data-type="{{ $course->duration_type }}">
-
-                                                {{ $course->duration }}
-                                                {{ $course->duration_type }}
-
-                                        </p>
 
                                     </div>
 
@@ -185,11 +241,19 @@
 
                 </div>
 
+
                 <hr>
+
+
+                {{-- ========================================================
+                    Course Related Details
+                ========================================================= --}}
 
                 <div class="row">
 
+
                     {{-- Level --}}
+
                     <div class="col-md-3 mb-3">
 
                         <label class="form-label">
@@ -200,19 +264,28 @@
 
                         </label>
 
+
                         <select
                             name="level_id"
                             id="level_id"
                             class="form-select"
                             required>
 
-                            <option value="">Select Level</option>
+                            <option value="">
+
+                                Select Level
+
+                            </option>
+
 
                             @foreach($levels as $level)
 
                                 <option
                                     value="{{ $level->id }}"
-                                    {{ old('level_id',$studentCourse->level_id)==$level->id?'selected':'' }}>
+                                    {{ old(
+                                        'level_id',
+                                        $studentCourse->level_id
+                                    ) == $level->id ? 'selected' : '' }}>
 
                                     {{ $level->name }}
 
@@ -224,7 +297,9 @@
 
                     </div>
 
+
                     {{-- Category --}}
+
                     <div class="col-md-3 mb-3">
 
                         <label class="form-label">
@@ -235,19 +310,28 @@
 
                         </label>
 
+
                         <select
                             name="category_id"
                             id="category_id"
                             class="form-select"
                             required>
 
-                            <option value="">Select Category</option>
+                            <option value="">
+
+                                Select Category
+
+                            </option>
+
 
                             @foreach($categories as $category)
 
                                 <option
                                     value="{{ $category->id }}"
-                                    {{ old('category_id',$studentCourse->category_id)==$category->id?'selected':'' }}>
+                                    {{ old(
+                                        'category_id',
+                                        $studentCourse->category_id
+                                    ) == $category->id ? 'selected' : '' }}>
 
                                     {{ $category->name }}
 
@@ -259,7 +343,9 @@
 
                     </div>
 
+
                     {{-- Faculty --}}
+
                     <div class="col-md-3 mb-3">
 
                         <label class="form-label">
@@ -267,6 +353,7 @@
                             Faculty
 
                         </label>
+
 
                         <select
                             name="instructor_id"
@@ -278,11 +365,15 @@
 
                             </option>
 
+
                             @foreach($faculty as $item)
 
                                 <option
                                     value="{{ $item->id }}"
-                                    {{ old('instructor_id',$studentCourse->instructor_id)==$item->id?'selected':'' }}>
+                                    {{ old(
+                                        'instructor_id',
+                                        $studentCourse->instructor_id
+                                    ) == $item->id ? 'selected' : '' }}>
 
                                     {{ $item->name }}
 
@@ -294,7 +385,9 @@
 
                     </div>
 
+
                     {{-- Course Status --}}
+
                     <div class="col-md-3 mb-3">
 
                         <label class="form-label">
@@ -305,6 +398,7 @@
 
                         </label>
 
+
                         <select
                             name="status"
                             class="form-select"
@@ -312,23 +406,34 @@
 
                             <option
                                 value="ongoing"
-                                {{ old('status',$studentCourse->status)=='ongoing'?'selected':'' }}>
+                                {{ old(
+                                    'status',
+                                    $studentCourse->status
+                                ) == 'ongoing' ? 'selected' : '' }}>
 
                                 Ongoing
 
                             </option>
 
+
                             <option
                                 value="completed"
-                                {{ old('status',$studentCourse->status)=='completed'?'selected':'' }}>
+                                {{ old(
+                                    'status',
+                                    $studentCourse->status
+                                ) == 'completed' ? 'selected' : '' }}>
 
                                 Completed
 
                             </option>
 
+
                             <option
                                 value="discontinued"
-                                {{ old('status',$studentCourse->status)=='discontinued'?'selected':'' }}>
+                                {{ old(
+                                    'status',
+                                    $studentCourse->status
+                                ) == 'discontinued' ? 'selected' : '' }}>
 
                                 Discontinued
 
@@ -338,26 +443,34 @@
 
                     </div>
 
+
                     {{-- Hidden Batch --}}
+
                     <input
                         type="hidden"
                         id="selected_batch_id"
                         name="batch_id"
-                        value="{{ old('batch_id',$studentCourse->batch_id) }}">
+                        value="{{ old(
+                            'batch_id',
+                            $studentCourse->batch_id
+                        ) }}">
 
                 </div>
 
+
                 <hr>
 
-                                {{-- =========================
+
+                {{-- ========================================================
                     Available Batches
-                ========================== --}}
+                ========================================================= --}}
 
                 <h5 class="mb-3">
 
                     Available Batches
 
                 </h5>
+
 
                 <div id="batch_container">
 
@@ -369,11 +482,13 @@
 
                 </div>
 
+
                 <hr>
 
-                {{-- =========================
+
+                {{-- ========================================================
                     Fee Details
-                ========================== --}}
+                ========================================================= --}}
 
                 <h5 class="mb-3">
 
@@ -381,9 +496,12 @@
 
                 </h5>
 
+
                 <div class="row">
 
+
                     {{-- Registration Fee --}}
+
                     <div class="col-md-4 mb-3">
 
                         <label class="form-label">
@@ -392,17 +510,23 @@
 
                         </label>
 
+
                         <input
                             type="text"
                             id="registration_fee"
                             name="registration_fee"
                             class="form-control"
                             readonly
-                            value="{{ old('registration_fee',$studentCourse->registration_fee) }}">
+                            value="{{ old(
+                                'registration_fee',
+                                $studentCourse->registration_fee
+                            ) }}">
 
                     </div>
 
+
                     {{-- Admission Fee --}}
+
                     <div class="col-md-4 mb-3">
 
                         <label class="form-label">
@@ -411,17 +535,23 @@
 
                         </label>
 
+
                         <input
                             type="text"
                             id="admission_fee"
                             name="admission_fee"
                             class="form-control"
                             readonly
-                            value="{{ old('admission_fee',$studentCourse->admission_fee) }}">
+                            value="{{ old(
+                                'admission_fee',
+                                $studentCourse->admission_fee
+                            ) }}">
 
                     </div>
 
+
                     {{-- Monthly Fee --}}
+
                     <div class="col-md-4 mb-3">
 
                         <label class="form-label">
@@ -430,19 +560,33 @@
 
                         </label>
 
+
                         <input
                             type="text"
                             id="monthly_fee"
                             name="monthly_fee"
                             class="form-control"
                             readonly
-                            value="{{ old('monthly_fee',$studentCourse->course_fee) }}">
+                            value="{{ old(
+                                'monthly_fee',
+                                $studentCourse->monthly_fee
+                            ) }}">
 
                     </div>
 
                 </div>
 
-                <h5 class="mb-3">Fee Summary</h5>
+
+                {{-- ========================================================
+                    Fee Summary
+                ========================================================= --}}
+
+                <h5 class="mb-3">
+
+                    Fee Summary
+
+                </h5>
+
 
                 <div class="table-responsive">
 
@@ -450,85 +594,108 @@
 
                         <tbody>
 
-                            <tr>
-                                <th width="35%">Registration Fee</th>
-                                <td id="summary_registration">0.00</td>
-                            </tr>
 
                             <tr>
-                                <th>Admission Fee</th>
-                                <td id="summary_admission">0.00</td>
-                            </tr>
 
-                            <tr>
-                                <th>Monthly Fee</th>
+                                <th width="35%">
+
+                                    Registration Fee
+
+                                </th>
+
                                 <td>
 
-                                    <span id="summary_monthly">0.00</span>
-
-                                    ×
-
-                                    <span id="summary_duration">
-                                        {{ old('course_duration',$studentCourse->course_duration) }}
+                                    ₹ <span id="summary_registration">
+                                        {{ number_format(
+                                            $studentCourse->registration_fee ?? 0,
+                                            2
+                                        ) }}
                                     </span>
 
-                                    {{ old('duration_type',$studentCourse->duration_type) }}
+                                </td>
 
-                                    =
+                            </tr>
 
-                                    <strong id="summary_total_monthly">0.00</strong>
+
+                            <tr>
+
+                                <th>
+
+                                    Admission Fee
+
+                                </th>
+
+                                <td>
+
+                                    ₹ <span id="summary_admission">
+                                        {{ number_format(
+                                            $studentCourse->admission_fee ?? 0,
+                                            2
+                                        ) }}
+                                    </span>
 
                                 </td>
-                            </tr>
-
-                            <tr class="table-success">
-
-                                <th>Grand Total</th>
-
-                                <th id="summary_total">0.00</th>
 
                             </tr>
+
+
+                            <tr class="table-primary">
+
+                                <th>
+
+                                    Monthly Fee
+
+                                </th>
+
+                                <td>
+
+                                    ₹ <strong id="summary_monthly">
+                                        {{ number_format(
+                                            $studentCourse->monthly_fee ?? 0,
+                                            2
+                                        ) }}
+                                    </strong>
+
+                                    <small class="text-muted ms-2">
+
+                                        Payable every month
+
+                                    </small>
+
+                                </td>
+
+                            </tr>
+
 
                         </tbody>
 
                     </table>
 
-                    <input
-                        type="hidden"
-                        name="course_duration"
-                        id="course_duration"
-                        value="{{ old('course_duration',$studentCourse->course_duration) }}">
-
-                    <input
-                        type="hidden"
-                        name="duration_type"
-                        id="duration_type"
-                        value="{{ old('duration_type',$studentCourse->duration_type) }}">
-
-                    <input
-                        type="hidden"
-                        name="total_monthly_fee"
-                        id="total_monthly_fee"
-                        value="{{ old('total_monthly_fee',$studentCourse->total_monthly_fee) }}">
-
-                    <input
-                        type="hidden"
-                        name="grand_total"
-                        id="grand_total"
-                        value="{{ old('grand_total',$studentCourse->grand_total) }}">
-
                 </div>
+
 
                 <hr>
 
+
+                {{-- ========================================================
+                    Action Buttons
+                ========================================================= --}}
+
                 <div class="d-flex justify-content-between">
 
-                    <a href="{{ route('students.courses',$student->id) }}"
-                       class="btn btn-secondary">
+                    <a
+                        href="{{ route(
+                            'students.courses',
+                            $student->id
+                        ) }}"
+                        class="btn btn-secondary">
+
+                        <i class="fa fa-arrow-left me-1"></i>
 
                         Back
 
                     </a>
+
 
                     <button
                         type="submit"
@@ -542,6 +709,7 @@
 
                 </div>
 
+
             </div>
 
         </div>
@@ -552,40 +720,54 @@
 
 @endsection
 
+
 @push('scripts')
 
 <script>
 
 $(function () {
 
+
     /*
     |--------------------------------------------------------------------------
-    | Fetch Batch
+    | Fetch Batches
     |--------------------------------------------------------------------------
     */
 
     function fetchBatches() {
 
-        let courseId = $('input[name="course_id"]:checked').val();
+        let courseId =
+            $('input[name="course_id"]:checked').val();
 
-        let levelId = $('#level_id').val();
+        let levelId =
+            $('#level_id').val();
 
-        let selectedBatch = $('#selected_batch_id').val();
+        let selectedBatch =
+            $('#selected_batch_id').val();
 
-        let container = $('#batch_container');
+        let container =
+            $('#batch_container');
+
 
         if (!courseId || !levelId) {
 
             container.html(`
+
                 <div class="alert alert-secondary">
+
                     Select Course & Level First.
+
                 </div>
+
             `);
 
             return;
+
         }
 
+
         container.html(`
+
             <div class="text-center p-4">
 
                 <div class="spinner-border text-primary"></div>
@@ -597,7 +779,9 @@ $(function () {
                 </p>
 
             </div>
+
         `);
+
 
         $.ajax({
 
@@ -613,144 +797,194 @@ $(function () {
 
             },
 
-            success: function(response){
+
+            success: function(response) {
 
                 container.empty();
 
-                if(response.status && response.batches.length){
 
-                    $.each(response.batches,function(index,batch){
+                if (
+                    response.status &&
+                    response.batches.length
+                ) {
 
-                        let badge='';
 
-                        let disabled='';
+                    $.each(
+                        response.batches,
+                        function(index, batch) {
 
-                        let checked='';
 
-                        let activeClass='';
+                            let badge = '';
 
-                        if(batch.is_full){
+                            let disabled = '';
 
-                            badge='<span class="badge bg-danger">Full</span>';
+                            let checked = '';
 
-                            disabled='disabled';
+                            let activeClass = '';
 
-                        }else{
 
-                            badge='<span class="badge bg-success">Available</span>';
+                            if (batch.is_full) {
+
+                                badge =
+                                    '<span class="badge bg-danger">Full</span>';
+
+                                /*
+                                | Existing selected batch should remain
+                                | selectable even if currently full.
+                                */
+
+                                if (
+                                    selectedBatch != batch.id
+                                ) {
+
+                                    disabled = 'disabled';
+
+                                }
+
+                            } else {
+
+                                badge =
+                                    '<span class="badge bg-success">Available</span>';
+
+                            }
+
+
+                            if (
+                                selectedBatch == batch.id
+                            ) {
+
+                                checked = 'checked';
+
+                                activeClass =
+                                    'border-primary shadow';
+
+                            }
+
+
+                            container.append(`
+
+                                <div class="card mb-3 batch-card border ${activeClass}">
+
+                                    <div class="card-body">
+
+                                        <div class="form-check">
+
+                                            <input
+                                                class="form-check-input batch-radio"
+                                                type="radio"
+                                                name="batch_radio"
+                                                value="${batch.id}"
+                                                ${checked}
+                                                ${disabled}>
+
+                                            <label class="form-check-label w-100">
+
+                                                <div class="d-flex justify-content-between">
+
+                                                    <h5 class="mb-0">
+
+                                                        ${batch.batch_name}
+
+                                                    </h5>
+
+                                                    ${badge}
+
+                                                </div>
+
+                                                <hr>
+
+                                                <div class="row text-center">
+
+                                                    <div class="col-md-3">
+
+                                                        <strong>Time</strong>
+
+                                                        <br>
+
+                                                        ${batch.start_time}
+                                                        -
+                                                        ${batch.end_time}
+
+                                                    </div>
+
+
+                                                    <div class="col-md-3">
+
+                                                        <strong>Days</strong>
+
+                                                        <br>
+
+                                                        ${batch.days_text}
+
+                                                    </div>
+
+
+                                                    <div class="col-md-3">
+
+                                                        <strong>Capacity</strong>
+
+                                                        <br>
+
+                                                        ${batch.enrolled_students}/${batch.capacity}
+
+                                                    </div>
+
+
+                                                    <div class="col-md-3">
+
+                                                        <strong>Status</strong>
+
+                                                        <br>
+
+                                                        ${badge}
+
+                                                    </div>
+
+                                                </div>
+
+                                            </label>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            `);
 
                         }
+                    );
 
-                        if(selectedBatch==batch.id){
 
-                            checked='checked';
+                } else {
 
-                            activeClass='border-primary shadow';
-
-                        }
-
-                        container.append(`
-
-<div class="card mb-3 batch-card border ${activeClass}">
-
-    <div class="card-body">
-
-        <div class="form-check">
-
-            <input
-                class="form-check-input batch-radio"
-                type="radio"
-                name="batch_radio"
-                value="${batch.id}"
-                ${checked}
-                // ${disabled}
-                >
-
-            <label class="form-check-label w-100">
-
-                <div class="d-flex justify-content-between">
-
-                    <h5 class="mb-0">
-
-                        ${batch.batch_name}
-
-                    </h5>
-
-                    ${badge}
-
-                </div>
-
-                <hr>
-
-                <div class="row text-center">
-
-                    <div class="col-md-3">
-
-                        <strong>Time</strong>
-
-                        <br>
-
-                        ${batch.start_time} - ${batch.end_time}
-
-                    </div>
-
-                    <div class="col-md-3">
-
-                        <strong>Days</strong>
-
-                        <br>
-
-                        ${batch.days_text}
-
-                    </div>
-
-                    <div class="col-md-3">
-
-                        <strong>Capacity</strong>
-
-                        <br>
-
-                        ${batch.enrolled_students}/${batch.capacity}
-
-                    </div>
-
-                    <div class="col-md-3">
-
-                        <strong>Status</strong>
-
-                        <br>
-
-                        ${badge}
-
-                    </div>
-
-                </div>
-
-            </label>
-
-        </div>
-
-    </div>
-
-</div>
-
-`);
-
-                    });
-
-                }else{
 
                     container.html(`
 
-<div class="alert alert-warning">
+                        <div class="alert alert-warning">
 
-    No Batch Available.
+                            No Batch Available.
 
-</div>
+                        </div>
 
-`);
+                    `);
 
                 }
+
+            },
+
+
+            error: function() {
+
+                container.html(`
+
+                    <div class="alert alert-danger">
+
+                        Unable to load batches.
+
+                    </div>
+
+                `);
 
             }
 
@@ -758,27 +992,45 @@ $(function () {
 
     }
 
+
     /*
     |--------------------------------------------------------------------------
     | Fetch Fee Structure
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    |
+    | No duration calculation.
+    | No total monthly fee.
+    | No grand total.
+    |
+    | Only:
+    |
+    | Registration Fee
+    | Admission Fee
+    | Monthly Fee
+    |
     |--------------------------------------------------------------------------
     */
 
     function fetchFeeStructure() {
 
-        let course = $('input[name="course_id"]:checked');
+        let courseId =
+            $('input[name="course_id"]:checked').val();
 
-        let courseId = course.val();
+        let levelId =
+            $('#level_id').val();
 
-        let levelId = $("#level_id").val();
 
-        // let categoryId = $("#category_id").val();
+        let regFee =
+            $('#registration_fee');
 
-        let regFee = $("#registration_fee");
+        let admFee =
+            $('#admission_fee');
 
-        let admFee = $("#admission_fee");
+        let monthFee =
+            $('#monthly_fee');
 
-        let monthFee = $("#monthly_fee");
 
         /*
         |--------------------------------------------------------------------------
@@ -786,31 +1038,19 @@ $(function () {
         |--------------------------------------------------------------------------
         */
 
-        regFee.val("");
+        regFee.val('');
 
-        admFee.val("");
+        admFee.val('');
 
-        monthFee.val("");
+        monthFee.val('');
 
-        $("#summary_registration").text("0.00");
 
-        $("#summary_admission").text("0.00");
+        $('#summary_registration').text('0.00');
 
-        $("#summary_monthly").text("0.00");
+        $('#summary_admission').text('0.00');
 
-        $("#summary_duration").text("0");
+        $('#summary_monthly').text('0.00');
 
-        $("#summary_total_monthly").text("0.00");
-
-        $("#summary_total").text("0.00");
-
-        $("#course_duration").val("");
-
-        $("#duration_type").val("");
-
-        $("#total_monthly_fee").val("");
-
-        $("#grand_total").val("");
 
         if (!courseId || !levelId) {
 
@@ -818,11 +1058,19 @@ $(function () {
 
         }
 
-        regFee.val("Loading...");
 
-        admFee.val("Loading...");
+        /*
+        |--------------------------------------------------------------------------
+        | Loading
+        |--------------------------------------------------------------------------
+        */
 
-        monthFee.val("Loading...");
+        regFee.val('Loading...');
+
+        admFee.val('Loading...');
+
+        monthFee.val('Loading...');
+
 
         $.ajax({
 
@@ -834,39 +1082,34 @@ $(function () {
 
                 course_id: courseId,
 
-                level_id: levelId,
-
-                // category_id: categoryId
+                level_id: levelId
 
             },
 
-            success: function (response) {
+
+            success: function(response) {
+
 
                 if (response.status) {
 
-                    let registrationFee = parseFloat(response.data.registration_fee) || 0;
 
-                    let admissionFee = parseFloat(response.data.admission_fee) || 0;
+                    let registrationFee =
+                        parseFloat(
+                            response.data.registration_fee
+                        ) || 0;
 
-                    let monthlyFee = parseFloat(response.data.monthly_fee) || 0;
 
-                    let duration = parseInt(
-                        course.closest(".card")
-                            .find(".course-duration")
-                            .data("duration")
-                    ) || 0;
+                    let admissionFee =
+                        parseFloat(
+                            response.data.admission_fee
+                        ) || 0;
 
-                    let durationType =
-                        course.closest(".card")
-                            .find(".course-duration")
-                            .data("type");
 
-                    let totalMonthlyFee = monthlyFee * duration;
+                    let monthlyFee =
+                        parseFloat(
+                            response.data.monthly_fee
+                        ) || 0;
 
-                    let grandTotal =
-                        registrationFee +
-                        admissionFee +
-                        totalMonthlyFee;
 
                     /*
                     |--------------------------------------------------------------------------
@@ -874,25 +1117,20 @@ $(function () {
                     |--------------------------------------------------------------------------
                     */
 
-                    regFee.val(registrationFee.toFixed(2));
+                    regFee.val(
+                        registrationFee.toFixed(2)
+                    );
 
-                    admFee.val(admissionFee.toFixed(2));
 
-                    monthFee.val(monthlyFee.toFixed(2));
+                    admFee.val(
+                        admissionFee.toFixed(2)
+                    );
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Hidden Inputs
-                    |--------------------------------------------------------------------------
-                    */
 
-                    $("#course_duration").val(duration);
+                    monthFee.val(
+                        monthlyFee.toFixed(2)
+                    );
 
-                    $("#duration_type").val(durationType);
-
-                    $("#total_monthly_fee").val(totalMonthlyFee.toFixed(2));
-
-                    $("#grand_total").val(grandTotal.toFixed(2));
 
                     /*
                     |--------------------------------------------------------------------------
@@ -900,74 +1138,131 @@ $(function () {
                     |--------------------------------------------------------------------------
                     */
 
-                    $("#summary_registration").text(registrationFee.toFixed(2));
+                    $('#summary_registration')
+                        .text(
+                            registrationFee.toFixed(2)
+                        );
 
-                    $("#summary_admission").text(admissionFee.toFixed(2));
 
-                    $("#summary_monthly").text(monthlyFee.toFixed(2));
+                    $('#summary_admission')
+                        .text(
+                            admissionFee.toFixed(2)
+                        );
 
-                    $("#summary_duration").text(duration + " " + durationType);
 
-                    $("#summary_total_monthly").text(totalMonthlyFee.toFixed(2));
+                    $('#summary_monthly')
+                        .text(
+                            monthlyFee.toFixed(2)
+                        );
 
-                    $("#summary_total").text(grandTotal.toFixed(2));
 
                 } else {
 
-                    regFee.val("");
 
-                    admFee.val("");
+                    regFee.val('');
 
-                    monthFee.val("");
+                    admFee.val('');
 
-                    console.log(response.message);
+                    monthFee.val('');
+
+
+                    $('#summary_registration')
+                        .text('0.00');
+
+                    $('#summary_admission')
+                        .text('0.00');
+
+                    $('#summary_monthly')
+                        .text('0.00');
+
+
+                    console.log(
+                        response.message
+                    );
 
                 }
 
             },
 
-            error: function (xhr) {
 
-                regFee.val("");
+            error: function(xhr) {
 
-                admFee.val("");
+                regFee.val('');
 
-                monthFee.val("");
+                admFee.val('');
 
-                console.log(xhr.responseText);
+                monthFee.val('');
+
+
+                $('#summary_registration')
+                    .text('0.00');
+
+                $('#summary_admission')
+                    .text('0.00');
+
+                $('#summary_monthly')
+                    .text('0.00');
+
+
+                console.log(
+                    xhr.responseText
+                );
 
             }
 
         });
 
     }
-        /*
+
+
+    /*
     |--------------------------------------------------------------------------
-    | Events
+    | Course Change
     |--------------------------------------------------------------------------
     */
 
-    $(document).on('change','input[name="course_id"]',function(){
+    $(document).on(
+        'change',
+        'input[name="course_id"]',
+        function() {
 
-        fetchBatches();
+            /*
+            | Reset selected batch
+            */
 
-        fetchFeeStructure();
+            $('#selected_batch_id').val('');
 
-    });
+            fetchBatches();
 
-    $('#level_id').on('change',function(){
+            fetchFeeStructure();
 
-        fetchBatches();
+        }
+    );
 
-        fetchFeeStructure();
 
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | Level Change
+    |--------------------------------------------------------------------------
+    */
 
-    // $('#category_id').on('change',function(){
+    $('#level_id').on(
+        'change',
+        function() {
 
-    //     fetchFeeStructure();
+            /*
+            | Reset selected batch
+            */
 
-    // });
+            $('#selected_batch_id').val('');
+
+            fetchBatches();
+
+            fetchFeeStructure();
+
+        }
+    );
+
 
     /*
     |--------------------------------------------------------------------------
@@ -975,18 +1270,32 @@ $(function () {
     |--------------------------------------------------------------------------
     */
 
-    $(document).on('change','.batch-radio',function(){
+    $(document).on(
+        'change',
+        '.batch-radio',
+        function() {
 
-        $('#selected_batch_id').val($(this).val());
+            $('#selected_batch_id')
+                .val(
+                    $(this).val()
+                );
 
-        $('.batch-card')
-            .removeClass('border-primary shadow');
 
-        $(this)
-            .closest('.batch-card')
-            .addClass('border-primary shadow');
+            $('.batch-card')
+                .removeClass(
+                    'border-primary shadow'
+                );
 
-    });
+
+            $(this)
+                .closest('.batch-card')
+                .addClass(
+                    'border-primary shadow'
+                );
+
+        }
+    );
+
 
     /*
     |--------------------------------------------------------------------------

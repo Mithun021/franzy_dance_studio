@@ -73,6 +73,9 @@
                                         <li>
                                             <a href="{{ route('student.list') }}" class="tp-link">Student List</a>
                                         </li>
+                                        <li>
+                                            <a href="{{ route('students.enroll-courses') }}" class="tp-link">Enroll Courses</a>
+                                        </li>
                                     </ul>
                                 </div>
                             </li>

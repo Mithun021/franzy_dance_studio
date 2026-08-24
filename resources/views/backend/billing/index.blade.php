@@ -1,569 +1,425 @@
 @extends('backend.partial.master')
 
-@section('title','Billing List')
+@section('title', 'Billing List')
 
 @section('backend-content')
 
 <div class="card">
-<div class="card-header d-flex justify-content-between align-items-center">
 
-    <h4 class="mb-0">
-        Billing List
-    </h4>
+    {{-- ============================================================
+        HEADER
+    ============================================================= --}}
+    <div class="card-header d-flex justify-content-between align-items-center">
 
-    <a href="{{ route('billing.create') }}"
-       class="btn btn-primary">
+        <h4 class="mb-0">
+            Billing List
+        </h4>
 
-        <i class="mdi mdi-plus"></i>
 
-        New Billing
+        <a href="{{ route('billing.create') }}"
+           class="btn btn-primary">
 
-    </a>
+            <i class="mdi mdi-plus"></i>
 
-</div>
+            New Billing
 
-<div class="card-body">
+        </a>
 
-    <div class="table-responsive">
+    </div>
 
-        <table class="table table-bordered table-hover align-middle" id="datatable-buttons">
 
-            <thead class="table-dark">
+    {{-- ============================================================
+        BODY
+    ============================================================= --}}
+    <div class="card-body">
 
-            <tr>
+        <div class="table-responsive">
 
-                <th>#</th>
+            <table
+                class="table table-bordered table-hover align-middle"
+                id="datatable-buttons"
+            >
 
-                <th>Student</th>
+                <thead class="table-dark">
 
-                <th>Course</th>
+                    <tr>
 
-                {{-- <th>Duration</th> --}}
+                        <th>#</th>
 
-                <th>Batch</th>
+                        <th>Student</th>
 
-                <th>Course Amount</th>
+                        <th>Course</th>
 
-                <th>Monthly Fee</th>
+                        <th>Batch</th>
 
-                <th>Total Received</th>
+                        <th>Course Amount</th>
 
-                <th>Due Amount</th>
+                        <th>Payment All Months</th>
 
-                <th>Payment History</th>
+                        <th>Payment History</th>
 
-                <th>Status</th>
+                        <th>Action</th>
 
-                <th width="120" id="no-export">Action</th>
+                    </tr>
 
-            </tr>
+                </thead>
 
-            </thead>
 
-            <tbody>
+                <tbody>
 
-            @forelse($billings as $key=>$row)
+                    @forelse($studentCourses as $studentCourse)
 
-                @php
+                        <tr>
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | All Payments
-                    |--------------------------------------------------------------------------
-                    */
+                            {{-- ====================================================
+                                #
+                            ===================================================== --}}
+                            <td>
+                                {{ $loop->iteration }}
+                            </td>
 
-                    $payments = \App\Models\StudentPayment::where(
-                        'student_course_id',
-                        $row->id
-                    )
-                    ->orderBy('payment_date')
-                    ->get();
 
+                            {{-- ====================================================
+                                STUDENT
+                            ===================================================== --}}
+                            <td>
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Total Received
-                    |--------------------------------------------------------------------------
-                    |
-                    | SUCCESS payments only
-                    |
-                    */
+                                <strong>
+                                    {{ $studentCourse->student->name ?? 'N/A' }}
+                                </strong>
 
-                    $received = \App\Models\StudentPayment::where(
-                        'student_course_id',
-                        $row->id
-                    )
-                    ->where('status', 'success')
-                    ->sum('amount');
+                                <br>
 
+                                <small class="text-muted">
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Total Late Fine
-                    |--------------------------------------------------------------------------
-                    |
-                    | SUCCESS payments ke andar stored late fine
-                    |
-                    */
-
-                    $totalLateFine = \App\Models\StudentPayment::where(
-                        'student_course_id',
-                        $row->id
-                    )
-                    ->where('status', 'success')
-                    ->sum('late_fine');
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Actual Course Received
-                    |--------------------------------------------------------------------------
-                    |
-                    | Payment amount me late fine included hai.
-                    | Isliye course ke against actual received:
-                    |
-                    | Total Received - Late Fine
-                    |
-                    */
-
-                    $courseReceived = $received - $totalLateFine;
-
-                    $courseReceived = max($courseReceived, 0);
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Due Amount
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $due = $row->grand_total - $courseReceived;
-
-                    $due = max($due, 0);
-
-                @endphp
-
-                <tr>
-
-                    <td>
-
-                        {{ $key+1 }}
-
-                    </td>
-
-                    <td>
-
-                        <strong>
-
-                            {{ $row->student->name }}
-
-                        </strong>
-
-                        <br>
-
-                        <small>
-
-                            {{ $row->admission_no }}
-
-                        </small>
-
-                    </td>
-
-                    <td>
-
-                        <p class="m-0">
-                            {{ $row->course->course_name }}
-                        </p>
-
-                        <small class="text-primary">
-
-                            {{ $row->course_duration }}
-
-                            {{ $row->duration_type }}
-
-                        </small>
-
-                    </td>
-
-                    <td>
-
-                        {{ $row->batch->batch_name ?? '-' }}
-
-                    </td>
-
-                    <td>
-
-                        ₹ {{ number_format($row->grand_total,2) }}
-
-                    </td>
-
-                    <td>
-
-                        ₹ {{ number_format($row->course_fee,2) }}
-
-                    </td>
-
-                    {{-- ================================================= --}}
-                    {{-- Total Received - SUCCESS ONLY --}}
-                    {{-- ================================================= --}}
-
-                    <td class="text-success fw-bold">
-
-                        <div>
-                            ₹ {{ number_format($received, 2) }}
-                        </div>
-
-                        @if($totalLateFine > 0)
-
-                            <small class="text-danger d-block mt-1">
-
-                                <i class="mdi mdi-clock-alert-outline"></i>
-
-                                Late Fine:
-                                ₹ {{ number_format($totalLateFine, 2) }}
-
-                            </small>
-
-                        @else
-
-                            <small class="text-muted d-block mt-1">
-
-                                Late Fine: ₹ 0.00
-
-                            </small>
-
-                        @endif
-
-                    </td>
-
-                    {{-- ================================================= --}}
-                    {{-- Due Amount --}}
-                    {{-- ================================================= --}}
-
-                    <td>
-
-                        @if($due <= 0)
-
-                            <span class="badge bg-success">
-
-                                Complete
-
-                            </span>
-
-                            @if($totalLateFine > 0)
-
-                                <small class="d-block text-muted mt-1">
-
-                                    Course Paid:
-                                    ₹ {{ number_format($courseReceived, 2) }}
+                                    Admission No:
+                                    {{ $studentCourse->student->admission_no ?? 'N/A' }}
 
                                 </small>
 
-                            @endif
+                            </td>
 
-                        @else
 
-                            <span class="badge bg-danger">
+                            {{-- ====================================================
+                                COURSE
+                            ===================================================== --}}
+                            <td>
 
-                                ₹ {{ number_format($due, 2) }}
+                                {{ $studentCourse->course->course_name ?? 'N/A' }}
 
-                            </span>
+                            </td>
 
-                            @if($totalLateFine > 0)
 
-                                <small class="d-block text-muted mt-1">
+                            {{-- ====================================================
+                                BATCH
+                            ===================================================== --}}
+                            <td>
 
-                                    Course Paid:
-                                    ₹ {{ number_format($courseReceived, 2) }}
+                                {{ $studentCourse->batch->batch_name ?? 'N/A' }}
+
+                            </td>
+
+
+                            {{-- ====================================================
+                                COURSE AMOUNT
+                            ===================================================== --}}
+                            <td>
+
+                                <strong class="text-primary">
+
+                                    ₹{{ number_format(
+                                        (float) $studentCourse->monthly_fee,
+                                        2
+                                    ) }}
+
+                                </strong>
+
+                                <br>
+
+                                <small class="text-muted">
+                                    Monthly Fee
+                                </small>
+
+                            </td>
+
+
+                            {{-- ====================================================
+                                PAYMENT ALL MONTHS
+                            ===================================================== --}}
+                            <td>
+
+                                @if($studentCourse->paid_month_count > 0)
+
+                                    <strong>
+
+                                        {{ $studentCourse->paid_month_label }}
+
+                                    </strong>
+
+                                    <br>
+
+                                    <span class="badge bg-success">
+
+                                        {{ $studentCourse->paid_month_count }}
+
+                                        {{ $studentCourse->paid_month_count == 1 ? 'Month' : 'Months' }}
+
+                                    </span>
+
+                                @else
+
+                                    <span class="badge bg-secondary">
+
+                                        No Payment Yet
+
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+
+                            {{-- ====================================================
+                                PAYMENT HISTORY
+                            ===================================================== --}}
+                            <td>
+
+                                <strong class="text-success">
+
+                                    ₹{{ number_format(
+                                        (float) ($studentCourse->total_paid_amount ?? 0),
+                                        2
+                                    ) }}
+
+                                </strong>
+
+                                <br>
+
+                                <small class="text-muted">
+
+                                    {{ $studentCourse->payment_count ?? 0 }}
+
+                                    {{ ($studentCourse->payment_count ?? 0) == 1
+                                        ? 'Payment'
+                                        : 'Payments'
+                                    }}
 
                                 </small>
 
-                            @endif
+                            </td>
 
-                        @endif
 
-                    </td>
+                            {{-- ====================================================
+                                ACTION
+                            ===================================================== --}}
 
-                    {{-- ================================================= --}}
-                    {{-- Payment History --}}
-                    {{-- ================================================= --}}
+                            <td>
 
-                    <td>
+                                <div class="d-flex gap-2 flex-wrap">
 
-                        @if($payments->count())
 
-                            <table class="table table-sm table-bordered mb-0">
+                                    {{-- ====================================================
+                                        VIEW PAYMENT HISTORY
+                                    ===================================================== --}}
 
-                                <thead>
+                                    <a
+                                        href="{{ route(
+                                            'billing.payments',
+                                            $studentCourse->id
+                                        ) }}"
+                                        class="btn btn-sm btn-primary"
+                                        title="View Payment History"
+                                    >
 
-                                <tr>
+                                        <i class="mdi mdi-eye"></i>
 
-                                    <th>Date</th>
+                                        View
 
-                                    <th>Mode</th>
+                                    </a>
 
-                                    <th>Amount</th>
 
-                                    <th>Status</th>
 
-                                    <th>Inv</th>
+                                    {{-- ====================================================
+                                        OVERALL INVOICE
+                                    ===================================================== --}}
 
-                                </tr>
+                                    @php
 
-                                </thead>
+                                        $latestPayment =
+                                            $studentCourse
+                                                ->paymentRecords
+                                                ->first();
 
-                                <tbody>
+                                    @endphp
 
-                                @foreach($payments as $payment)
 
-                                    <tr>
+                                    @if($latestPayment)
 
-                                        {{-- Date --}}
+                                        <a
+                                            href="{{ route(
+                                                'billing.overall-invoice',
+                                                $latestPayment->id
+                                            ) }}"
+                                            class="btn btn-sm btn-success"
+                                            target="_blank"
+                                            title="Overall Payment Invoice"
+                                        >
 
-                                        <td>
+                                            <i class="mdi mdi-file-document-outline"></i>
 
-                                            {{ $payment->payment_date->format('d M Y') }}
+                                            Invoice
 
-                                        </td>
+                                        </a>
 
+                                    @endif
 
-                                        {{-- Payment Mode --}}
 
-                                        <td>
 
-                                            {{ $payment->payment_mode }}
+                                    {{-- ====================================================
+                                        DELETE PAYMENT
+                                    ===================================================== --}}
 
-                                        </td>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-danger"
+                                        onclick="deletePayment(
+                                            {{ $studentCourse->id }}
+                                        )"
+                                        title="Delete Payment"
+                                    >
 
+                                        <i class="mdi mdi-delete"></i>
 
-                                        {{-- Amount --}}
+                                        Delete
 
-                                        <td>
+                                    </button>
 
-                                            <div>
-                                                ₹ {{ number_format($payment->amount, 2) }}
-                                            </div>
+                                </div>
 
-                                            @if($payment->late_fine > 0)
+                            </td>
 
-                                                <small class="text-danger d-block">
+                        </tr>
 
-                                                    Late Fine:
-                                                    ₹ {{ number_format($payment->late_fine, 2) }}
 
-                                                </small>
+                    @empty
 
-                                            @endif
+                        <tr>
 
-                                        </td>
+                            <td
+                                colspan="8"
+                                class="text-center text-muted py-4"
+                            >
 
+                                <i class="mdi mdi-information-outline"></i>
 
-                                        {{-- Status --}}
+                                No billing records found.
 
-                                        <td>
+                            </td>
 
-                                            @if($payment->status === 'success')
+                        </tr>
 
-                                                <span class="badge bg-success">
+                    @endforelse
 
-                                                    Success
+                </tbody>
 
-                                                </span>
+            </table>
 
-                                            @elseif($payment->status === 'pending')
-
-                                                <span class="badge bg-warning text-dark">
-
-                                                    Pending
-
-                                                </span>
-
-                                            @elseif($payment->status === 'failed')
-
-                                                <span class="badge bg-danger">
-
-                                                    Failed
-
-                                                </span>
-
-                                            @elseif($payment->status === 'cancelled')
-
-                                                <span class="badge bg-secondary">
-
-                                                    Cancelled
-
-                                                </span>
-
-                                            @elseif($payment->status === 'refunded')
-
-                                                <span class="badge bg-info">
-
-                                                    Refunded
-
-                                                </span>
-
-                                            @else
-
-                                                <span class="badge bg-dark">
-
-                                                    {{ ucfirst($payment->status) }}
-
-                                                </span>
-
-                                            @endif
-
-                                             @if(
-                                                $payment->payment_mode !== 'Online Payment'
-                                                && !empty($payment->payment_proof)
-                                            )
-
-                                                <a
-                                                    href="{{ asset('storage/' . $payment->payment_proof) }}"
-                                                    target="_blank"
-                                                    class="btn btn-sm btn-secondary"
-                                                    title="View Payment Proof">
-
-                                                    <i class="mdi mdi-file-image"></i>
-
-                                                </a>
-
-                                            @else
-
-                                                <span class="text-muted">-</span>
-
-                                            @endif
-
-                                        </td>
-
-
-                                        {{-- Invoice --}}
-                                        {{-- Invoice ONLY for SUCCESS payment --}}
-
-                                        <td class="text-center">
-
-                                            @if($payment->status === 'success')
-
-                                                <a
-                                                    href="{{ route('billing.invoice',$payment->id) }}"
-                                                    class="btn btn-sm btn-primary"
-                                                    target="_blank"
-                                                    title="View Invoice">
-
-                                                    <i class="mdi mdi-file-document"></i>
-
-                                                </a>
-
-                                            @else
-
-                                                <span class="text-muted">
-
-                                                    -
-
-                                                </span>
-
-                                            @endif
-
-                                        </td>
-
-                                    </tr>
-
-                                @endforeach
-
-                                </tbody>
-
-                            </table>
-
-                        @else
-
-                            -
-
-                        @endif
-
-                    </td>
-
-                    {{-- ================================================= --}}
-                    {{-- Overall Billing Status --}}
-                    {{-- ================================================= --}}
-
-                    <td>
-
-                        @if($due <= 0)
-
-                            <span class="badge bg-success">
-
-                                Completed
-
-                            </span>
-
-                        @else
-
-                            <span class="badge bg-warning">
-
-                                Pending
-
-                            </span>
-
-                        @endif
-
-                    </td>
-
-                    {{-- ================================================= --}}
-                    {{-- Action --}}
-                    {{-- ================================================= --}}
-
-                    <td>
-
-                        @if($due > 0)
-
-                            <a
-                                href="{{ route('billing.manage',$row->id) }}"
-                                class="btn btn-primary btn-sm">
-
-                                <i class="fa fa-credit-card"></i>
-
-                                Manage Payment
-
-                            </a>
-
-                        @else
-
-                            <button
-                                class="btn btn-success btn-sm"
-                                disabled>
-
-                                Paid
-
-                            </button>
-
-                        @endif
-
-                    </td>
-
-                </tr>
-
-            @empty
-
-                <tr>
-
-                    <td
-                        colspan="12"
-                        class="text-center">
-
-                        No Billing Found
-
-                    </td>
-
-                </tr>
-
-            @endforelse
-
-            </tbody>
-
-        </table>
+        </div>
 
     </div>
 
 </div>
-</div>
 
 @endsection
+
+@push('scripts')
+
+<script>
+
+function deletePayment(studentCourseId)
+{
+    if (!studentCourseId) {
+        return;
+    }
+
+
+    if (
+        !confirm(
+            'WARNING!\n\n' +
+            'This will permanently delete ALL billing/payment history for this student.\n\n' +
+            'This includes:\n' +
+            '• Payment Records\n' +
+            '• Monthly Billing Records\n' +
+            '• Late Fine / Penalty Records\n\n' +
+            'The student and course enrollment will NOT be deleted.\n\n' +
+            'Are you sure you want to continue?'
+        )
+    ) {
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create DELETE Form
+    |--------------------------------------------------------------------------
+    */
+
+    const form = document.createElement('form');
+
+    form.method = 'POST';
+
+    form.action =
+        "{{ url('/backend/billing/destroy') }}/" +
+        studentCourseId;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CSRF
+    |--------------------------------------------------------------------------
+    */
+
+    const csrf = document.createElement('input');
+
+    csrf.type = 'hidden';
+
+    csrf.name = '_token';
+
+    csrf.value =
+        "{{ csrf_token() }}";
+
+    form.appendChild(csrf);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE Method
+    |--------------------------------------------------------------------------
+    */
+
+    const method = document.createElement('input');
+
+    method.type = 'hidden';
+
+    method.name = '_method';
+
+    method.value = 'DELETE';
+
+    form.appendChild(method);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Submit
+    |--------------------------------------------------------------------------
+    */
+
+    document.body.appendChild(form);
+
+    form.submit();
+}
+
+</script>
+
+@endpush

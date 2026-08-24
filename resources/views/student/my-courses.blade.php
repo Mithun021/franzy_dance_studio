@@ -227,12 +227,54 @@
 
                         <div class="flex gap-3">
 
-                            <a href="{{ route('student.id-card') }}"
-                               class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm">
+                            {{-- ============================================================
+                                PAYMENT / ID CARD ACTION
+                            ============================================================= --}}
 
-                                ID Card
+                            @php
 
-                            </a>
+                                $latestPayment = $course->paymentRecords->first();
+
+                            @endphp
+
+
+                            @if(!$latestPayment)
+
+                                {{-- No Payment Attempt Yet --}}
+
+                                <span
+                                    class="px-4 py-2 rounded-xl bg-yellow-500/20 text-yellow-300 text-sm font-semibold">
+
+                                    Payment Pending
+
+                                </span>
+
+
+                            @elseif($latestPayment->status === 'success')
+
+                                {{-- Latest Payment Successful --}}
+
+                                <span
+                                    class="px-4 py-2 rounded-xl bg-green-500/20 text-green-300 text-sm font-semibold">
+
+                                    Payment Successful
+
+                                </span>
+
+
+                            @else
+
+                                {{-- Payment Tried But Not Successful --}}
+
+                                <a
+                                    href="{{ route('student.payment-page', $course->id) }}"
+                                    class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+
+                                    Pay Now
+
+                                </a>
+
+                            @endif
 
                             <a href="{{ route('student.course-details',$course->id) }}"
                                class="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-sm">

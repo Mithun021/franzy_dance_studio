@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Certificate;
+use App\Models\CoursePaymentRecord;
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
 use Illuminate\Http\Request;
@@ -267,6 +268,27 @@ class StudentController extends Controller
         );
     }
 
+    // public function myCourses()
+    // {
+    //     $student = Auth::user();
+
+    //     $courses = StudentCourse::with([
+    //         'course',
+    //         'level',
+    //         'category',
+    //         'batch',
+    //         'instructor'
+    //     ])
+    //     ->where('user_id', $student->id)
+    //     ->latest()
+    //     ->get();
+
+    //     return view(
+    //         'student.my-courses',
+    //         compact('student', 'courses')
+    //     );
+    // }
+
     public function myCourses()
     {
         $student = Auth::user();
@@ -276,7 +298,10 @@ class StudentController extends Controller
             'level',
             'category',
             'batch',
-            'instructor'
+            'instructor',
+            'paymentRecords' => function ($query) {
+                $query->latest('id');
+            }
         ])
         ->where('user_id', $student->id)
         ->latest()
@@ -332,41 +357,162 @@ class StudentController extends Controller
 
     public function payments()
     {
-        if (!Auth::check() || Auth::user()->user_type != 'student') {
-            abort(403);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Logged In Student
+        |--------------------------------------------------------------------------
+        */
 
-        $payments = StudentPayment::with([
+        $student = Auth::user();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get All Payment Attempts
+        |--------------------------------------------------------------------------
+        |
+        | Every payment record is treated as a separate payment attempt.
+        |
+        */
+
+        $payments = CoursePaymentRecord::with([
             'studentCourse.course',
+            'studentCourse.level',
+            'studentCourse.category',
             'studentCourse.batch',
         ])
-        ->where('user_id', Auth::id())
-        ->where('status', 'success')
-        ->latest('payment_date')
+        ->where('user_id', $student->id)
+        ->latest('id')
         ->get();
 
-        return view('student.payments', compact('payments'));
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return View
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'student.payments',
+            compact(
+                'student',
+                'payments'
+            )
+        );
     }
+
+    // public function paymentInvoice($id)
+    // {
+    //     $payment = StudentPayment::with([
+    //         'student',
+    //         'studentCourse.course',
+    //         'studentCourse.batch',
+    //         'studentCourse.level',
+    //         'studentCourse.category',
+    //         'studentCourse.instructor',
+    //     ])
+    //     ->where('id',$id)
+    //     ->where('user_id',Auth::id())
+    //     ->where('status','success')
+    //     ->firstOrFail();
+
+    //     return view(
+    //         'student.payment-invoice',
+    //         compact('payment')
+    //     );
+    // }
 
     public function paymentInvoice($id)
     {
-        $payment = StudentPayment::with([
+        /*
+        |--------------------------------------------------------------------------
+        | Logged In Student
+        |--------------------------------------------------------------------------
+        */
+
+        $student = Auth::user();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Payment
+        |--------------------------------------------------------------------------
+        | Only allow the logged-in student's payment record.
+        |--------------------------------------------------------------------------
+        */
+
+        $payment = CoursePaymentRecord::with([
             'student',
             'studentCourse.course',
-            'studentCourse.batch',
             'studentCourse.level',
             'studentCourse.category',
+            'studentCourse.batch',
             'studentCourse.instructor',
         ])
-        ->where('id',$id)
-        ->where('user_id',Auth::id())
-        ->where('status','success')
+        ->where('id', $id)
+        ->where('user_id', $student->id)
         ->firstOrFail();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice Only For Successful Payment
+        |--------------------------------------------------------------------------
+        */
+
+        if (strtolower($payment->status) !== 'success') {
+
+            return redirect()
+                ->route('student.payments')
+                ->with(
+                    'error',
+                    'Invoice is available only for successful payments.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Related Student Course
+        |--------------------------------------------------------------------------
+        */
+
+        $studentCourse = $payment->studentCourse;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Safety Check
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$studentCourse) {
+
+            return redirect()
+                ->route('student.payment-invoice')
+                ->with(
+                    'error',
+                    'Course information not found for this payment.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Invoice View
+        |--------------------------------------------------------------------------
+        */
 
         return view(
             'student.payment-invoice',
-            compact('payment')
+            compact(
+                'student',
+                'payment',
+                'studentCourse'
+            )
         );
     }
+
+    
 
 }

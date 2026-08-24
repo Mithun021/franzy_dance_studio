@@ -70,10 +70,12 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::get('/students/{id}/courses', [UsersController::class, 'studentCourses'])
     ->name('students.courses');
 
+    Route::get('/students/enroll-courses', [UsersController::class, 'enrollCourses'])->name('students.enroll-courses');
     Route::get('/students/{id}/add-course',[UsersController::class,'addCourse'])->name('students.add-course');
     Route::post('/students/{id}/store-course',[UsersController::class,'storeCourse'])->name('students.store-course');
     Route::get('/students/course/{id}/edit',[UsersController::class,'editCourse'])->name('students.edit-course');
     Route::put('/students/course/{id}',[UsersController::class,'updateCourse'])->name('students.update-course');
+    Route::delete( '/students/course/{id}', [UsersController::class, 'deleteCourse'] )->name('students.delete-course');
 
     Route::get('/billing/student-courses',[BillingController::class,'studentCourses'])->name('billing.student-courses');
     Route::get('/billing/course-details',[BillingController::class,'courseDetails'])->name('billing.course-details');
@@ -82,11 +84,14 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::get('/billing/create', [BillingController::class,'create'])->name('billing.create');
     Route::get( '/billing/late-fine', [BillingController::class, 'calculateLateFine'] )->name('billing.calculate-late-fine');
     Route::post('/billing/store', [BillingController::class,'store'])->name('billing.store');
+    Route::get( '/payments/{studentCourse}', [BillingController::class, 'paymentDetails'] )->name('billing.payments');
     Route::get('/billing/manage/{student_course}',[BillingController::class,'manage'])->name('billing.manage');
     Route::post('/billing/update/{student_course}',[BillingController::class,'update'])->name('billing.update');
-    Route::delete('/billing/delete-payment/{payment}',[BillingController::class,'deletePayment'])->name('billing.delete-payment');
+    Route::delete( '/billing/payment-delete/{payment}', [BillingController::class, 'deletePayment'] )->name('billing.payment.delete');
+    Route::delete( '/billing/destroy/{studentCourse}', [BillingController::class, 'destroy'] )->name('billing.destroy');
     Route::post( '/billing/payment/{payment}/confirm', [BillingController::class, 'confirmPayment'] )->name('billing.payment.confirm');
     Route::get('/billing/invoice/{payment}',[BillingController::class,'invoice'])->name('billing.invoice');
+    Route::get('/billing/overall-invoice/{payment}', [BillingController::class, 'overallInvoice'] )->name('billing.overall-invoice');
     Route::get('/course-payment', [ BillingController::class, 'paymentHistory' ])->name('course.payment.index');
 
     Route::prefix('holidays')->name('holidays.')->group(function () {

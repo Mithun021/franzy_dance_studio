@@ -25,7 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
-        'salary',
+        'salary_percentage',
         'profile_image',
         'signature',
         'city',

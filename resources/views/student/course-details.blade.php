@@ -484,7 +484,7 @@
 
                                 <h2 class="text-3xl font-bold text-blue-400 mt-3">
 
-                                    ₹ {{ number_format($studentCourse->course_fee,2) }}
+                                    ₹ {{ number_format($studentCourse->monthly_fee,2) }}
 
                                 </h2>
 

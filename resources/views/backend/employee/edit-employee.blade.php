@@ -71,9 +71,9 @@
                         <span class="text-danger">@error('state'){{ $message }} @enderror</span>
                     </div>
                     <div class="col-6 form-group mb-3">
-                        <label class="form-label">Monthly Salary</label>
-                        <input class="form-control" type="number" name="salary" value="{{ old('salary',$user->salary) }}" step="0.01">
-                        <span class="text-danger">@error('salary'){{ $message }} @enderror</span>
+                        <label class="form-label">Salary Percentage(%)<span class="text-danger">*</span></label>
+                        <input class="form-control" type="number" name="salary_percentage" value="{{ old('salary_percentage',$user->salary_percentage) }}" step="0.01">
+                        <span class="text-danger">@error('salary_percentage'){{ $message }} @enderror</span>
                     </div>
                     <div class="col-6 form-group mb-3">
                         <label class="form-label">Account Type</label>

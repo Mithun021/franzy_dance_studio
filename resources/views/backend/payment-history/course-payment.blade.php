@@ -6,32 +6,44 @@
 
 <div class="container-fluid">
 
-    {{-- ========================================================= --}}
-    {{-- PAGE HEADER --}}
-    {{-- ========================================================= --}}
+    {{-- =========================================================
+        PAGE HEADER
+    ========================================================== --}}
 
     <div class="card mb-3">
 
         <div class="card-header d-flex justify-content-between align-items-center">
 
             <div>
+
                 <h4 class="mb-0">
+
                     <i class="mdi mdi-cash-multiple me-1"></i>
+
                     Course Payment Records
+
                 </h4>
 
                 <small class="text-muted">
+
                     Complete payment history of all students
+
                 </small>
+
             </div>
+
 
             <div>
 
-                <a href="{{ route('billing.index') }}"
-                   class="btn btn-secondary btn-sm">
+                <a
+                    href="{{ route('billing.index') }}"
+                    class="btn btn-secondary btn-sm"
+                >
 
                     <i class="mdi mdi-arrow-left"></i>
+
                     Billing
+
                 </a>
 
             </div>
@@ -41,51 +53,74 @@
     </div>
 
 
-    {{-- ========================================================= --}}
-    {{-- FILTER --}}
-    {{-- ========================================================= --}}
+
+    {{-- =========================================================
+        FILTER
+    ========================================================== --}}
 
     <div class="card mb-3">
 
         <div class="card-header">
 
             <h5 class="mb-0">
+
                 <i class="mdi mdi-filter-outline"></i>
+
                 Filter Payments
+
             </h5>
 
         </div>
 
+
         <div class="card-body">
 
-            <form method="GET"
-                  action="{{ route('course.payment.index') }}">
+            <form
+                method="GET"
+                action="{{ route('course.payment.index') }}"
+            >
 
                 <div class="row g-3">
 
-                    {{-- Student --}}
+
+                    {{-- =================================================
+                        STUDENT
+                    ================================================== --}}
+
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Student
+
                         </label>
 
-                        <select name="student_id"
-                                class="form-select">
+
+                        <select
+                            name="student_id"
+                            class="form-select"
+                        >
 
                             <option value="">
+
                                 All Students
+
                             </option>
+
 
                             @foreach($students as $student)
 
-                                <option value="{{ $student->id }}"
-                                    {{ request('student_id') == $student->id ? 'selected' : '' }}>
+                                <option
+                                    value="{{ $student->id }}"
+                                    {{ request('student_id') == $student->id ? 'selected' : '' }}
+                                >
 
                                     {{ $student->name }}
 
-                                    @if(!empty($student->admission_no))
-                                        - {{ $student->admission_no }}
+                                    @if($student->user_id)
+
+                                        - ID: {{ $student->user_id }}
+
                                     @endif
 
                                 </option>
@@ -97,24 +132,38 @@
                     </div>
 
 
-                    {{-- Course --}}
+
+                    {{-- =================================================
+                        COURSE
+                    ================================================== --}}
+
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Course
+
                         </label>
 
-                        <select name="course_id"
-                                class="form-select">
+
+                        <select
+                            name="course_id"
+                            class="form-select"
+                        >
 
                             <option value="">
+
                                 All Courses
+
                             </option>
+
 
                             @foreach($courses as $course)
 
-                                <option value="{{ $course->id }}"
-                                    {{ request('course_id') == $course->id ? 'selected' : '' }}>
+                                <option
+                                    value="{{ $course->id }}"
+                                    {{ request('course_id') == $course->id ? 'selected' : '' }}
+                                >
 
                                     {{ $course->course_name }}
 
@@ -127,73 +176,123 @@
                     </div>
 
 
-                    {{-- From Date --}}
-                    <div class="col-md-2">
+
+                    {{-- =================================================
+                        BATCH
+                    ================================================== --}}
+
+                    <div class="col-md-3">
 
                         <label class="form-label">
-                            From Date
+
+                            Batch
+
                         </label>
 
-                        <input type="date"
-                               name="from_date"
-                               value="{{ request('from_date') }}"
-                               class="form-control">
 
-                    </div>
-
-
-                    {{-- To Date --}}
-                    <div class="col-md-2">
-
-                        <label class="form-label">
-                            To Date
-                        </label>
-
-                        <input type="date"
-                               name="to_date"
-                               value="{{ request('to_date') }}"
-                               class="form-control">
-
-                    </div>
-
-
-                    {{-- Status --}}
-                    <div class="col-md-2">
-
-                        <label class="form-label">
-                            Payment Status
-                        </label>
-
-                        <select name="status"
-                                class="form-select">
+                        <select
+                            name="batch_id"
+                            class="form-select"
+                        >
 
                             <option value="">
+
+                                All Batches
+
+                            </option>
+
+
+                            @foreach($batches as $batch)
+
+                                <option
+                                    value="{{ $batch->id }}"
+                                    {{ request('batch_id') == $batch->id ? 'selected' : '' }}
+                                >
+
+                                    {{ $batch->batch_name }}
+
+                                </option>
+
+                            @endforeach
+
+                        </select>
+
+                    </div>
+
+
+
+                    {{-- =================================================
+                        STATUS
+                    ================================================== --}}
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Payment Status
+
+                        </label>
+
+
+                        <select
+                            name="status"
+                            class="form-select"
+                        >
+
+                            <option value="">
+
                                 All Status
+
                             </option>
 
-                            <option value="success"
-                                {{ request('status') == 'success' ? 'selected' : '' }}>
+
+                            <option
+                                value="success"
+                                {{ request('status') == 'success' ? 'selected' : '' }}
+                            >
+
                                 Success
+
                             </option>
 
-                            <option value="pending"
-                                {{ request('status') == 'pending' ? 'selected' : '' }}>
+
+                            <option
+                                value="pending"
+                                {{ request('status') == 'pending' ? 'selected' : '' }}
+                            >
+
                                 Pending
+
                             </option>
 
-                            <option value="failed"
-                                {{ request('status') == 'failed' ? 'selected' : '' }}>
+
+                            <option
+                                value="failed"
+                                {{ request('status') == 'failed' ? 'selected' : '' }}
+                            >
+
                                 Failed
+
                             </option>
 
-                            <option value="cancelled"
-                                {{ request('status') == 'cancelled' ? 'selected' : '' }}>
+
+                            <option
+                                value="cancelled"
+                                {{ request('status') == 'cancelled' ? 'selected' : '' }}
+                            >
+
                                 Cancelled
+
                             </option>
 
-                            <option value="refunded"
-                                {{ request('status') == 'refunded' ? 'selected' : '' }}>
+
+                            <option
+                                value="refunded"
+                                {{ request('status') == 'refunded' ? 'selected' : '' }}
+                            >
+
                                 Refunded
+
                             </option>
 
                         </select>
@@ -201,32 +300,86 @@
                     </div>
 
 
-                    {{-- Payment Mode --}}
+
+                    {{-- =================================================
+                        FROM DATE
+                    ================================================== --}}
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+
+                            From Date
+
+                        </label>
+
+
+                        <input
+                            type="date"
+                            name="from_date"
+                            value="{{ request('from_date') }}"
+                            class="form-control"
+                        >
+
+                    </div>
+
+
+
+                    {{-- =================================================
+                        TO DATE
+                    ================================================== --}}
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+
+                            To Date
+
+                        </label>
+
+
+                        <input
+                            type="date"
+                            name="to_date"
+                            value="{{ request('to_date') }}"
+                            class="form-control"
+                        >
+
+                    </div>
+
+
+
+                    {{-- =================================================
+                        PAYMENT MODE
+                    ================================================== --}}
+
                     <div class="col-md-3">
 
                         <label class="form-label">
+
                             Payment Mode
+
                         </label>
 
-                        <select name="payment_mode"
-                                class="form-select">
+
+                        <select
+                            name="payment_mode"
+                            class="form-select"
+                        >
 
                             <option value="">
+
                                 All Payment Modes
+
                             </option>
 
-                            @php
-                                $paymentModes = $payments
-                                    ->pluck('payment_mode')
-                                    ->filter()
-                                    ->unique()
-                                    ->sort();
-                            @endphp
 
                             @foreach($paymentModes as $mode)
 
-                                <option value="{{ $mode }}"
-                                    {{ request('payment_mode') == $mode ? 'selected' : '' }}>
+                                <option
+                                    value="{{ $mode }}"
+                                    {{ request('payment_mode') == $mode ? 'selected' : '' }}
+                                >
 
                                     {{ $mode }}
 
@@ -239,39 +392,57 @@
                     </div>
 
 
-                    {{-- Search --}}
+
+                    {{-- =================================================
+                        SEARCH
+                    ================================================== --}}
+
                     <div class="col-md-3">
 
                         <label class="form-label">
-                            Order / Transaction ID
+
+                            Search
+
                         </label>
 
-                        <input type="text"
-                               name="search"
-                               value="{{ request('search') }}"
-                               class="form-control"
-                               placeholder="Order ID / Transaction ID">
+
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            class="form-control"
+                            placeholder="Student / User ID / Course / Transaction"
+                        >
 
                     </div>
 
 
-                    {{-- Buttons --}}
-                    <div class="col-md-6 d-flex align-items-end gap-2">
 
-                        <button type="submit"
-                                class="btn btn-primary">
+                    {{-- =================================================
+                        BUTTONS
+                    ================================================== --}}
+
+                    <div class="col-md-2 d-flex align-items-end gap-2">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
 
                             <i class="mdi mdi-filter"></i>
-                            Apply Filter
+
+                            Filter
 
                         </button>
 
 
-                        <a href="{{ route('course.payment.index') }}"
-                           class="btn btn-light border">
+                        <a
+                            href="{{ route('course.payment.index') }}"
+                            class="btn btn-light border"
+                            title="Reset"
+                        >
 
                             <i class="mdi mdi-refresh"></i>
-                            Reset
 
                         </a>
 
@@ -286,29 +457,17 @@
     </div>
 
 
-    {{-- ========================================================= --}}
-    {{-- SUMMARY --}}
-    {{-- ========================================================= --}}
 
-    @php
-
-        $successPayments = $payments->where('status', 'success');
-
-        $lateFineAmount = $successPayments->sum('late_fine');
-
-        $successAmount = $successPayments->sum('amount') - $lateFineAmount;
-
-
-
-        $totalAmount = $successAmount + $lateFineAmount;
-
-    @endphp
-
+    {{-- =========================================================
+        SUMMARY
+    ========================================================== --}}
 
     <div class="row g-3 mb-3">
 
-        {{-- Total Records --}}
-        <div class="col-md-3">
+
+        {{-- TOTAL PAYMENTS --}}
+
+        <div class="col-md-4">
 
             <div class="card border-0 shadow-sm h-100">
 
@@ -319,17 +478,24 @@
                         <div>
 
                             <small class="text-muted">
+
                                 Total Payments
+
                             </small>
 
                             <h4 class="mb-0">
-                                {{ $payments->count() }}
+
+                                {{ $totalPayments }}
+
                             </h4>
 
                         </div>
 
+
                         <div class="text-primary fs-2">
+
                             <i class="mdi mdi-cash-multiple"></i>
+
                         </div>
 
                     </div>
@@ -341,8 +507,10 @@
         </div>
 
 
-        {{-- Successful Amount --}}
-        <div class="col-md-3">
+
+        {{-- SUCCESSFUL PAYMENTS --}}
+
+        <div class="col-md-4">
 
             <div class="card border-0 shadow-sm h-100">
 
@@ -353,17 +521,24 @@
                         <div>
 
                             <small class="text-muted">
-                                Successful Amount
+
+                                Successful Payments
+
                             </small>
 
                             <h4 class="mb-0 text-success">
-                                ₹ {{ number_format($successAmount, 2) }}
+
+                                {{ $payments->where('status','success')->count() }}
+
                             </h4>
 
                         </div>
+
 
                         <div class="text-success fs-2">
+
                             <i class="mdi mdi-check-circle"></i>
+
                         </div>
 
                     </div>
@@ -375,8 +550,10 @@
         </div>
 
 
-        {{-- Late Fine --}}
-        <div class="col-md-3">
+
+        {{-- SUCCESSFUL AMOUNT --}}
+
+        <div class="col-md-4">
 
             <div class="card border-0 shadow-sm h-100">
 
@@ -387,51 +564,27 @@
                         <div>
 
                             <small class="text-muted">
-                                Late Fine Collected
-                            </small>
 
-                            <h4 class="mb-0 text-danger">
-                                ₹ {{ number_format($lateFineAmount, 2) }}
-                            </h4>
+                                Successful Amount
 
-                        </div>
-
-                        <div class="text-danger fs-2">
-                            <i class="mdi mdi-alert-circle"></i>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- Total Collection --}}
-        <div class="col-md-3">
-
-            <div class="card border-0 shadow-sm h-100">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-                        <div>
-
-                            <small class="text-muted">
-                                Total Collection
                             </small>
 
                             <h4 class="mb-0 text-primary">
-                                ₹ {{ number_format($totalAmount, 2) }}
+
+                                ₹ {{ number_format(
+                                    $successfulAmount,
+                                    2
+                                ) }}
+
                             </h4>
 
                         </div>
 
+
                         <div class="text-primary fs-2">
+
                             <i class="mdi mdi-wallet"></i>
+
                         </div>
 
                     </div>
@@ -445,9 +598,10 @@
     </div>
 
 
-    {{-- ========================================================= --}}
-    {{-- PAYMENT TABLE --}}
-    {{-- ========================================================= --}}
+
+    {{-- =========================================================
+        PAYMENT TABLE
+    ========================================================== --}}
 
     <div class="card">
 
@@ -461,9 +615,12 @@
 
             </h5>
 
+
             <span class="badge bg-primary">
 
-                {{ $payments->count() }} Records
+                {{ $payments->count() }}
+
+                Records
 
             </span>
 
@@ -476,67 +633,72 @@
 
                 <table
                     class="table table-bordered table-hover align-middle"
-                    id="responsive-datatable">
+                    id="datatable-buttons"
+                >
 
                     <thead class="table-dark">
 
-                    <tr>
+                        <tr>
 
-                        <th>#</th>
+                            <th>#</th>
 
-                        <th>Payment Date</th>
+                            <th>Payment Date</th>
 
-                        <th>Order ID</th>
+                            <th>Student</th>
 
-                        <th>Student</th>
+                            <th>Course</th>
 
-                        <th>Course</th>
+                            <th>Batch</th>
 
-                        <th>Payment Mode</th>
+                            <th>Payment Mode</th>
 
-                        <th>Payment Type</th>
+                            <th>Amount</th>
 
-                        <th>Amount</th>
+                            <th>Transaction / Reference</th>
 
-                        <th>Late Fine</th>
+                            <th>Status</th>
 
-                        <th>Total Amount</th>
+                            <th>Remarks</th>
 
-                        <th>Transaction ID</th>
+                            <th id="no-export">
+                                Action
+                            </th>
 
-                        <th>Status</th>
-
-                        <th>Payment Proof</th>
-
-                        <th>Remarks</th>
-
-                        <th id="no-export">
-                            Action
-                        </th>
-
-                    </tr>
+                        </tr>
 
                     </thead>
 
 
                     <tbody>
 
-                    @forelse($payments as $key => $payment)
+                    @forelse($payments as $payment)
 
                         <tr>
 
-                            {{-- # --}}
+
+                            {{-- =================================================
+                                #
+                            ================================================== --}}
+
                             <td>
-                                {{ $key + 1 }}
+
+                                {{ $loop->iteration }}
+
                             </td>
 
 
-                            {{-- Payment Date --}}
+
+                            {{-- =================================================
+                                PAYMENT DATE
+                            ================================================== --}}
+
                             <td>
 
                                 @if($payment->payment_date)
 
-                                    {{ $payment->payment_date->format('d M Y') }}
+                                    {{ \Carbon\Carbon::parse(
+                                        $payment->payment_date
+                                    )->format('d M Y') }}
 
                                 @else
 
@@ -547,50 +709,37 @@
                             </td>
 
 
-                            {{-- Order ID --}}
+
+                            {{-- =================================================
+                                STUDENT
+                            ================================================== --}}
+
                             <td>
 
-                                @if($payment->order_id)
-
-                                    <span class="badge bg-light text-dark border">
-
-                                        {{ $payment->order_id }}
-
-                                    </span>
-
-                                @else
-
-                                    -
-
-                                @endif
-
-                            </td>
-
-
-                            {{-- Student --}}
-                            <td>
-
-                                @if($payment->student)
+                                @if($payment->studentCourse?->student)
 
                                     <strong>
-                                        {{ $payment->student->name }}
+
+                                        {{ $payment->studentCourse->student->name }}
+
                                     </strong>
 
                                     <br>
 
-                                    <small class="text-muted">
+                                    <small class="text-primary">
 
-                                        {{ $payment->student->email ?? '' }}
+                                        User ID:
+                                        {{ $payment->studentCourse->student->user_id ?? '-' }}
 
                                     </small>
 
-                                    @if(!empty($payment->student->phone))
+                                    @if($payment->studentCourse->student->phone)
 
                                         <br>
 
-                                        <small>
+                                        <small class="text-muted">
 
-                                            {{ $payment->student->phone }}
+                                            {{ $payment->studentCourse->student->phone }}
 
                                         </small>
 
@@ -605,25 +754,20 @@
                             </td>
 
 
-                            {{-- Course --}}
+
+                            {{-- =================================================
+                                COURSE
+                            ================================================== --}}
+
                             <td>
 
-                                @if($payment->studentCourse)
+                                @if($payment->studentCourse?->course)
 
                                     <strong>
 
-                                        {{ optional($payment->studentCourse->course)->course_name ?? '-' }}
+                                        {{ $payment->studentCourse->course->course_name }}
 
                                     </strong>
-
-                                    <br>
-
-                                    <small class="text-primary">
-
-                                        Admission:
-                                        {{ $payment->studentCourse->admission_no ?? '-' }}
-
-                                    </small>
 
                                 @else
 
@@ -634,16 +778,93 @@
                             </td>
 
 
-                            {{-- Payment Mode --}}
+
+                            {{-- =================================================
+                                BATCH
+                            ================================================== --}}
+
+                            <td>
+
+                                {{ $payment->studentCourse?->batch?->batch_name ?? '-' }}
+
+                            </td>
+
+
+
+                            {{-- =================================================
+                                PAYMENT MODE
+                            ================================================== --}}
+
                             <td>
 
                                 @if($payment->payment_mode)
 
-                                    <span class="badge bg-info text-dark">
+                                    @switch($payment->payment_mode)
 
-                                        {{ $payment->payment_mode }}
+                                        @case('Cash')
 
-                                    </span>
+                                            <span class="badge bg-success">
+
+                                                Cash
+
+                                            </span>
+
+                                            @break
+
+
+                                        @case('UPI')
+
+                                            <span class="badge bg-primary">
+
+                                                UPI
+
+                                            </span>
+
+                                            @break
+
+
+                                        @case('Card')
+
+                                            <span class="badge bg-info">
+
+                                                Card
+
+                                            </span>
+
+                                            @break
+
+
+                                        @case('Bank Transfer')
+
+                                            <span class="badge bg-dark">
+
+                                                Bank Transfer
+
+                                            </span>
+
+                                            @break
+
+
+                                        @case('Cheque')
+
+                                            <span class="badge bg-warning text-dark">
+
+                                                Cheque
+
+                                            </span>
+
+                                            @break
+
+
+                                        @default
+
+                                            <span class="badge bg-secondary">
+
+                                                {{ $payment->payment_mode }}
+
+                                            </span>
+
+                                    @endswitch
 
                                 @else
 
@@ -654,21 +875,17 @@
                             </td>
 
 
-                            {{-- Payment Type --}}
-                            <td>
 
-                                {{ ucfirst($payment->payment_type ?? '-') }}
+                            {{-- =================================================
+                                AMOUNT
+                            ================================================== --}}
 
-                            </td>
-
-
-                            {{-- Amount --}}
                             <td class="text-end">
 
-                                <strong>
+                                <strong class="text-success">
 
                                     ₹ {{ number_format(
-                                        (float)$payment->amount - (float)$payment->late_fine,
+                                        (float)$payment->amount,
                                         2
                                     ) }}
 
@@ -677,68 +894,39 @@
                             </td>
 
 
-                            {{-- Late Fine --}}
-                            <td class="text-end">
 
-                                @if((float)$payment->late_fine > 0)
+                            {{-- =================================================
+                                TRANSACTION
+                            ================================================== --}}
 
-                                    <span class="text-danger fw-bold">
-
-                                        ₹ {{ number_format((float)$payment->late_fine, 2) }}
-
-                                    </span>
-
-                                @else
-
-                                    <span class="text-muted">
-                                        -
-                                    </span>
-
-                                @endif
-
-                            </td>
-
-
-                            {{-- Total Amount --}}
-                            <td class="text-end">
-
-                                <strong class="text-primary">
-
-                                    {{-- ₹
-                                    {{ number_format(
-                                        (float)$payment->amount +
-                                        (float)$payment->late_fine,
-                                        2
-                                    ) }} --}}
-
-                                    ₹ {{ number_format((float) $payment->amount, 2) }}
-
-                                </strong>
-
-                            </td>
-
-
-                            {{-- Transaction ID --}}
                             <td>
 
                                 @if($payment->transaction_id)
 
-                                    <small>
+                                    <code>
 
                                         {{ $payment->transaction_id }}
 
-                                    </small>
+                                    </code>
 
                                 @else
 
-                                    -
+                                    <span class="text-muted">
+
+                                        -
+
+                                    </span>
 
                                 @endif
 
                             </td>
 
 
-                            {{-- Status --}}
+
+                            {{-- =================================================
+                                STATUS
+                            ================================================== --}}
+
                             <td>
 
                                 @switch($payment->status)
@@ -748,6 +936,7 @@
                                         <span class="badge bg-success">
 
                                             <i class="mdi mdi-check-circle"></i>
+
                                             Success
 
                                         </span>
@@ -760,6 +949,7 @@
                                         <span class="badge bg-warning text-dark">
 
                                             <i class="mdi mdi-clock-outline"></i>
+
                                             Pending
 
                                         </span>
@@ -772,6 +962,7 @@
                                         <span class="badge bg-danger">
 
                                             <i class="mdi mdi-close-circle"></i>
+
                                             Failed
 
                                         </span>
@@ -784,6 +975,7 @@
                                         <span class="badge bg-secondary">
 
                                             <i class="mdi mdi-cancel"></i>
+
                                             Cancelled
 
                                         </span>
@@ -796,6 +988,7 @@
                                         <span class="badge bg-info">
 
                                             <i class="mdi mdi-cash-refund"></i>
+
                                             Refunded
 
                                         </span>
@@ -807,7 +1000,9 @@
 
                                         <span class="badge bg-dark">
 
-                                            {{ ucfirst($payment->status ?? 'Unknown') }}
+                                            {{ ucfirst(
+                                                $payment->status ?? 'Unknown'
+                                            ) }}
 
                                         </span>
 
@@ -816,41 +1011,18 @@
                             </td>
 
 
-                            {{-- Payment Proof --}}
-                            <td class="text-center">
 
-                                @if(
-                                    $payment->payment_mode !== 'Online Payment'
-                                    && !empty($payment->payment_proof)
-                                )
+                            {{-- =================================================
+                                REMARKS
+                            ================================================== --}}
 
-                                    <a
-                                        href="{{ asset('storage/' . $payment->payment_proof) }}"
-                                        target="_blank"
-                                        class="btn btn-sm btn-secondary"
-                                        title="View Payment Proof">
-
-                                        <i class="mdi mdi-file-image"></i>
-
-                                    </a>
-
-                                @else
-
-                                    <span class="text-muted">
-                                        -
-                                    </span>
-
-                                @endif
-
-                            </td>
-
-
-                            {{-- Remarks --}}
                             <td>
 
                                 @if($payment->remarks)
 
-                                    <span title="{{ $payment->remarks }}">
+                                    <span
+                                        title="{{ $payment->remarks }}"
+                                    >
 
                                         {{ \Illuminate\Support\Str::limit(
                                             $payment->remarks,
@@ -868,47 +1040,86 @@
                             </td>
 
 
-                            {{-- Action --}}
+
+                            {{-- =================================================
+                                ACTION
+                            ================================================== --}}
+
                             <td class="text-center">
 
-                                @if($payment->status === 'success')
+                                <div class="d-flex gap-1 justify-content-center">
 
-                                    <a
-                                        href="{{ route('billing.invoice',$payment->id) }}"
-                                        target="_blank"
-                                        class="btn btn-sm btn-primary"
-                                        title="View Invoice">
+                                    {{-- ================================
+                                        INVOICE
+                                    ================================= --}}
 
-                                        <i class="mdi mdi-file-document"></i>
+                                    @if($payment->status === 'success')
 
-                                    </a>
+                                        <a
+                                            href="{{ route(
+                                                'billing.invoice',
+                                                $payment->id
+                                            ) }}"
+                                            target="_blank"
+                                            class="btn btn-sm btn-success"
+                                            title="View Invoice"
+                                        >
 
-                                @else
+                                            <i class="mdi mdi-receipt-text-outline"></i>
 
-                                    <span class="text-muted">
-                                        -
-                                    </span>
+                                        </a>
 
-                                @endif
+                                    @endif
+
+
+                                    {{-- ================================
+                                        CONFIRM PAYMENT
+                                    ================================= --}}
+
+                                    @if($payment->status !== 'success')
+
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-primary"
+                                            onclick="confirmBillingPayment(
+                                                {{ $payment->id }}
+                                            )"
+                                            title="Confirm Payment"
+                                        >
+
+                                            <i class="mdi mdi-check-circle-outline"></i>
+
+                                        </button>
+
+                                    @endif
+
+                                </div>
 
                             </td>
 
                         </tr>
+
 
                     @empty
 
                         <tr>
 
                             <td
-                                colspan="15"
-                                class="text-center py-4">
+                                colspan="11"
+                                class="text-center py-5"
+                            >
 
                                 <div class="text-muted">
 
-                                    <i class="mdi mdi-cash-remove fs-2"></i>
+                                    <i
+                                        class="mdi mdi-cash-remove"
+                                        style="font-size:40px;"
+                                    ></i>
 
                                     <div class="mt-2">
+
                                         No payment records found.
+
                                     </div>
 
                                 </div>
@@ -922,65 +1133,42 @@
                     </tbody>
 
 
-                    {{-- ================================================= --}}
-                    {{-- FOOTER TOTAL --}}
-                    {{-- ================================================= --}}
+
+                    {{-- =========================================================
+                        FOOTER TOTAL
+                    ========================================================== --}}
 
                     @if($payments->count())
 
                         <tfoot class="table-light">
 
-                        <tr>
+                            <tr>
 
-                            <th colspan="7" class="text-end">
+                                <th
+                                    colspan="6"
+                                    class="text-end"
+                                >
 
-                                Total:
+                                    Total Successful Payment:
 
-                            </th>
+                                </th>
 
-                            {{-- <th class="text-end">
 
-                                ₹
-                                {{ number_format(
-                                    $payments->where('status','success')->sum('amount'),
-                                    2
-                                ) }}
+                                <th class="text-end text-success">
 
-                            </th> --}}
+                                    ₹ {{ number_format(
+                                        $payments
+                                            ->where('status','success')
+                                            ->sum('amount'),
+                                        2
+                                    ) }}
 
-                            <th class="text-end">
-                                ₹ {{ number_format(
-                                    $payments->where('status', 'success')->sum('amount')
-                                    - $payments->where('status', 'success')->sum('late_fine'),
-                                    2
-                                ) }}
-                            </th>
+                                </th>
 
-                            <th class="text-end text-danger">
 
-                                ₹
-                                {{ number_format(
-                                    $payments->where('status','success')->sum('late_fine'),
-                                    2
-                                ) }}
+                                <th colspan="4"></th>
 
-                            </th>
-
-                            <th class="text-end text-primary">
-
-                                ₹
-                                {{ number_format(
-                                    $payments->where('status','success')->sum('amount'),
-                                    // +
-                                    // $payments->where('status','success')->sum('late_fine'),
-                                    2
-                                ) }}
-
-                            </th>
-
-                            <th colspan="5"></th>
-
-                        </tr>
+                            </tr>
 
                         </tfoot>
 
@@ -998,7 +1186,12 @@
 
 @endsection
 
-{{--
+
+
+{{-- =========================================================
+    SCRIPTS
+========================================================= --}}
+
 @push('scripts')
 
 <script>
@@ -1029,7 +1222,7 @@ $(document).ready(function () {
             columnDefs: [
 
                 {
-                    targets: [14],
+                    targets: [10],
                     orderable: false,
                     searchable: false
                 }
@@ -1055,6 +1248,7 @@ $(document).ready(function () {
 
                 {
                     extend: 'copy',
+
                     exportOptions: {
                         columns: ':not(#no-export)'
                     }
@@ -1062,7 +1256,9 @@ $(document).ready(function () {
 
                 {
                     extend: 'excel',
+
                     title: 'Course Payment Records',
+
                     exportOptions: {
                         columns: ':not(#no-export)'
                     }
@@ -1070,7 +1266,9 @@ $(document).ready(function () {
 
                 {
                     extend: 'csv',
+
                     title: 'Course Payment Records',
+
                     exportOptions: {
                         columns: ':not(#no-export)'
                     }
@@ -1078,7 +1276,9 @@ $(document).ready(function () {
 
                 {
                     extend: 'print',
+
                     title: 'Course Payment Records',
+
                     exportOptions: {
                         columns: ':not(#no-export)'
                     }
@@ -1092,6 +1292,86 @@ $(document).ready(function () {
 
 });
 
+
+
+/*
+|--------------------------------------------------------------------------
+| CONFIRM PAYMENT
+|--------------------------------------------------------------------------
+*/
+
+function confirmBillingPayment(paymentId)
+{
+    if (!confirm(
+        'Are you sure you want to confirm this payment?'
+    )) {
+
+        return;
+
+    }
+
+
+    $.ajax({
+
+        url:
+            "{{ url('/billing/payment') }}/"
+            + paymentId
+            + "/confirm",
+
+        type: "POST",
+
+        data: {
+
+            _token:
+                "{{ csrf_token() }}"
+
+        },
+
+        success: function(response) {
+
+            if (response.success) {
+
+                alert(
+                    response.message ||
+                    'Payment confirmed successfully.'
+                );
+
+                location.reload();
+
+            } else {
+
+                alert(
+                    response.message ||
+                    'Unable to confirm payment.'
+                );
+
+            }
+
+        },
+
+        error: function(xhr) {
+
+            let message =
+                'Something went wrong while confirming payment.';
+
+            if (
+                xhr.responseJSON &&
+                xhr.responseJSON.message
+            ) {
+
+                message =
+                    xhr.responseJSON.message;
+
+            }
+
+            alert(message);
+
+        }
+
+    });
+
+}
+
 </script>
 
-@endpush --}}
+@endpush

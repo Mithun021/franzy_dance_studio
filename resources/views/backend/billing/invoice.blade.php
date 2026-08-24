@@ -1,6 +1,6 @@
 @extends('backend.partial.master')
 
-@section('title','Payment Invoice')
+@section('title', 'Payment Invoice')
 
 @section('backend-content')
 
@@ -77,10 +77,29 @@ body{
 
 .logo{
     max-height:65px;
+    max-width:100%;
+}
+
+.amount-paid{
+    font-size:15px;
+    font-weight:700;
 }
 
 .no-print{
     margin-bottom:12px;
+}
+
+.invoice-footer{
+    border-top:1px solid #ddd;
+    margin-top:12px;
+    padding-top:8px;
+}
+
+.payment-highlight{
+    background:#f0fff4;
+    border:1px solid #b7e4c7;
+    border-radius:4px;
+    padding:8px 10px;
 }
 
 @media print{
@@ -100,6 +119,7 @@ body{
         box-shadow:none;
         padding:0;
         width:100%;
+        max-width:none;
     }
 
     .table th,
@@ -116,6 +136,16 @@ body{
         font-size:18px;
     }
 
+    .section-title{
+        font-size:12px;
+        padding:4px 6px;
+        margin:7px 0 5px;
+    }
+
+    .payment-highlight{
+        padding:6px 8px;
+    }
+
 }
 
 </style>
@@ -123,61 +153,119 @@ body{
 
 <div class="container-fluid">
 
+
+{{-- ================================================================
+    ACTION BUTTONS
+================================================================ --}}
+
 <div class="mb-3 no-print">
 
-    <a href="{{ url()->previous() }}" class="btn btn-secondary">
-        <i class="mdi mdi-arrow-left"></i> Back
+    <a
+        href="{{ url()->previous() }}"
+        class="btn btn-secondary"
+    >
+
+        <i class="mdi mdi-arrow-left"></i>
+
+        Back
+
     </a>
 
-    <button onclick="window.print()" class="btn btn-primary">
-        <i class="mdi mdi-printer"></i> Print Invoice
+
+    <button
+        type="button"
+        onclick="window.print()"
+        class="btn btn-primary"
+    >
+
+        <i class="mdi mdi-printer"></i>
+
+        Print Invoice
+
     </button>
 
 </div>
 
+
+
+{{-- ================================================================
+    INVOICE
+================================================================ --}}
+
 <div class="invoice-box">
 
-<!-- ================= HEADER ================= -->
+
+{{-- ================================================================
+    HEADER
+================================================================ --}}
 
 <div class="invoice-header">
 
     <div class="row align-items-center">
 
+        {{-- Logo --}}
         <div class="col-2 text-center">
 
-            {{-- Uncomment if logo available --}}
-
-
-            <img src="{{ asset('images/logo.png') }}" class="logo">
-
+            <img
+                src="{{ asset('images/logo.png') }}"
+                class="logo"
+                alt="Frenzy Dance Studio"
+            >
 
         </div>
 
+
+        {{-- Company --}}
         <div class="col-7">
 
             <div class="company-name">
+
                 FRENZY DANCE STUDIO
+
             </div>
 
             <p class="company-info mb-1">
+
                 A Complete Performing & Fine Art Center
+
             </p>
 
             <small>
+
                 Dance | Music | Art | Fitness
+
             </small>
 
         </div>
 
+
+        {{-- Invoice --}}
         <div class="col-3 text-end">
 
             <h4 class="invoice-title">
-                INVOICE
+
+                PAYMENT RECEIPT
+
             </h4>
 
             <strong>
-                {{ $payment->order_id ?? 'N/A' }}
+
+                INV-{{ str_pad(
+                    $payment->id,
+                    6,
+                    '0',
+                    STR_PAD_LEFT
+                ) }}
+
             </strong>
+
+            <br>
+
+            <small class="text-muted">
+
+                Computer Generated Receipt
+
+            </small>
 
         </div>
 
@@ -186,132 +274,339 @@ body{
 </div>
 
 
-<!-- ================= STUDENT INFORMATION ================= -->
+
+{{-- ================================================================
+    STUDENT INFORMATION
+================================================================ --}}
 
 <div class="section-title">
+
     Student Information
+
 </div>
+
 
 <table class="table table-bordered">
 
-<tr>
+    <tr>
 
-    <th>Name</th>
+        <th>
+            Name
+        </th>
 
-    <td>
-        {{ $payment->studentCourse->student->name }}
-    </td>
+        <td>
 
-    <th>Admission No</th>
+            {{ $studentCourse->student->name ?? 'N/A' }}
 
-    <td>
-        {{ $payment->studentCourse->admission_no }}
-    </td>
+        </td>
 
-</tr>
 
-<tr>
+        <th>
+            Admission No
+        </th>
 
-    <th>Mobile</th>
+        <td>
 
-    <td>
-        {{ $payment->studentCourse->student->phone }}
-    </td>
+            {{ $studentCourse->student->admission_no ?? 'N/A' }}
 
-    <th>Email</th>
+        </td>
 
-    <td>
-        {{ $payment->studentCourse->student->email }}
-    </td>
+    </tr>
 
-</tr>
 
-<tr>
+    <tr>
 
-    <th>Payment Date</th>
+        <th>
+            Mobile
+        </th>
 
-    <td>
-        {{ $payment->payment_date->format('d M Y') }}
-    </td>
+        <td>
 
-    <th>Payment Mode</th>
+            {{ $studentCourse->student->phone ?? '-' }}
 
-    <td>
-        {{ $payment->payment_mode }}
-    </td>
+        </td>
 
-</tr>
+
+        <th>
+            Email
+        </th>
+
+        <td>
+
+            {{ $studentCourse->student->email ?? '-' }}
+
+        </td>
+
+    </tr>
 
 </table>
 
 
-<!-- ================= COURSE INFORMATION ================= -->
+
+{{-- ================================================================
+    COURSE INFORMATION
+================================================================ --}}
 
 <div class="section-title">
+
     Course Information
+
 </div>
+
 
 <table class="table table-bordered">
 
-<tr>
+    <tr>
 
-    <th>Course</th>
+        <th>
+            Course
+        </th>
 
-    <td>
-        {{ $payment->studentCourse->course->course_name }}
-    </td>
+        <td>
 
-    <th>Batch</th>
+            {{ $studentCourse->course->course_name ?? 'N/A' }}
 
-    <td>
-        {{ $payment->studentCourse->batch->batch_name ?? '-' }}
-    </td>
+        </td>
 
-</tr>
 
-<tr>
+        <th>
+            Batch
+        </th>
 
-    <th>Level</th>
+        <td>
 
-    <td>
-        {{ $payment->studentCourse->level->name ?? '-' }}
-    </td>
+            {{ $studentCourse->batch->batch_name ?? '-' }}
 
-    <th>Category</th>
+        </td>
 
-    <td>
-        {{ $payment->studentCourse->category->name ?? '-' }}
-    </td>
+    </tr>
 
-</tr>
 
-<tr>
+    <tr>
 
-    <th>Duration</th>
+        <th>
+            Level
+        </th>
 
-    <td>
-        {{ $payment->studentCourse->course->course_duration }}
-        {{ ucfirst($payment->studentCourse->course->duration_type) }}
-    </td>
+        <td>
 
-    <th>Instructor</th>
+            {{ $studentCourse->level->name ?? '-' }}
 
-    <td>
-        {{ optional($payment->studentCourse->instructor)->name ?? '-' }}
-    </td>
+        </td>
 
-</tr>
+
+        <th>
+            Category
+        </th>
+
+        <td>
+
+            {{ $studentCourse->category->name ?? '-' }}
+
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <th>
+            Monthly Fee
+        </th>
+
+        <td>
+
+            ₹{{ number_format(
+                (float) ($studentCourse->monthly_fee ?? 0),
+                2
+            ) }}
+
+        </td>
+
+
+        <th>
+            Instructor
+        </th>
+
+        <td>
+
+            {{ optional(
+                $studentCourse->instructor
+            )->name ?? '-' }}
+
+        </td>
+
+    </tr>
 
 </table>
 
-{{-- Part 2 starts from here --}}
-{{-- ========================================================= --}}
-{{-- PAYMENT DETAILS --}}
-{{-- ========================================================= --}}
+
+
+{{-- ================================================================
+    PAYMENT INFORMATION
+================================================================ --}}
 
 <div class="section-title">
-    Payment Details
+
+    Payment Information
+
 </div>
+
+
+<table class="table table-bordered">
+
+    <tr>
+
+        <th>
+            Payment Date
+        </th>
+
+        <td>
+
+            @if($payment->payment_date)
+
+                {{ \Carbon\Carbon::parse(
+                    $payment->payment_date
+                )->format('d M Y') }}
+
+            @else
+
+                -
+
+            @endif
+
+        </td>
+
+
+        <th>
+            Payment Mode
+        </th>
+
+        <td>
+
+            {{ $payment->payment_mode ?? '-' }}
+
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <th>
+            Transaction / Reference No.
+        </th>
+
+        <td>
+
+            {{ $payment->transaction_id ?: 'N/A' }}
+
+        </td>
+
+
+        <th>
+            Payment Status
+        </th>
+
+        <td>
+
+            @switch($payment->status)
+
+                @case('success')
+
+                    <span class="badge bg-success">
+                        Success
+                    </span>
+
+                    @break
+
+
+                @case('pending')
+
+                    <span class="badge bg-warning text-dark">
+                        Pending
+                    </span>
+
+                    @break
+
+
+                @case('failed')
+
+                    <span class="badge bg-danger">
+                        Failed
+                    </span>
+
+                    @break
+
+
+                @case('cancelled')
+
+                    <span class="badge bg-secondary">
+                        Cancelled
+                    </span>
+
+                    @break
+
+
+                @default
+
+                    <span class="badge bg-dark">
+                        {{ ucfirst(
+                            $payment->status ?? 'Unknown'
+                        ) }}
+                    </span>
+
+            @endswitch
+
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <th>
+            Receipt No.
+        </th>
+
+        <td>
+
+            INV-{{ str_pad(
+                $payment->id,
+                6,
+                '0',
+                STR_PAD_LEFT
+            ) }}
+
+        </td>
+
+
+        <th>
+            Remarks
+        </th>
+
+        <td>
+
+            {{ $payment->remarks ?: '-' }}
+
+        </td>
+
+    </tr>
+
+</table>
+
+
+
+{{-- ================================================================
+    SINGLE PAYMENT DETAILS
+================================================================ --}}
+
+<div class="section-title">
+
+    Payment Details
+
+</div>
+
 
 <table class="table table-bordered">
 
@@ -319,84 +614,100 @@ body{
 
         <tr>
 
-            <th width="8%">#</th>
+            <th width="8%">
+                #
+            </th>
 
-            <th>Description</th>
+            <th>
+                Description
+            </th>
 
-            <th width="20%">Amount (₹)</th>
+            <th width="20%">
+                Amount (₹)
+            </th>
 
         </tr>
 
     </thead>
 
+
     <tbody>
 
-        @php $i = 1; @endphp
-
-        @if($payment->registration_fee > 0)
-
         <tr>
-
-            <td>{{ $i++ }}</td>
-
-            <td>Registration Fee</td>
-
-            <td>{{ number_format($payment->registration_fee,2) }}</td>
-
-        </tr>
-
-        @endif
-
-
-        @if($payment->admission_fee > 0)
-
-        <tr>
-
-            <td>{{ $i++ }}</td>
-
-            <td>Admission Fee</td>
-
-            <td>{{ number_format($payment->admission_fee,2) }}</td>
-
-        </tr>
-
-        @endif
-
-
-        <tr>
-
-            <td>{{ $i++ }}</td>
-
-            <td>Monthly Course Fee</td>
-
-            <td>{{ number_format($payment->course_fee,2) }}</td>
-
-        </tr>
-
-        @if($payment->late_fine > 0)
-
-        <tr>
-            <td>{{ $i++ }}</td>
 
             <td>
-                Late Fine
+                1
             </td>
 
-            <td class="text-danger">
-                ₹ {{ number_format($payment->late_fine,2) }}
+            <td>
+
+                Course Fee Payment
+
+                <br>
+
+                <small class="text-muted">
+
+                    Payment received against course billing
+
+                </small>
+
             </td>
+
+            <td>
+
+                ₹{{ number_format(
+                    (float) $payment->amount,
+                    2
+                ) }}
+
+            </td>
+
         </tr>
 
+
+        {{-- Late Fine / Penalty if this payment is related
+             to fine information --}}
+        @if(isset($payment->late_fine) && $payment->late_fine > 0)
+
+            <tr>
+
+                <td>
+                    2
+                </td>
+
+                <td>
+                    Late Fine
+                </td>
+
+                <td class="text-danger">
+
+                    ₹{{ number_format(
+                        (float) $payment->late_fine,
+                        2
+                    ) }}
+
+                </td>
+
+            </tr>
+
         @endif
+
 
         <tr class="table-success">
 
             <th colspan="2" class="text-end">
+
                 Paid Amount
+
             </th>
 
-            <th>
-                ₹ {{ number_format($payment->amount,2) }}
+            <th class="amount-paid">
+
+                ₹{{ number_format(
+                    (float) $payment->amount,
+                    2
+                ) }}
+
             </th>
 
         </tr>
@@ -406,168 +717,354 @@ body{
 </table>
 
 
-{{-- ========================================================= --}}
-{{-- BILLING SUMMARY + TRANSACTION INFO (COMPACT) --}}
-{{-- ========================================================= --}}
 
-@php
+{{-- ================================================================
+    PAYMENT HIGHLIGHT
+================================================================ --}}
 
-$studentCourse = $payment->studentCourse;
+<div class="payment-highlight mb-2">
 
-$totalPaid = \App\Models\StudentPayment::where(
-    'student_course_id',
-    $studentCourse->id
-)->sum('amount');
+    <div class="row align-items-center">
 
-$remaining = $studentCourse->grand_total - $totalPaid;
+        <div class="col-8">
 
-@endphp
+            <strong>
 
+                Payment Received
+
+            </strong>
+
+            <br>
+
+            <small class="text-muted">
+
+                This receipt represents this payment transaction only.
+
+            </small>
+
+        </div>
+
+
+        <div class="col-4 text-end">
+
+            <span class="amount-paid">
+
+                ₹{{ number_format(
+                    (float) $payment->amount,
+                    2
+                ) }}
+
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+{{-- ================================================================
+    BILLING SUMMARY
+================================================================ --}}
 
 <div class="section-title">
-    Billing & Transaction Summary
+
+    Billing Summary
+
 </div>
+
 
 <table class="table table-bordered">
 
-<tr>
+    <tr>
 
-    <th>Grand Total</th>
+        <th>
+            Total Course Fee
+        </th>
 
-    <td>
-        ₹ {{ number_format($studentCourse->grand_total,2) }}
-    </td>
+        <td>
 
-    <th>Total Paid</th>
+            ₹{{ number_format(
+                (float) $totalCourseFee,
+                2
+            ) }}
 
-    <td>
-        ₹ {{ number_format($totalPaid,2) }}
-    </td>
+        </td>
 
-</tr>
 
-<tr>
+        <th>
+            Registration Fee
+        </th>
 
-    <th>Remaining</th>
+        <td>
 
-    <td>
+            ₹{{ number_format(
+                (float) $registrationFee,
+                2
+            ) }}
 
-        @if($remaining<=0)
+        </td>
 
-            <span class="badge bg-success">
-                Fully Paid
-            </span>
+    </tr>
 
-        @else
 
-            ₹ {{ number_format($remaining,2) }}
+    <tr>
 
-        @endif
+        <th>
+            Admission Fee
+        </th>
 
-    </td>
+        <td>
 
-    <th>Status</th>
+            ₹{{ number_format(
+                (float) $admissionFee,
+                2
+            ) }}
 
-    <td>
+        </td>
 
-        @switch($payment->status)
 
-            @case('success')
+        <th>
+            Late Fine / Penalty
+        </th>
+
+        <td>
+
+            ₹{{ number_format(
+                (float) $totalFine,
+                2
+            ) }}
+
+        </td>
+
+    </tr>
+
+
+    <tr class="table-light">
+
+        <th>
+            Total Billing
+        </th>
+
+        <td>
+
+            <strong>
+
+                ₹{{ number_format(
+                    (float) $totalBilling,
+                    2
+                ) }}
+
+            </strong>
+
+        </td>
+
+
+        <th>
+            Total Paid Till Date
+        </th>
+
+        <td class="text-success">
+
+            <strong>
+
+                ₹{{ number_format(
+                    (float) $totalPaid,
+                    2
+                ) }}
+
+            </strong>
+
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <th>
+            Remaining Due
+        </th>
+
+        <td>
+
+            @if($remaining <= 0)
 
                 <span class="badge bg-success">
-                    Success
+
+                    Fully Paid
+
                 </span>
 
-                @break
+            @else
 
-            @case('pending')
+                <strong class="text-danger">
+
+                    ₹{{ number_format(
+                        (float) $remaining,
+                        2
+                    ) }}
+
+                </strong>
+
+            @endif
+
+        </td>
+
+
+        <th>
+            Payment Status
+        </th>
+
+        <td>
+
+            @if($payment->status === 'success')
+
+                <span class="badge bg-success">
+
+                    Successful Payment
+
+                </span>
+
+            @elseif($payment->status === 'pending')
 
                 <span class="badge bg-warning text-dark">
-                    Pending
+
+                    Payment Pending
+
                 </span>
 
-                @break
-
-            @case('failed')
+            @elseif($payment->status === 'failed')
 
                 <span class="badge bg-danger">
-                    Failed
+
+                    Payment Failed
+
                 </span>
 
-                @break
-
-            @case('cancelled')
+            @else
 
                 <span class="badge bg-secondary">
-                    Cancelled
+
+                    {{ ucfirst(
+                        $payment->status ?? 'Unknown'
+                    ) }}
+
                 </span>
 
-                @break
+            @endif
 
-            @default
+        </td>
 
-                <span class="badge bg-dark">
-                    Unknown
-                </span>
-
-        @endswitch
-
-    </td>
-
-</tr>
-
-<tr>
-
-    <th>Payment Mode</th>
-
-    <td>
-        {{ $payment->payment_mode }}
-    </td>
-
-    <th>Transaction No.</th>
-
-    <td>
-        {{ $payment->transaction_id ?: 'N/A' }}
-    </td>
-
-</tr>
-
-<tr>
-
-    <th>Receipt No.</th>
-
-    <td>
-        INV-{{ str_pad($payment->id,6,'0',STR_PAD_LEFT) }}
-    </td>
-
-    <th>Remarks</th>
-
-    <td>
-        {{ $payment->remarks ?: '-' }}
-    </td>
-
-</tr>
+    </tr>
 
 </table>
 
 
-{{-- ========================================================= --}}
-{{-- AMOUNT IN WORDS --}}
-{{-- ========================================================= --}}
+
+{{-- ================================================================
+    MONTH COVERAGE
+================================================================ --}}
+
+@if(isset($paidMonthCount) && $paidMonthCount > 0)
+
+<div class="section-title">
+
+    Course Payment Coverage
+
+</div>
+
+
+<table class="table table-bordered">
+
+    <tr>
+
+        <th>
+            Paid Months
+        </th>
+
+        <td>
+
+            <strong>
+
+                {{ $paidMonthLabel }}
+
+            </strong>
+
+        </td>
+
+
+        <th>
+            Total Paid Months
+        </th>
+
+        <td>
+
+            <span class="badge bg-success">
+
+                {{ $paidMonthCount }}
+
+                {{ $paidMonthCount == 1
+                    ? 'Month'
+                    : 'Months'
+                }}
+
+            </span>
+
+        </td>
+
+    </tr>
+
+</table>
+
+@endif
+
+
+
+{{-- ================================================================
+    AMOUNT IN WORDS
+================================================================ --}}
 
 <p class="mb-2">
 
-<strong>Amount in Words :</strong>
+    <strong>
+        Amount in Words:
+    </strong>
 
-{{ ucwords(\NumberFormatter::create('en', \NumberFormatter::SPELLOUT)->format($payment->amount)) }}
-Rupees Only
+    @php
+
+        try {
+
+            $formatter = \NumberFormatter::create(
+                'en',
+                \NumberFormatter::SPELLOUT
+            );
+
+            $amountInWords = $formatter->format(
+                (float) $payment->amount
+            );
+
+        } catch (\Throwable $e) {
+
+            $amountInWords = '';
+
+        }
+
+    @endphp
+
+
+    {{ ucwords($amountInWords) }}
+
+    Rupees Only
 
 </p>
 
-{{-- Part 3 starts from here --}}
-{{-- ========================================================= --}}
-{{-- SIGNATURE SECTION --}}
-{{-- ========================================================= --}}
+
+
+{{-- ================================================================
+    SIGNATURE SECTION
+================================================================ --}}
 
 <div class="row mt-3">
 
@@ -578,10 +1075,13 @@ Rupees Only
         <hr class="mb-1">
 
         <strong style="font-size:11px;">
+
             Student Signature
+
         </strong>
 
     </div>
+
 
     <div class="col-6 text-center">
 
@@ -590,7 +1090,9 @@ Rupees Only
         <hr class="mb-1">
 
         <strong style="font-size:11px;">
+
             Authorized Signature
+
         </strong>
 
     </div>
@@ -598,40 +1100,63 @@ Rupees Only
 </div>
 
 
-{{-- ========================================================= --}}
-{{-- FOOTER --}}
-{{-- ========================================================= --}}
 
-<div class="border-top mt-3 pt-2" style="font-size:10px;">
+{{-- ================================================================
+    FOOTER
+================================================================ --}}
+
+<div
+    class="invoice-footer"
+    style="font-size:10px;"
+>
 
     <div class="row align-items-center">
 
         <div class="col-8">
 
-            <strong>Terms & Conditions</strong>
+            <strong>
+
+                Terms & Conditions
+
+            </strong>
+
 
             <div>
+
                 • Fees once paid are non-refundable.
+
             </div>
 
+
             <div>
+
                 • Preserve this receipt for future reference.
+
             </div>
 
+
             <div>
+
                 • Computer generated receipt.
+
             </div>
 
         </div>
 
+
         <div class="col-4 text-end">
 
             <strong class="text-success">
+
                 Thank You!
+
             </strong>
 
+
             <div>
+
                 FRENZY DANCE STUDIO
+
             </div>
 
         </div>
@@ -640,19 +1165,22 @@ Rupees Only
 
 </div>
 
-</div> {{-- invoice-box --}}
+
+</div>
 
 
-{{-- ========================================================= --}}
-{{-- PRINT BUTTON --}}
-{{-- ========================================================= --}}
+
+{{-- ================================================================
+    BOTTOM BUTTONS
+================================================================ --}}
 
 <div class="text-center mt-3 no-print">
 
     <button
         type="button"
         class="btn btn-primary"
-        onclick="window.print();">
+        onclick="window.print();"
+    >
 
         <i class="mdi mdi-printer"></i>
 
@@ -660,16 +1188,23 @@ Rupees Only
 
     </button>
 
-    <a href="{{ route('billing.index') }}"
-       class="btn btn-secondary">
+
+    <a
+        href="{{ route(
+            'billing.payments',
+            $studentCourse->id
+        ) }}"
+        class="btn btn-secondary"
+    >
 
         <i class="mdi mdi-arrow-left"></i>
 
-        Back
+        Back to Payments
 
     </a>
 
 </div>
+
 
 </div>
 
@@ -682,7 +1217,7 @@ Rupees Only
 
 $(function () {
 
-    // Auto Print
+    // Auto print if required
     // window.print();
 
 });
