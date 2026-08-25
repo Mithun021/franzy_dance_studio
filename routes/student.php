@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'student'])->group(function () {
 
     Route::get('/student', [AdminController::class, 'studentIndex'])->name('student.dashboard');
-
     Route::get('/student/profile', [StudentController::class, 'studentProfile'])->name('student.profile');
     Route::get('/student/profile/edit',[StudentController::class, 'editProfile'])->name('student.edit-profile');
     Route::post('/student/profile/update',[StudentController::class, 'updateProfile'])->name('student.update-profile');

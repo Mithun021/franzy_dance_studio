@@ -1,21 +1,12 @@
 @extends('partials.master')
-
 @section('title','My Certificates')
-
 @section('content')
-
 @include('component.breadcrumbs')
-
 <section class="py-12 bg-slate-950 min-h-screen">
-
     <div class="max-w-7xl mx-auto px-4">
-
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-
             <div class="px-6 py-5 border-b border-slate-800">
-
                 <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-
                     <svg xmlns="http://www.w3.org/2000/svg"
                         class="w-7 h-7 text-pink-500"
                         fill="none"
@@ -124,8 +115,7 @@
                                     <td class="px-6 py-4 text-center">
 
                                         <a href="{{ asset('uploads/certificates/'.$certificate->certificate_file) }}"
-                                           download
-                                           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-blue-600 hover:from-pink-600 hover:to-blue-700 text-white font-medium transition">
+                                           download class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-blue-600 hover:from-pink-600 hover:to-blue-700 text-white font-medium transition">
 
                                             <svg xmlns="http://www.w3.org/2000/svg"
                                                 class="w-5 h-5"
