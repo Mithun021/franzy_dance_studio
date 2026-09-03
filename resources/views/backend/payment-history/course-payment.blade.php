@@ -98,7 +98,7 @@
 
                         <select
                             name="student_id"
-                            class="form-select"
+                            class="form-select select2"
                         >
 
                             <option value="">

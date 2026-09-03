@@ -2687,6 +2687,7 @@ class BillingController extends Controller
 
     public function confirmPayment(CoursePaymentRecord $payment)
     {
+        // dd($payment);
         /*
         |--------------------------------------------------------------------------
         | Already Successful

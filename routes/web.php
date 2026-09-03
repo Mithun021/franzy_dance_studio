@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AssignInstructorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ExpenseController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\FeeStructureController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LateFineController;
 use App\Http\Controllers\LevelController;
+use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\PermissionCategoryController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RulesController;
@@ -93,6 +95,49 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::get('/billing/invoice/{payment}',[BillingController::class,'invoice'])->name('billing.invoice');
     Route::get('/billing/overall-invoice/{payment}', [BillingController::class, 'overallInvoice'] )->name('billing.overall-invoice');
     Route::get('/course-payment', [ BillingController::class, 'paymentHistory' ])->name('course.payment.index');
+
+    Route::prefix('assign-instuructor')->name('assign-instuructor.')->group(function () {
+        Route::get('/index', [AssignInstructorController::class, 'index'])
+        ->name('index');
+
+        Route::post('/search', [AssignInstructorController::class, 'searchStudents'])
+            ->name('search');
+
+        Route::post('/assign', [AssignInstructorController::class, 'assignInstructor'])
+            ->name('assign');
+    });
+
+    Route::prefix('membership')
+        ->name('membership.')
+        ->group(function () {
+
+            Route::get(
+                '/index',
+                [MembershipController::class, 'index']
+            )->name('index');
+
+            Route::post(
+                '/store',
+                [MembershipController::class, 'store']
+            )->name('store');
+
+            Route::get(
+                '/edit/{membership}',
+                [MembershipController::class, 'edit']
+            )->name('edit');
+
+            Route::put(
+                '/update/{membership}',
+                [MembershipController::class, 'update']
+            )->name('update');
+
+            Route::delete(
+                '/delete/{membership}',
+                [MembershipController::class, 'destroy']
+            )->name('delete');
+
+        });
+
 
     Route::prefix('holidays')->name('holidays.')->group(function () {
 

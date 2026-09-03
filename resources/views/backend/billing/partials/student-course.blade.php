@@ -24,7 +24,7 @@
         <select
             name="student_id"
             id="student_id"
-            class="form-select"
+            class="form-select select2"
             required>
 
             <option value="">
@@ -38,6 +38,7 @@
                     value="{{ $student->id }}">
 
                     {{ $student->name }}
+                    - {{ $student->user_id }}
 
                     @if($student->phone)
                         ({{ $student->phone }})

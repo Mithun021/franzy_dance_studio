@@ -28,6 +28,8 @@ class User extends Authenticatable
         'salary_percentage',
         'profile_image',
         'signature',
+        'aadhar_front_image',
+        'aadhar_back_image',
         'city',
         'state',
         'country',

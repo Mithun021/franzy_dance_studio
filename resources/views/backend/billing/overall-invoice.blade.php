@@ -290,7 +290,7 @@ body{
         </th>
 
         <td>
-            {{ $studentCourse->student->admission_no ?? 'N/A' }}
+            {{ $studentCourse->student->user_id ?? 'N/A' }}
         </td>
 
     </tr>

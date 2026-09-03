@@ -184,7 +184,7 @@
                             <select
                                 name="user_id"
                                 id="user_id"
-                                class="form-control @error('user_id') is-invalid @enderror"
+                                class="form-control select2 @error('user_id') is-invalid @enderror"
                                 required>
 
                                 <option value="">

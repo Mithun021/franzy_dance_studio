@@ -81,6 +81,15 @@
                             </li>
 
                             <li>
+                                <a href="{{ route('assign-instuructor.index') }}" class="tp-link">
+                                    <i data-feather="users"></i>
+                                    <span> Assign Instructor </span>
+                                </a>
+                            </li>
+
+
+
+                            <li>
                                 <a href="#holiday" data-bs-toggle="collapse">
                                     <i data-feather="calendar"></i>
                                     <span> Holiday </span>
@@ -263,6 +272,9 @@
                                         </li>
                                         <li>
                                             <a href="{{ route('late-fines.index') }}" class="tp-link">Late Fines</a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('membership.index') }}" class="tp-link">Membership Plans</a>
                                         </li>
                                         <li>
                                             <a href="{{ route('rules.index') }}" class="tp-link">Rules</a>

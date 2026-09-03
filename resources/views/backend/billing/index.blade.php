@@ -67,7 +67,7 @@
 
                 <tbody>
 
-                    @forelse($studentCourses as $studentCourse)
+                    @forelse($studentCourses as $key => $studentCourse)
 
                         <tr>
 
@@ -75,7 +75,7 @@
                                 #
                             ===================================================== --}}
                             <td>
-                                {{ $loop->iteration }}
+                                {{ ++$key }}
                             </td>
 
 
@@ -93,7 +93,7 @@
                                 <small class="text-muted">
 
                                     Admission No:
-                                    {{ $studentCourse->student->admission_no ?? 'N/A' }}
+                                    {{ $studentCourse->student->user_id ?? 'N/A' }}
 
                                 </small>
 

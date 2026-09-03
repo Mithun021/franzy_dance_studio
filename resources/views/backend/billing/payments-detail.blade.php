@@ -121,7 +121,7 @@
 
                 <h6 class="mb-0">
 
-                    {{ $studentCourse->student->admission_no ?? 'N/A' }}
+                    {{ $studentCourse->student->user_id ?? 'N/A' }}
 
                 </h6>
 
@@ -1183,7 +1183,7 @@ function confirmBillingPayment(paymentId)
     form.method = 'POST';
 
     form.action =
-        "{{ url('/billing/payment') }}/" +
+        "{{ url('/backend/billing/payment') }}/" +
         paymentId +
         "/confirm";
 

@@ -297,6 +297,7 @@
 @endsection
 
 @push('scripts')
+
 <script>
 
 let chapterIndex = 1;

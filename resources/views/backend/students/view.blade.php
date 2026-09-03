@@ -564,6 +564,70 @@
 
                 </div>
 
+                <div class="row mt-3">
+
+                    <div class="col-md-6">
+
+                        <div class="card border">
+
+                            <div class="card-header">
+                                Aadhar Front Image
+                            </div>
+
+                            <div class="card-body text-center">
+
+                                @if($student->aadhar_front_image)
+
+                                    <img src="{{ asset('storage/'.$student->aadhar_front_image) }}"
+                                        class="img-thumbnail"
+                                        style="max-height:220px;">
+
+                                @else
+
+                                    <p class="text-muted">
+                                        No Aadhar Front Image Uploaded
+                                    </p>
+
+                                @endif
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="card border">
+
+                            <div class="card-header">
+                                Aadhar Back Image
+                            </div>
+
+                            <div class="card-body text-center">
+
+                                @if($student->aadhar_back_image)
+
+                                    <img src="{{ asset('storage/'.$student->aadhar_back_image) }}"
+                                        class="img-thumbnail"
+                                        style="max-height:220px;">
+
+                                @else
+
+                                    <p class="text-muted">
+                                        No Aadhar Back Image Uploaded
+                                    </p>
+
+                                @endif
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
         </div>

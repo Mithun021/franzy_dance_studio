@@ -25,7 +25,7 @@ class Batch extends Model
 
     public function course()
     {
-        return $this->belongsTo(course::class);
+        return $this->belongsTo(Course::class);
     }
 
     public function level()

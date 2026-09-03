@@ -119,7 +119,7 @@
                             <select
                                 name="user_id"
                                 id="user_id"
-                                class="form-control">
+                                class="form-control select2">
 
                                 <option value="">
                                     Select Employee / Staff

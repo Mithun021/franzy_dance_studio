@@ -192,6 +192,20 @@ class WebsiteController extends Controller
                 'max:2048',
             ],
 
+            'aadhar_front_image' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
+
+            'aadhar_back_image' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
+
             /*
             |--------------------------------------------------------------------------
             | Admission
@@ -336,6 +350,41 @@ class WebsiteController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | Upload Aadhar Front Image
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->hasFile('aadhar_front_image')) {
+
+                $aadharFrontImage = $request
+                    ->file('aadhar_front_image')
+                    ->store('students/aadhar', 'public');
+
+            } else {
+
+                $aadharFrontImage = $user->aadhar_front_image;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Upload Aadhar Back Image
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->hasFile('aadhar_back_image')) {
+
+                $aadharBackImage = $request
+                    ->file('aadhar_back_image')
+                    ->store('students/aadhar', 'public');
+
+            } else {
+
+                $aadharBackImage = $user->aadhar_back_image;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
             | Update Student Profile
             |--------------------------------------------------------------------------
             */
@@ -375,6 +424,10 @@ class WebsiteController extends Controller
                 'profile_image' => $profileImage,
 
                 'signature' => $signature,
+
+                'aadhar_front_image' => $aadharFrontImage,
+
+                'aadhar_back_image' => $aadharBackImage,
             ]);
 
 
