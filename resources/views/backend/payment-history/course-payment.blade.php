@@ -7,9 +7,8 @@
 <div class="container-fluid">
 
     {{-- =========================================================
-        PAGE HEADER
+        HEADER
     ========================================================== --}}
-
     <div class="card mb-3">
 
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -17,21 +16,15 @@
             <div>
 
                 <h4 class="mb-0">
-
                     <i class="mdi mdi-cash-multiple me-1"></i>
-
                     Course Payment Records
-
                 </h4>
 
                 <small class="text-muted">
-
                     Complete payment history of all students
-
                 </small>
 
             </div>
-
 
             <div>
 
@@ -39,11 +32,8 @@
                     href="{{ route('billing.index') }}"
                     class="btn btn-secondary btn-sm"
                 >
-
                     <i class="mdi mdi-arrow-left"></i>
-
                     Billing
-
                 </a>
 
             </div>
@@ -53,21 +43,16 @@
     </div>
 
 
-
     {{-- =========================================================
         FILTER
     ========================================================== --}}
-
     <div class="card mb-3">
 
         <div class="card-header">
 
             <h5 class="mb-0">
-
                 <i class="mdi mdi-filter-outline"></i>
-
                 Filter Payments
-
             </h5>
 
         </div>
@@ -82,19 +67,12 @@
 
                 <div class="row g-3">
 
-
-                    {{-- =================================================
-                        STUDENT
-                    ================================================== --}}
-
+                    {{-- STUDENT --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
-
                             Student
-
                         </label>
-
 
                         <select
                             name="student_id"
@@ -102,11 +80,8 @@
                         >
 
                             <option value="">
-
                                 All Students
-
                             </option>
-
 
                             @foreach($students as $student)
 
@@ -118,9 +93,7 @@
                                     {{ $student->name }}
 
                                     @if($student->user_id)
-
                                         - ID: {{ $student->user_id }}
-
                                     @endif
 
                                 </option>
@@ -132,19 +105,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        COURSE
-                    ================================================== --}}
-
+                    {{-- COURSE --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
-
                             Course
-
                         </label>
-
 
                         <select
                             name="course_id"
@@ -152,11 +118,8 @@
                         >
 
                             <option value="">
-
                                 All Courses
-
                             </option>
-
 
                             @foreach($courses as $course)
 
@@ -164,9 +127,7 @@
                                     value="{{ $course->id }}"
                                     {{ request('course_id') == $course->id ? 'selected' : '' }}
                                 >
-
                                     {{ $course->course_name }}
-
                                 </option>
 
                             @endforeach
@@ -176,19 +137,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        BATCH
-                    ================================================== --}}
-
+                    {{-- BATCH --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
-
                             Batch
-
                         </label>
-
 
                         <select
                             name="batch_id"
@@ -196,11 +150,8 @@
                         >
 
                             <option value="">
-
                                 All Batches
-
                             </option>
-
 
                             @foreach($batches as $batch)
 
@@ -208,9 +159,7 @@
                                     value="{{ $batch->id }}"
                                     {{ request('batch_id') == $batch->id ? 'selected' : '' }}
                                 >
-
                                     {{ $batch->batch_name }}
-
                                 </option>
 
                             @endforeach
@@ -220,19 +169,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        STATUS
-                    ================================================== --}}
-
+                    {{-- STATUS --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
-
                             Payment Status
-
                         </label>
-
 
                         <select
                             name="status"
@@ -240,59 +182,42 @@
                         >
 
                             <option value="">
-
                                 All Status
-
                             </option>
-
 
                             <option
                                 value="success"
                                 {{ request('status') == 'success' ? 'selected' : '' }}
                             >
-
                                 Success
-
                             </option>
-
 
                             <option
                                 value="pending"
                                 {{ request('status') == 'pending' ? 'selected' : '' }}
                             >
-
                                 Pending
-
                             </option>
-
 
                             <option
                                 value="failed"
                                 {{ request('status') == 'failed' ? 'selected' : '' }}
                             >
-
                                 Failed
-
                             </option>
-
 
                             <option
                                 value="cancelled"
                                 {{ request('status') == 'cancelled' ? 'selected' : '' }}
                             >
-
                                 Cancelled
-
                             </option>
-
 
                             <option
                                 value="refunded"
                                 {{ request('status') == 'refunded' ? 'selected' : '' }}
                             >
-
                                 Refunded
-
                             </option>
 
                         </select>
@@ -300,19 +225,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        FROM DATE
-                    ================================================== --}}
-
+                    {{-- FROM DATE --}}
                     <div class="col-md-2">
 
                         <label class="form-label">
-
                             From Date
-
                         </label>
-
 
                         <input
                             type="date"
@@ -324,19 +242,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        TO DATE
-                    ================================================== --}}
-
+                    {{-- TO DATE --}}
                     <div class="col-md-2">
 
                         <label class="form-label">
-
                             To Date
-
                         </label>
-
 
                         <input
                             type="date"
@@ -348,19 +259,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        PAYMENT MODE
-                    ================================================== --}}
-
+                    {{-- PAYMENT MODE --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
-
                             Payment Mode
-
                         </label>
-
 
                         <select
                             name="payment_mode"
@@ -368,11 +272,8 @@
                         >
 
                             <option value="">
-
                                 All Payment Modes
-
                             </option>
-
 
                             @foreach($paymentModes as $mode)
 
@@ -380,9 +281,7 @@
                                     value="{{ $mode }}"
                                     {{ request('payment_mode') == $mode ? 'selected' : '' }}
                                 >
-
                                     {{ $mode }}
-
                                 </option>
 
                             @endforeach
@@ -392,19 +291,12 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        SEARCH
-                    ================================================== --}}
-
+                    {{-- SEARCH --}}
                     <div class="col-md-3">
 
                         <label class="form-label">
-
                             Search
-
                         </label>
-
 
                         <input
                             type="text"
@@ -417,22 +309,15 @@
                     </div>
 
 
-
-                    {{-- =================================================
-                        BUTTONS
-                    ================================================== --}}
-
+                    {{-- BUTTONS --}}
                     <div class="col-md-2 d-flex align-items-end gap-2">
 
                         <button
                             type="submit"
                             class="btn btn-primary"
                         >
-
                             <i class="mdi mdi-filter"></i>
-
                             Filter
-
                         </button>
 
 
@@ -441,9 +326,7 @@
                             class="btn btn-light border"
                             title="Reset"
                         >
-
                             <i class="mdi mdi-refresh"></i>
-
                         </a>
 
                     </div>
@@ -457,16 +340,13 @@
     </div>
 
 
-
     {{-- =========================================================
         SUMMARY
     ========================================================== --}}
-
     <div class="row g-3 mb-3">
 
 
         {{-- TOTAL PAYMENTS --}}
-
         <div class="col-md-4">
 
             <div class="card border-0 shadow-sm h-100">
@@ -478,19 +358,14 @@
                         <div>
 
                             <small class="text-muted">
-
                                 Total Payments
-
                             </small>
 
                             <h4 class="mb-0">
-
                                 {{ $totalPayments }}
-
                             </h4>
 
                         </div>
-
 
                         <div class="text-primary fs-2">
 
@@ -507,9 +382,7 @@
         </div>
 
 
-
         {{-- SUCCESSFUL PAYMENTS --}}
-
         <div class="col-md-4">
 
             <div class="card border-0 shadow-sm h-100">
@@ -521,19 +394,14 @@
                         <div>
 
                             <small class="text-muted">
-
                                 Successful Payments
-
                             </small>
 
                             <h4 class="mb-0 text-success">
-
-                                {{ $payments->where('status','success')->count() }}
-
+                                {{ $payments->where('status', 'success')->count() }}
                             </h4>
 
                         </div>
-
 
                         <div class="text-success fs-2">
 
@@ -550,9 +418,7 @@
         </div>
 
 
-
         {{-- SUCCESSFUL AMOUNT --}}
-
         <div class="col-md-4">
 
             <div class="card border-0 shadow-sm h-100">
@@ -564,22 +430,14 @@
                         <div>
 
                             <small class="text-muted">
-
                                 Successful Amount
-
                             </small>
 
                             <h4 class="mb-0 text-primary">
-
-                                ₹ {{ number_format(
-                                    $successfulAmount,
-                                    2
-                                ) }}
-
+                                ₹ {{ number_format($successfulAmount, 2) }}
                             </h4>
 
                         </div>
-
 
                         <div class="text-primary fs-2">
 
@@ -598,11 +456,9 @@
     </div>
 
 
-
     {{-- =========================================================
         PAYMENT TABLE
     ========================================================== --}}
-
     <div class="card">
 
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -610,7 +466,6 @@
             <h5 class="mb-0">
 
                 <i class="mdi mdi-history"></i>
-
                 Payment History
 
             </h5>
@@ -619,7 +474,6 @@
             <span class="badge bg-primary">
 
                 {{ $payments->count() }}
-
                 Records
 
             </span>
@@ -642,23 +496,41 @@
 
                             <th>#</th>
 
-                            <th>Payment Date</th>
+                            <th>
+                                Payment Date
+                            </th>
 
-                            <th>Student</th>
+                            <th>
+                                Student
+                            </th>
 
-                            <th>Course</th>
+                            <th>
+                                Course
+                            </th>
 
-                            <th>Batch</th>
+                            <th>
+                                Batch
+                            </th>
 
-                            <th>Payment Mode</th>
+                            <th>
+                                Payment Mode
+                            </th>
 
-                            <th>Amount</th>
+                            <th>
+                                Amount
+                            </th>
 
-                            <th>Transaction / Reference</th>
+                            <th>
+                                Transaction / Reference
+                            </th>
 
-                            <th>Status</th>
+                            <th>
+                                Status
+                            </th>
 
-                            <th>Remarks</th>
+                            <th>
+                                Remarks
+                            </th>
 
                             <th id="no-export">
                                 Action
@@ -671,473 +543,672 @@
 
                     <tbody>
 
-                    @forelse($payments as $payment)
+                        @forelse($payments as $payment)
 
-                        <tr>
-
-
-                            {{-- =================================================
-                                #
-                            ================================================== --}}
-
-                            <td>
-
-                                {{ $loop->iteration }}
-
-                            </td>
+                            <tr>
 
 
+                                {{-- =================================================
+                                    #
+                                ================================================== --}}
+                                <td>
 
-                            {{-- =================================================
-                                PAYMENT DATE
-                            ================================================== --}}
+                                    {{ $loop->iteration }}
 
-                            <td>
-
-                                @if($payment->payment_date)
-
-                                    {{ \Carbon\Carbon::parse(
-                                        $payment->payment_date
-                                    )->format('d M Y') }}
-
-                                @else
-
-                                    -
-
-                                @endif
-
-                            </td>
+                                </td>
 
 
+                                {{-- =================================================
+                                    PAYMENT DATE
+                                ================================================== --}}
+                                <td>
 
-                            {{-- =================================================
-                                STUDENT
-                            ================================================== --}}
+                                    @if($payment->payment_date)
 
-                            <td>
+                                        <strong>
 
-                                @if($payment->studentCourse?->student)
+                                            {{ \Carbon\Carbon::parse(
+                                                $payment->payment_date
+                                            )->format('d M Y') }}
 
-                                    <strong>
+                                        </strong>
 
-                                        {{ $payment->studentCourse->student->name }}
 
-                                    </strong>
+                                        @if($payment->created_at)
 
-                                    <br>
+                                            <br>
 
-                                    <small class="text-primary">
+                                            <small class="text-muted">
 
-                                        User ID:
-                                        {{ $payment->studentCourse->student->user_id ?? '-' }}
+                                                {{ $payment->created_at->format('h:i A') }}
 
-                                    </small>
+                                            </small>
 
-                                    @if($payment->studentCourse->student->phone)
+                                        @endif
+
+                                    @else
+
+                                        -
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- =================================================
+                                    STUDENT
+                                ================================================== --}}
+                                <td>
+
+                                    @if($payment->studentCourse?->student)
+
+                                        <strong>
+
+                                            {{ $payment->studentCourse->student->name }}
+
+                                        </strong>
+
+                                        <br>
+
+                                        <small class="text-primary">
+
+                                            User ID:
+                                            {{ $payment->studentCourse->student->user_id ?? '-' }}
+
+                                        </small>
+
+
+                                        @if($payment->studentCourse->student->phone)
+
+                                            <br>
+
+                                            <small class="text-muted">
+
+                                                {{ $payment->studentCourse->student->phone }}
+
+                                            </small>
+
+                                        @endif
+
+                                    @else
+
+                                        -
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- =================================================
+                                    COURSE
+                                ================================================== --}}
+                                <td>
+
+                                    @if($payment->studentCourse?->course)
+
+                                        <strong>
+
+                                            {{ $payment->studentCourse->course->course_name }}
+
+                                        </strong>
+
+
+                                        @if($payment->studentCourse?->level)
+
+                                            <br>
+
+                                            <small class="text-muted">
+
+                                                Level:
+                                                {{ $payment->studentCourse->level->level_name ?? '-' }}
+
+                                            </small>
+
+                                        @endif
+
+                                    @else
+
+                                        -
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- =================================================
+                                    BATCH
+                                ================================================== --}}
+                                <td>
+
+                                    {{ $payment->studentCourse?->batch?->batch_name ?? '-' }}
+
+
+                                    @if($payment->studentCourse?->category)
 
                                         <br>
 
                                         <small class="text-muted">
 
-                                            {{ $payment->studentCourse->student->phone }}
+                                            {{ $payment->studentCourse->category->category_name ?? '' }}
 
                                         </small>
 
                                     @endif
 
-                                @else
-
-                                    -
-
-                                @endif
-
-                            </td>
+                                </td>
 
 
+                                {{-- =================================================
+                                    PAYMENT MODE + INDIVIDUAL STATUS
+                                ================================================== --}}
+                                <td class="payment-mode-cell">
 
-                            {{-- =================================================
-                                COURSE
-                            ================================================== --}}
+                                    @if(
+                                        $payment->grouped_payment_records &&
+                                        $payment->grouped_payment_records->count()
+                                    )
 
-                            <td>
+                                        <div class="payment-parts">
 
-                                @if($payment->studentCourse?->course)
 
-                                    <strong>
+                                            @foreach(
+                                                $payment->grouped_payment_records
+                                                as $record
+                                            )
 
-                                        {{ $payment->studentCourse->course->course_name }}
+                                                @php
+
+                                                    /*
+                                                    |--------------------------------------------------------------------------
+                                                    | IMPORTANT
+                                                    |--------------------------------------------------------------------------
+                                                    |
+                                                    | actual_status comes directly from
+                                                    | course_payment_records table.
+                                                    |
+                                                    */
+
+                                                    $recordStatus = strtolower(
+                                                        trim(
+                                                            (string) $record->actual_status
+                                                        )
+                                                    );
+
+
+                                                    $recordMode = strtolower(
+                                                        trim(
+                                                            (string) $record->payment_mode
+                                                        )
+                                                    );
+
+
+                                                    $modeClass = match($recordMode) {
+
+                                                        'cash'
+                                                            => 'bg-success',
+
+                                                        'upi'
+                                                            => 'bg-primary',
+
+                                                        'card'
+                                                            => 'bg-info',
+
+                                                        'bank transfer'
+                                                            => 'bg-dark',
+
+                                                        'cheque'
+                                                            => 'bg-warning text-dark',
+
+                                                        'online'
+                                                            => 'bg-primary',
+
+                                                        default
+                                                            => 'bg-secondary',
+
+                                                    };
+
+                                                @endphp
+
+
+                                                <div class="payment-part">
+
+
+                                                    {{-- PAYMENT MODE + AMOUNT --}}
+                                                    <div class="payment-part-info">
+
+                                                        <span
+                                                            class="badge {{ $modeClass }}"
+                                                        >
+
+                                                            {{ $record->payment_mode ?: 'Other' }}
+
+                                                        </span>
+
+
+                                                        <span class="payment-part-amount">
+
+                                                            ₹
+                                                            {{ number_format(
+                                                                (float) $record->amount,
+                                                                2
+                                                            ) }}
+
+                                                        </span>
+
+                                                    </div>
+
+
+                                                    {{-- =================================================
+                                                        INDIVIDUAL PAYMENT STATUS
+                                                    ================================================== --}}
+                                                    <div class="payment-part-status">
+
+
+                                                        {{-- SUCCESS --}}
+                                                        @if($recordStatus === 'success')
+
+                                                            <span class="badge bg-success">
+
+                                                                <i class="mdi mdi-check-circle"></i>
+
+                                                                Success
+
+                                                            </span>
+
+
+                                                        {{-- PENDING --}}
+                                                        @elseif($recordStatus === 'pending')
+
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-warning confirm-payment-btn"
+                                                                onclick="confirmBillingPayment({{ $record->id }})"
+                                                                title="Confirm {{ $record->payment_mode ?: 'Payment' }}"
+                                                            >
+
+                                                                <i class="mdi mdi-check-circle-outline"></i>
+
+                                                                Confirm
+
+                                                            </button>
+
+
+                                                        {{-- FAILED --}}
+                                                        @elseif($recordStatus === 'failed')
+
+                                                            <span class="badge bg-danger">
+
+                                                                <i class="mdi mdi-close-circle"></i>
+
+                                                                Failed
+
+                                                            </span>
+
+
+                                                        {{-- CANCELLED --}}
+                                                        @elseif($recordStatus === 'cancelled')
+
+                                                            <span class="badge bg-secondary">
+
+                                                                <i class="mdi mdi-cancel"></i>
+
+                                                                Cancelled
+
+                                                            </span>
+
+
+                                                        {{-- REFUNDED --}}
+                                                        @elseif($recordStatus === 'refunded')
+
+                                                            <span class="badge bg-info">
+
+                                                                <i class="mdi mdi-cash-refund"></i>
+
+                                                                Refunded
+
+                                                            </span>
+
+
+                                                        {{-- UNKNOWN --}}
+                                                        @else
+
+                                                            <span class="badge bg-dark">
+
+                                                                {{ ucfirst(
+                                                                    $record->actual_status ?: 'Unknown'
+                                                                ) }}
+
+                                                            </span>
+
+                                                        @endif
+
+
+                                                    </div>
+
+                                                </div>
+
+
+                                            @endforeach
+
+                                        </div>
+
+                                    @else
+
+                                        <span class="text-muted">
+                                            -
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- =================================================
+                                    TOTAL AMOUNT
+                                ================================================== --}}
+                                <td
+                                    class="text-end"
+                                    data-order="{{ $payment->total_amount }}"
+                                >
+
+                                    <strong class="text-success fs-6">
+
+                                        ₹
+                                        {{ number_format(
+                                            $payment->total_amount,
+                                            2
+                                        ) }}
 
                                     </strong>
 
-                                @else
 
-                                    -
+                                    @if(
+                                        $payment->grouped_payment_records &&
+                                        $payment->grouped_payment_records->count() > 1
+                                    )
 
-                                @endif
+                                        <br>
 
-                            </td>
+                                        <small class="text-muted">
 
+                                            {{ $payment->grouped_payment_records->count() }}
 
+                                            payment parts
 
-                            {{-- =================================================
-                                BATCH
-                            ================================================== --}}
+                                        </small>
 
-                            <td>
+                                    @endif
 
-                                {{ $payment->studentCourse?->batch?->batch_name ?? '-' }}
-
-                            </td>
+                                </td>
 
 
+                                {{-- =================================================
+                                    TRANSACTION / REFERENCE
+                                ================================================== --}}
+                                <td>
 
-                            {{-- =================================================
-                                PAYMENT MODE
-                            ================================================== --}}
+                                    @if(
+                                        $payment->transaction_breakdown &&
+                                        $payment->transaction_breakdown->count()
+                                    )
 
-                            <td>
+                                        <div class="transaction-parts">
 
-                                @if($payment->payment_mode)
 
-                                    @switch($payment->payment_mode)
+                                            @foreach(
+                                                $payment->transaction_breakdown
+                                                as $transaction
+                                            )
 
-                                        @case('Cash')
+                                                <div class="transaction-part">
+
+                                                    <div>
+
+                                                        <small class="text-muted">
+
+                                                            {{ $transaction['payment_mode'] }}:
+
+                                                        </small>
+
+
+                                                        @if(
+                                                            !empty(
+                                                                $transaction['transaction_id']
+                                                            )
+                                                        )
+
+                                                            <code>
+
+                                                                {{ $transaction['transaction_id'] }}
+
+                                                            </code>
+
+                                                        @else
+
+                                                            <span class="text-muted">
+                                                                —
+                                                            </span>
+
+                                                        @endif
+
+                                                    </div>
+
+                                                </div>
+
+                                            @endforeach
+
+                                        </div>
+
+                                    @else
+
+                                        <span class="text-muted">
+                                            -
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- =================================================
+                                    OVERALL STATUS
+                                ================================================== --}}
+                                <td>
+
+
+                                    @switch(
+                                        strtolower(
+                                            trim(
+                                                (string) $payment->status
+                                            )
+                                        )
+                                    )
+
+
+                                        {{-- SUCCESS --}}
+                                        @case('success')
 
                                             <span class="badge bg-success">
 
-                                                Cash
+                                                <i class="mdi mdi-check-circle"></i>
+
+                                                Success
 
                                             </span>
 
                                             @break
 
 
-                                        @case('UPI')
-
-                                            <span class="badge bg-primary">
-
-                                                UPI
-
-                                            </span>
-
-                                            @break
-
-
-                                        @case('Card')
-
-                                            <span class="badge bg-info">
-
-                                                Card
-
-                                            </span>
-
-                                            @break
-
-
-                                        @case('Bank Transfer')
-
-                                            <span class="badge bg-dark">
-
-                                                Bank Transfer
-
-                                            </span>
-
-                                            @break
-
-
-                                        @case('Cheque')
+                                        {{-- PENDING --}}
+                                        @case('pending')
 
                                             <span class="badge bg-warning text-dark">
 
-                                                Cheque
+                                                <i class="mdi mdi-clock-outline"></i>
+
+                                                Pending
 
                                             </span>
 
                                             @break
 
 
-                                        @default
+                                        {{-- FAILED --}}
+                                        @case('failed')
+
+                                            <span class="badge bg-danger">
+
+                                                <i class="mdi mdi-close-circle"></i>
+
+                                                Failed
+
+                                            </span>
+
+                                            @break
+
+
+                                        {{-- CANCELLED --}}
+                                        @case('cancelled')
 
                                             <span class="badge bg-secondary">
 
-                                                {{ $payment->payment_mode }}
+                                                <i class="mdi mdi-cancel"></i>
+
+                                                Cancelled
+
+                                            </span>
+
+                                            @break
+
+
+                                        {{-- REFUNDED --}}
+                                        @case('refunded')
+
+                                            <span class="badge bg-info">
+
+                                                <i class="mdi mdi-cash-refund"></i>
+
+                                                Refunded
+
+                                            </span>
+
+                                            @break
+
+
+                                        {{-- DEFAULT --}}
+                                        @default
+
+                                            <span class="badge bg-dark">
+
+                                                {{ ucfirst(
+                                                    $payment->status ?? 'Unknown'
+                                                ) }}
 
                                             </span>
 
                                     @endswitch
 
-                                @else
-
-                                    -
-
-                                @endif
-
-                            </td>
+                                </td>
 
 
+                                {{-- =================================================
+                                    REMARKS
+                                ================================================== --}}
+                                <td>
 
-                            {{-- =================================================
-                                AMOUNT
-                            ================================================== --}}
+                                    @if($payment->combined_remarks)
 
-                            <td class="text-end">
+                                        <span
+                                            title="{{ $payment->combined_remarks }}"
+                                        >
 
-                                <strong class="text-success">
+                                            {{
+                                                \Illuminate\Support\Str::limit(
+                                                    $payment->combined_remarks,
+                                                    40
+                                                )
+                                            }}
 
-                                    ₹ {{ number_format(
-                                        (float)$payment->amount,
-                                        2
-                                    ) }}
+                                        </span>
 
-                                </strong>
-
-                            </td>
-
-
-
-                            {{-- =================================================
-                                TRANSACTION
-                            ================================================== --}}
-
-                            <td>
-
-                                @if($payment->transaction_id)
-
-                                    <code>
-
-                                        {{ $payment->transaction_id }}
-
-                                    </code>
-
-                                @else
-
-                                    <span class="text-muted">
+                                    @else
 
                                         -
 
-                                    </span>
-
-                                @endif
-
-                            </td>
-
-
-
-                            {{-- =================================================
-                                STATUS
-                            ================================================== --}}
-
-                            <td>
-
-                                @switch($payment->status)
-
-                                    @case('success')
-
-                                        <span class="badge bg-success">
-
-                                            <i class="mdi mdi-check-circle"></i>
-
-                                            Success
-
-                                        </span>
-
-                                        @break
-
-
-                                    @case('pending')
-
-                                        <span class="badge bg-warning text-dark">
-
-                                            <i class="mdi mdi-clock-outline"></i>
-
-                                            Pending
-
-                                        </span>
-
-                                        @break
-
-
-                                    @case('failed')
-
-                                        <span class="badge bg-danger">
-
-                                            <i class="mdi mdi-close-circle"></i>
-
-                                            Failed
-
-                                        </span>
-
-                                        @break
-
-
-                                    @case('cancelled')
-
-                                        <span class="badge bg-secondary">
-
-                                            <i class="mdi mdi-cancel"></i>
-
-                                            Cancelled
-
-                                        </span>
-
-                                        @break
-
-
-                                    @case('refunded')
-
-                                        <span class="badge bg-info">
-
-                                            <i class="mdi mdi-cash-refund"></i>
-
-                                            Refunded
-
-                                        </span>
-
-                                        @break
-
-
-                                    @default
-
-                                        <span class="badge bg-dark">
-
-                                            {{ ucfirst(
-                                                $payment->status ?? 'Unknown'
-                                            ) }}
-
-                                        </span>
-
-                                @endswitch
-
-                            </td>
-
-
-
-                            {{-- =================================================
-                                REMARKS
-                            ================================================== --}}
-
-                            <td>
-
-                                @if($payment->remarks)
-
-                                    <span
-                                        title="{{ $payment->remarks }}"
-                                    >
-
-                                        {{ \Illuminate\Support\Str::limit(
-                                            $payment->remarks,
-                                            40
-                                        ) }}
-
-                                    </span>
-
-                                @else
-
-                                    -
-
-                                @endif
-
-                            </td>
-
-
-
-                            {{-- =================================================
-                                ACTION
-                            ================================================== --}}
-
-                            <td class="text-center">
-
-                                <div class="d-flex gap-1 justify-content-center">
-
-                                    {{-- ================================
-                                        INVOICE
-                                    ================================= --}}
-
-                                    @if($payment->status === 'success')
-
-                                        <a
-                                            href="{{ route(
-                                                'billing.invoice',
-                                                $payment->id
-                                            ) }}"
-                                            target="_blank"
-                                            class="btn btn-sm btn-success"
-                                            title="View Invoice"
-                                        >
-
-                                            <i class="mdi mdi-receipt-text-outline"></i>
-
-                                        </a>
-
                                     @endif
 
-
-                                    {{-- ================================
-                                        CONFIRM PAYMENT
-                                    ================================= --}}
-
-                                    @if($payment->status !== 'success')
-
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-primary"
-                                            onclick="confirmBillingPayment(
-                                                {{ $payment->id }}
-                                            )"
-                                            title="Confirm Payment"
-                                        >
-
-                                            <i class="mdi mdi-check-circle-outline"></i>
-
-                                        </button>
-
-                                    @endif
-
-                                </div>
-
-                            </td>
-
-                        </tr>
+                                </td>
 
 
-                    @empty
+                                {{-- =================================================
+                                    ACTION
+                                ================================================== --}}
+                                <td class="text-center">
 
-                        <tr>
+                                    <div class="d-flex gap-1 justify-content-center">
 
-                            <td
-                                colspan="11"
-                                class="text-center py-5"
-                            >
 
-                                <div class="text-muted">
+                                        {{-- INVOICE --}}
+                                        @if($payment->status === 'success')
 
-                                    <i
-                                        class="mdi mdi-cash-remove"
-                                        style="font-size:40px;"
-                                    ></i>
+                                            <a
+                                                href="{{ route(
+                                                    'billing.invoice',
+                                                    $payment->payment_id
+                                                ) }}"
+                                                target="_blank"
+                                                class="btn btn-sm btn-success"
+                                                title="View Invoice"
+                                            >
 
-                                    <div class="mt-2">
+                                                <i class="mdi mdi-receipt-text-outline"></i>
 
-                                        No payment records found.
+                                            </a>
+
+                                        @endif
 
                                     </div>
 
-                                </div>
+                                </td>
 
-                            </td>
+                            </tr>
 
-                        </tr>
+                        @empty
 
-                    @endforelse
+                            <tr>
+
+                                <td
+                                    colspan="11"
+                                    class="text-center py-5"
+                                >
+
+                                    <div class="text-muted">
+
+                                        <i
+                                            class="mdi mdi-cash-remove"
+                                            style="font-size:40px;"
+                                        ></i>
+
+                                        <div class="mt-2">
+
+                                            No payment records found.
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        @endforelse
 
                     </tbody>
-
 
 
                     {{-- =========================================================
                         FOOTER TOTAL
                     ========================================================== --}}
-
                     @if($payments->count())
 
                         <tfoot class="table-light">
@@ -1148,18 +1219,17 @@
                                     colspan="6"
                                     class="text-end"
                                 >
-
                                     Total Successful Payment:
-
                                 </th>
 
 
                                 <th class="text-end text-success">
 
-                                    ₹ {{ number_format(
+                                    ₹
+                                    {{ number_format(
                                         $payments
-                                            ->where('status','success')
-                                            ->sum('amount'),
+                                            ->where('status', 'success')
+                                            ->sum('total_amount'),
                                         2
                                     ) }}
 
@@ -1187,22 +1257,105 @@
 @endsection
 
 
+{{-- =========================================================
+    STYLES
+========================================================= --}}
+@push('styles')
+
+<style>
+
+    .payment-mode-cell {
+        min-width: 220px;
+        vertical-align: middle;
+    }
+
+
+    .payment-parts {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+
+    .payment-part {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 7px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        background: #fff;
+        min-height: 42px;
+    }
+
+
+    .payment-part-info {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+    }
+
+
+    .payment-part-amount {
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+    }
+
+
+    .payment-part-status {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        white-space: nowrap;
+    }
+
+
+    .confirm-payment-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+
+    .payment-part-status .badge {
+        font-size: 10px;
+        padding: 5px 7px;
+    }
+
+
+    .transaction-parts {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+
+    .transaction-part {
+        padding: 3px 0;
+    }
+
+
+    .transaction-part code {
+        font-size: 12px;
+        word-break: break-all;
+    }
+
+</style>
+
+@endpush
+
 
 {{-- =========================================================
     SCRIPTS
 ========================================================= --}}
-
 @push('scripts')
 
 <script>
 
 $(document).ready(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | DataTable
-    |--------------------------------------------------------------------------
-    */
 
     if ($.fn.DataTable) {
 
@@ -1234,11 +1387,14 @@ $(document).ready(function () {
                     '<"col-md-6"B>' +
                     '<"col-md-6"f>' +
                 '>' +
+
                 '<"row"' +
                     '<"col-md-6"l>' +
                     '<"col-md-6"i>' +
                 '>' +
+
                 'rt' +
+
                 '<"row mt-2"' +
                     '<"col-md-6"i>' +
                     '<"col-md-6"p>' +
@@ -1254,6 +1410,7 @@ $(document).ready(function () {
                     }
                 },
 
+
                 {
                     extend: 'excel',
 
@@ -1264,6 +1421,7 @@ $(document).ready(function () {
                     }
                 },
 
+
                 {
                     extend: 'csv',
 
@@ -1273,6 +1431,7 @@ $(document).ready(function () {
                         columns: ':not(#no-export)'
                     }
                 },
+
 
                 {
                     extend: 'print',
@@ -1293,83 +1452,64 @@ $(document).ready(function () {
 });
 
 
-
 /*
 |--------------------------------------------------------------------------
-| CONFIRM PAYMENT
+| CONFIRM BILLING PAYMENT
 |--------------------------------------------------------------------------
 */
 
 function confirmBillingPayment(paymentId)
 {
-    if (!confirm(
-        'Are you sure you want to confirm this payment?'
-    )) {
-
+    if (!confirm('Are you sure you want to confirm this payment?')) {
         return;
-
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Create normal POST form
+    |--------------------------------------------------------------------------
+    |
+    | confirmPayment() controller returns:
+    |
+    | return back()->with('success', ...)
+    |
+    | So we should submit a normal POST request instead of expecting JSON.
+    |
+    */
 
-    $.ajax({
+    let form = document.createElement('form');
 
-        url:
-            "{{ url('/billing/payment') }}/"
-            + paymentId
-            + "/confirm",
+    form.method = 'POST';
 
-        type: "POST",
+    form.action =
+        "{{ url('/backend/billing/payment') }}/"
+        + paymentId
+        + "/confirm";
 
-        data: {
+    /*
+    |--------------------------------------------------------------------------
+    | CSRF TOKEN
+    |--------------------------------------------------------------------------
+    */
 
-            _token:
-                "{{ csrf_token() }}"
+    let csrfInput = document.createElement('input');
 
-        },
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = "{{ csrf_token() }}";
 
-        success: function(response) {
+    form.appendChild(csrfInput);
 
-            if (response.success) {
 
-                alert(
-                    response.message ||
-                    'Payment confirmed successfully.'
-                );
+    /*
+    |--------------------------------------------------------------------------
+    | Add form to body and submit
+    |--------------------------------------------------------------------------
+    */
 
-                location.reload();
+    document.body.appendChild(form);
 
-            } else {
-
-                alert(
-                    response.message ||
-                    'Unable to confirm payment.'
-                );
-
-            }
-
-        },
-
-        error: function(xhr) {
-
-            let message =
-                'Something went wrong while confirming payment.';
-
-            if (
-                xhr.responseJSON &&
-                xhr.responseJSON.message
-            ) {
-
-                message =
-                    xhr.responseJSON.message;
-
-            }
-
-            alert(message);
-
-        }
-
-    });
-
+    form.submit();
 }
 
 </script>

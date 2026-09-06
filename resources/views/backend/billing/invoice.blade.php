@@ -7,77 +7,137 @@
 <style>
 
 @page{
-    size:A4 portrait;
-    margin:8mm;
+    size:A5 portrait;
+    margin:5mm;
 }
 
 body{
     background:#f5f5f5;
-    font-size:12px;
+    font-size:11px;
     line-height:1.3;
     color:#222;
 }
 
 .invoice-box{
-    max-width:210mm;
-    margin:10px auto;
+    width:148mm;
+    min-height:200mm;
+    margin:12px auto;
+    padding:10px;
     background:#fff;
-    border:1px solid #ddd;
-    padding:12px;
+    border:1px solid #d9d9d9;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
 }
 
 .invoice-header{
     border-bottom:2px solid #0d6efd;
-    padding-bottom:8px;
-    margin-bottom:10px;
+    padding-bottom:7px;
+    margin-bottom:8px;
 }
 
-.invoice-title{
-    font-size:22px;
-    font-weight:700;
-    color:#0d6efd;
-    margin:0;
+.logo{
+    max-width:55px;
+    max-height:55px;
 }
 
 .company-name{
-    font-size:20px;
+    font-size:17px;
     font-weight:700;
-    margin-bottom:2px;
+    margin-bottom:1px;
+    letter-spacing:.2px;
 }
 
 .company-info{
-    font-size:11px;
+    font-size:9px;
     margin:0;
 }
 
-.section-title{
+.invoice-title{
     font-size:14px;
     font-weight:700;
+    color:#0d6efd;
+    margin:0 0 2px;
+}
+
+.invoice-number{
+    font-size:11px;
+    font-weight:600;
+}
+
+.invoice-note{
+    font-size:8px;
+    color:#777;
+}
+
+.section-title{
+    font-size:11px;
+    font-weight:700;
     background:#f3f6fb;
-    padding:5px 8px;
-    margin:10px 0 6px;
-    border-left:4px solid #0d6efd;
+    padding:4px 6px;
+    margin:7px 0 4px;
+    border-left:3px solid #0d6efd;
+    color:#222;
 }
 
 .table{
-    margin-bottom:8px;
+    margin-bottom:5px;
 }
 
 .table th,
 .table td{
-    padding:5px 8px !important;
-    font-size:11px;
+    padding:4px 5px !important;
+    font-size:9.5px;
     vertical-align:middle;
 }
 
 .table th{
-    width:20%;
     background:#fafafa;
+    font-weight:600;
 }
 
-.logo{
-    max-height:65px;
-    max-width:100%;
+.payment-table{
+    table-layout:fixed;
+    width:100%;
+}
+
+.payment-table th,
+.payment-table td{
+    word-break:break-word;
+}
+
+.payment-table th:nth-child(1){
+    width:5%;
+}
+
+.payment-table th:nth-child(2){
+    width:14%;
+}
+
+.payment-table th:nth-child(3){
+    width:20%;
+}
+
+.payment-table th:nth-child(4){
+    width:13%;
+}
+
+.payment-table th:nth-child(5){
+    width:19%;
+}
+
+.payment-table th:nth-child(6){
+    width:11%;
+}
+
+.payment-table th:nth-child(7){
+    width:18%;
+}
+
+.payment-description{
+    line-height:1.2;
+}
+
+.payment-description small{
+    font-size:7.5px;
 }
 
 .amount-paid{
@@ -85,65 +145,181 @@ body{
     font-weight:700;
 }
 
-.no-print{
-    margin-bottom:12px;
-}
-
-.invoice-footer{
-    border-top:1px solid #ddd;
-    margin-top:12px;
-    padding-top:8px;
-}
-
 .payment-highlight{
     background:#f0fff4;
     border:1px solid #b7e4c7;
     border-radius:4px;
-    padding:8px 10px;
+    padding:7px 9px;
+    margin-top:6px;
+}
+
+.amount-words{
+    font-size:9px;
+    margin:6px 0;
+}
+
+.signature-area{
+    margin-top:12px;
+}
+
+.signature-line{
+    height:25px;
+    border-bottom:1px solid #555;
+    margin-bottom:3px;
+}
+
+.signature-title{
+    font-size:9px;
+    font-weight:600;
+}
+
+.invoice-footer{
+    border-top:1px solid #ddd;
+    margin-top:8px;
+    padding-top:6px;
+    font-size:8px;
+    color:#555;
+}
+
+.invoice-footer strong{
+    color:#222;
+}
+
+.no-print{
+    margin-bottom:12px;
 }
 
 @media print{
 
-    body{
-        background:#fff;
-        font-size:10px;
+    @page{
+        size:A5 portrait;
+        margin:5mm;
     }
 
-    .no-print{
-        display:none!important;
+    html,
+    body{
+        width:148mm;
+        min-height:210mm;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+    }
+
+    body{
+        font-size:9px;
+    }
+
+    body *{
+        visibility:hidden;
+    }
+
+    .invoice-box,
+    .invoice-box *{
+        visibility:visible;
     }
 
     .invoice-box{
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        min-height:0;
         margin:0;
+        padding:0;
         border:none;
         box-shadow:none;
-        padding:0;
-        width:100%;
-        max-width:none;
+        background:#fff;
+    }
+
+    .no-print{
+        display:none !important;
+    }
+
+    .invoice-header{
+        padding-bottom:5px;
+        margin-bottom:5px;
+    }
+
+    .logo{
+        max-width:48px;
+        max-height:48px;
+    }
+
+    .company-name{
+        font-size:14px;
+    }
+
+    .company-info{
+        font-size:8px;
+    }
+
+    .invoice-title{
+        font-size:12px;
+    }
+
+    .invoice-number{
+        font-size:9px;
+    }
+
+    .invoice-note{
+        font-size:7px;
+    }
+
+    .section-title{
+        font-size:9px;
+        padding:3px 5px;
+        margin:5px 0 3px;
+    }
+
+    .table{
+        margin-bottom:4px;
     }
 
     .table th,
     .table td{
-        padding:4px 6px !important;
-        font-size:10px;
+        padding:3px 4px !important;
+        font-size:8px;
     }
 
-    .company-name{
-        font-size:17px;
+    .payment-table th,
+    .payment-table td{
+        font-size:7.5px;
     }
 
-    .invoice-title{
-        font-size:18px;
-    }
-
-    .section-title{
-        font-size:12px;
-        padding:4px 6px;
-        margin:7px 0 5px;
+    .payment-description small{
+        font-size:6.5px;
     }
 
     .payment-highlight{
-        padding:6px 8px;
+        padding:5px 7px;
+        margin-top:4px;
+    }
+
+    .amount-paid{
+        font-size:13px;
+    }
+
+    .amount-words{
+        font-size:8px;
+        margin:5px 0;
+    }
+
+    .signature-area{
+        margin-top:8px;
+    }
+
+    .signature-line{
+        height:20px;
+    }
+
+    .signature-title{
+        font-size:8px;
+    }
+
+    .invoice-footer{
+        margin-top:5px;
+        padding-top:4px;
+        font-size:7px;
     }
 
 }
@@ -151,1059 +327,561 @@ body{
 </style>
 
 
+@php
+
+$paymentIdTotal = $payments
+    ->where('status', 'success')
+    ->sum(function ($record) {
+        return (float) ($record->amount ?? 0);
+    });
+
+$paymentIdTotal = round($paymentIdTotal, 2);
+
+try {
+
+    $formatter = \NumberFormatter::create(
+        'en',
+        \NumberFormatter::SPELLOUT
+    );
+
+    $amountInWords = $formatter->format($paymentIdTotal);
+
+} catch (\Throwable $e) {
+
+    $amountInWords = '';
+
+}
+
+@endphp
+
+
 <div class="container-fluid">
 
 
-{{-- ================================================================
-    ACTION BUTTONS
-================================================================ --}}
+    {{-- ACTION BUTTONS --}}
 
-<div class="mb-3 no-print">
+    <div class="mb-3 no-print">
 
-    <a
-        href="{{ url()->previous() }}"
-        class="btn btn-secondary"
-    >
+        <a
+            href="{{ url()->previous() }}"
+            class="btn btn-secondary"
+        >
 
-        <i class="mdi mdi-arrow-left"></i>
+            <i class="mdi mdi-arrow-left"></i>
 
-        Back
+            Back
 
-    </a>
+        </a>
 
+        <button
+            type="button"
+            onclick="window.print()"
+            class="btn btn-primary"
+        >
 
-    <button
-        type="button"
-        onclick="window.print()"
-        class="btn btn-primary"
-    >
+            <i class="mdi mdi-printer"></i>
 
-        <i class="mdi mdi-printer"></i>
+            Print Invoice
 
-        Print Invoice
-
-    </button>
-
-</div>
-
-
-
-{{-- ================================================================
-    INVOICE
-================================================================ --}}
-
-<div class="invoice-box">
-
-
-{{-- ================================================================
-    HEADER
-================================================================ --}}
-
-<div class="invoice-header">
-
-    <div class="row align-items-center">
-
-        {{-- Logo --}}
-        <div class="col-2 text-center">
-
-            <img
-                src="{{ asset('images/logo.png') }}"
-                class="logo"
-                alt="Frenzy Dance Studio"
-            >
-
-        </div>
-
-
-        {{-- Company --}}
-        <div class="col-7">
-
-            <div class="company-name">
-
-                FRENZY DANCE STUDIO
-
-            </div>
-
-            <p class="company-info mb-1">
-
-                A Complete Performing & Fine Art Center
-
-            </p>
-
-            <small>
-
-                Dance | Music | Art | Fitness
-
-            </small>
-
-        </div>
-
-
-        {{-- Invoice --}}
-        <div class="col-3 text-end">
-
-            <h4 class="invoice-title">
-
-                PAYMENT RECEIPT
-
-            </h4>
-
-            <strong>
-
-                INV-{{ str_pad(
-                    $payment->id,
-                    6,
-                    '0',
-                    STR_PAD_LEFT
-                ) }}
-
-            </strong>
-
-            <br>
-
-            <small class="text-muted">
-
-                Computer Generated Receipt
-
-            </small>
-
-        </div>
+        </button>
 
     </div>
 
-</div>
 
+    {{-- ==========================================================
+         INVOICE
+    =========================================================== --}}
 
+    <div class="invoice-box">
 
-{{-- ================================================================
-    STUDENT INFORMATION
-================================================================ --}}
 
-<div class="section-title">
+        {{-- ======================================================
+             HEADER
+        ======================================================= --}}
 
-    Student Information
+        <div class="invoice-header">
 
-</div>
+            <div class="row align-items-center">
 
+                <div class="col-2 text-center">
 
-<table class="table table-bordered">
+                    <img
+                        src="{{ asset('images/logo.png') }}"
+                        class="logo"
+                        alt="Frenzy Dance Studio"
+                    >
 
-    <tr>
+                </div>
 
-        <th>
-            Name
-        </th>
+                <div class="col-6">
 
-        <td>
+                    <div class="company-name">
+                        FRENZY DANCE STUDIO
+                    </div>
 
-            {{ $studentCourse->student->name ?? 'N/A' }}
+                    <p class="company-info">
+                        A Complete Performing & Fine Art Center
+                    </p>
 
-        </td>
+                    <small>
+                        Dance | Music | Art | Fitness
+                    </small>
 
+                </div>
 
-        <th>
-            Admission No
-        </th>
+                <div class="col-4 text-end">
 
-        <td>
+                    <div class="invoice-title">
+                        PAYMENT RECEIPT
+                    </div>
 
-            {{ $studentCourse->student->admission_no ?? 'N/A' }}
+                    <div class="invoice-number">
+                        INV-{{ $payment->payment_id }}
+                    </div>
 
-        </td>
+                    <div class="invoice-note">
+                        Computer Generated Receipt
+                    </div>
 
-    </tr>
+                </div>
 
+            </div>
 
-    <tr>
+        </div>
 
-        <th>
-            Mobile
-        </th>
 
-        <td>
+        {{-- ======================================================
+             STUDENT INFORMATION
+        ======================================================= --}}
 
-            {{ $studentCourse->student->phone ?? '-' }}
+        <div class="section-title">
+            Student Information
+        </div>
 
-        </td>
-
-
-        <th>
-            Email
-        </th>
-
-        <td>
-
-            {{ $studentCourse->student->email ?? '-' }}
-
-        </td>
-
-    </tr>
-
-</table>
-
-
-
-{{-- ================================================================
-    COURSE INFORMATION
-================================================================ --}}
-
-<div class="section-title">
-
-    Course Information
-
-</div>
-
-
-<table class="table table-bordered">
-
-    <tr>
-
-        <th>
-            Course
-        </th>
-
-        <td>
-
-            {{ $studentCourse->course->course_name ?? 'N/A' }}
-
-        </td>
-
-
-        <th>
-            Batch
-        </th>
-
-        <td>
-
-            {{ $studentCourse->batch->batch_name ?? '-' }}
-
-        </td>
-
-    </tr>
-
-
-    <tr>
-
-        <th>
-            Level
-        </th>
-
-        <td>
-
-            {{ $studentCourse->level->name ?? '-' }}
-
-        </td>
-
-
-        <th>
-            Category
-        </th>
-
-        <td>
-
-            {{ $studentCourse->category->name ?? '-' }}
-
-        </td>
-
-    </tr>
-
-
-    <tr>
-
-        <th>
-            Monthly Fee
-        </th>
-
-        <td>
-
-            ₹{{ number_format(
-                (float) ($studentCourse->monthly_fee ?? 0),
-                2
-            ) }}
-
-        </td>
-
-
-        <th>
-            Instructor
-        </th>
-
-        <td>
-
-            {{ optional(
-                $studentCourse->instructor
-            )->name ?? '-' }}
-
-        </td>
-
-    </tr>
-
-</table>
-
-
-
-{{-- ================================================================
-    PAYMENT INFORMATION
-================================================================ --}}
-
-<div class="section-title">
-
-    Payment Information
-
-</div>
-
-
-<table class="table table-bordered">
-
-    <tr>
-
-        <th>
-            Payment Date
-        </th>
-
-        <td>
-
-            @if($payment->payment_date)
-
-                {{ \Carbon\Carbon::parse(
-                    $payment->payment_date
-                )->format('d M Y') }}
-
-            @else
-
-                -
-
-            @endif
-
-        </td>
-
-
-        <th>
-            Payment Mode
-        </th>
-
-        <td>
-
-            {{ $payment->payment_mode ?? '-' }}
-
-        </td>
-
-    </tr>
-
-
-    <tr>
-
-        <th>
-            Transaction / Reference No.
-        </th>
-
-        <td>
-
-            {{ $payment->transaction_id ?: 'N/A' }}
-
-        </td>
-
-
-        <th>
-            Payment Status
-        </th>
-
-        <td>
-
-            @switch($payment->status)
-
-                @case('success')
-
-                    <span class="badge bg-success">
-                        Success
-                    </span>
-
-                    @break
-
-
-                @case('pending')
-
-                    <span class="badge bg-warning text-dark">
-                        Pending
-                    </span>
-
-                    @break
-
-
-                @case('failed')
-
-                    <span class="badge bg-danger">
-                        Failed
-                    </span>
-
-                    @break
-
-
-                @case('cancelled')
-
-                    <span class="badge bg-secondary">
-                        Cancelled
-                    </span>
-
-                    @break
-
-
-                @default
-
-                    <span class="badge bg-dark">
-                        {{ ucfirst(
-                            $payment->status ?? 'Unknown'
-                        ) }}
-                    </span>
-
-            @endswitch
-
-        </td>
-
-    </tr>
-
-
-    <tr>
-
-        <th>
-            Receipt No.
-        </th>
-
-        <td>
-
-            INV-{{ str_pad(
-                $payment->id,
-                6,
-                '0',
-                STR_PAD_LEFT
-            ) }}
-
-        </td>
-
-
-        <th>
-            Remarks
-        </th>
-
-        <td>
-
-            {{ $payment->remarks ?: '-' }}
-
-        </td>
-
-    </tr>
-
-</table>
-
-
-
-{{-- ================================================================
-    SINGLE PAYMENT DETAILS
-================================================================ --}}
-
-<div class="section-title">
-
-    Payment Details
-
-</div>
-
-
-<table class="table table-bordered">
-
-    <thead class="table-primary">
-
-        <tr>
-
-            <th width="8%">
-                #
-            </th>
-
-            <th>
-                Description
-            </th>
-
-            <th width="20%">
-                Amount (₹)
-            </th>
-
-        </tr>
-
-    </thead>
-
-
-    <tbody>
-
-        <tr>
-
-            <td>
-                1
-            </td>
-
-            <td>
-
-                Course Fee Payment
-
-                <br>
-
-                <small class="text-muted">
-
-                    Payment received against course billing
-
-                </small>
-
-            </td>
-
-            <td>
-
-                ₹{{ number_format(
-                    (float) $payment->amount,
-                    2
-                ) }}
-
-            </td>
-
-        </tr>
-
-
-        {{-- Late Fine / Penalty if this payment is related
-             to fine information --}}
-        @if(isset($payment->late_fine) && $payment->late_fine > 0)
+        <table class="table table-bordered">
 
             <tr>
 
-                <td>
-                    2
-                </td>
+                <th>
+                    Name
+                </th>
 
                 <td>
-                    Late Fine
+                    {{ $studentCourse->student->name ?? 'N/A' }}
                 </td>
 
-                <td class="text-danger">
+                <th>
+                    Admission No
+                </th>
 
-                    ₹{{ number_format(
-                        (float) $payment->late_fine,
-                        2
-                    ) }}
-
+                <td>
+                    {{ $studentCourse->student->user_id ?? 'N/A' }}
                 </td>
 
             </tr>
 
-        @endif
+            <tr>
+
+                <th>
+                    Mobile
+                </th>
+
+                <td>
+                    {{ $studentCourse->student->phone ?? '-' }}
+                </td>
+
+                <th>
+                    Email
+                </th>
+
+                <td>
+                    {{ $studentCourse->student->email ?? '-' }}
+                </td>
+
+            </tr>
+
+        </table>
 
 
-        <tr class="table-success">
+        {{-- ======================================================
+             COURSE INFORMATION
+        ======================================================= --}}
 
-            <th colspan="2" class="text-end">
-
-                Paid Amount
-
-            </th>
-
-            <th class="amount-paid">
-
-                ₹{{ number_format(
-                    (float) $payment->amount,
-                    2
-                ) }}
-
-            </th>
-
-        </tr>
-
-    </tbody>
-
-</table>
-
-
-
-{{-- ================================================================
-    PAYMENT HIGHLIGHT
-================================================================ --}}
-
-<div class="payment-highlight mb-2">
-
-    <div class="row align-items-center">
-
-        <div class="col-8">
-
-            <strong>
-
-                Payment Received
-
-            </strong>
-
-            <br>
-
-            <small class="text-muted">
-
-                This receipt represents this payment transaction only.
-
-            </small>
-
+        <div class="section-title">
+            Course Information
         </div>
 
+        <table class="table table-bordered">
 
-        <div class="col-4 text-end">
+            <tr>
 
-            <span class="amount-paid">
+                <th>
+                    Course
+                </th>
 
-                ₹{{ number_format(
-                    (float) $payment->amount,
-                    2
-                ) }}
+                <td>
+                    {{ $studentCourse->course->course_name ?? 'N/A' }}
+                </td>
 
-            </span>
+                <th>
+                    Batch
+                </th>
 
-        </div>
+                <td>
+                    {{ $studentCourse->batch->batch_name ?? '-' }}
+                </td>
 
-    </div>
+            </tr>
 
-</div>
+            <tr>
 
+                <th>
+                    Level
+                </th>
 
+                <td>
+                    {{ $studentCourse->level->name ?? '-' }}
+                </td>
 
-{{-- ================================================================
-    BILLING SUMMARY
-================================================================ --}}
+                <th>
+                    Category
+                </th>
 
-<div class="section-title">
+                <td>
+                    {{ $studentCourse->category->name ?? '-' }}
+                </td>
 
-    Billing Summary
+            </tr>
 
-</div>
+            <tr>
 
+                <th>
+                    Monthly Fee
+                </th>
 
-<table class="table table-bordered">
-
-    <tr>
-
-        <th>
-            Total Course Fee
-        </th>
-
-        <td>
-
-            ₹{{ number_format(
-                (float) $totalCourseFee,
-                2
-            ) }}
-
-        </td>
-
-
-        <th>
-            Registration Fee
-        </th>
-
-        <td>
-
-            ₹{{ number_format(
-                (float) $registrationFee,
-                2
-            ) }}
-
-        </td>
-
-    </tr>
-
-
-    <tr>
-
-        <th>
-            Admission Fee
-        </th>
-
-        <td>
-
-            ₹{{ number_format(
-                (float) $admissionFee,
-                2
-            ) }}
-
-        </td>
-
-
-        <th>
-            Late Fine / Penalty
-        </th>
-
-        <td>
-
-            ₹{{ number_format(
-                (float) $totalFine,
-                2
-            ) }}
-
-        </td>
-
-    </tr>
-
-
-    <tr class="table-light">
-
-        <th>
-            Total Billing
-        </th>
-
-        <td>
-
-            <strong>
-
-                ₹{{ number_format(
-                    (float) $totalBilling,
-                    2
-                ) }}
-
-            </strong>
-
-        </td>
-
-
-        <th>
-            Total Paid Till Date
-        </th>
-
-        <td class="text-success">
-
-            <strong>
-
-                ₹{{ number_format(
-                    (float) $totalPaid,
-                    2
-                ) }}
-
-            </strong>
-
-        </td>
-
-    </tr>
-
-
-    <tr>
-
-        <th>
-            Remaining Due
-        </th>
-
-        <td>
-
-            @if($remaining <= 0)
-
-                <span class="badge bg-success">
-
-                    Fully Paid
-
-                </span>
-
-            @else
-
-                <strong class="text-danger">
-
+                <td>
                     ₹{{ number_format(
-                        (float) $remaining,
+                        (float) ($studentCourse->monthly_fee ?? 0),
                         2
                     ) }}
+                </td>
 
-                </strong>
+                <th>
+                    Instructor
+                </th>
 
-            @endif
+                <td>
+                    {{ optional($studentCourse->instructor)->name ?? '-' }}
+                </td>
 
-        </td>
+            </tr>
 
-
-        <th>
-            Payment Status
-        </th>
-
-        <td>
-
-            @if($payment->status === 'success')
-
-                <span class="badge bg-success">
-
-                    Successful Payment
-
-                </span>
-
-            @elseif($payment->status === 'pending')
-
-                <span class="badge bg-warning text-dark">
-
-                    Payment Pending
-
-                </span>
-
-            @elseif($payment->status === 'failed')
-
-                <span class="badge bg-danger">
-
-                    Payment Failed
-
-                </span>
-
-            @else
-
-                <span class="badge bg-secondary">
-
-                    {{ ucfirst(
-                        $payment->status ?? 'Unknown'
-                    ) }}
-
-                </span>
-
-            @endif
-
-        </td>
-
-    </tr>
-
-</table>
+        </table>
 
 
+        {{-- ======================================================
+             PAYMENT DETAILS
+        ======================================================= --}}
 
-{{-- ================================================================
-    MONTH COVERAGE
-================================================================ --}}
+        <div class="section-title">
+            Payment Details
+        </div>
 
-@if(isset($paidMonthCount) && $paidMonthCount > 0)
+        <table class="table table-bordered payment-table">
 
-<div class="section-title">
+            <thead class="table-primary">
 
-    Course Payment Coverage
+                <tr>
 
-</div>
+                    <th>
+                        #
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th>
+                        Description
+                    </th>
+
+                    <th>
+                        Mode
+                    </th>
+
+                    <th>
+                        Transaction / Reference
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th class="text-end">
+                        Amount (₹)
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                @forelse($payments as $index => $paymentRecord)
+
+                    <tr>
+
+                        <td>
+                            {{ $index + 1 }}
+                        </td>
+
+                        <td>
+
+                            @if($paymentRecord->payment_date)
+
+                                {{ \Carbon\Carbon::parse(
+                                    $paymentRecord->payment_date
+                                )->format('d M Y') }}
+
+                            @else
+
+                                -
+
+                            @endif
+
+                        </td>
+
+                        <td class="payment-description">
+                            Course Fee Payment
+                        </td>
+
+                        <td>
+                            {{ $paymentRecord->payment_mode ?? '-' }}
+                        </td>
+
+                        <td>
+                            {{ $paymentRecord->transaction_id ?: 'N/A' }}
+                        </td>
+
+                        <td>
+
+                            @if($paymentRecord->status === 'success')
+
+                                <span class="badge bg-success">
+                                    Success
+                                </span>
+
+                            @elseif($paymentRecord->status === 'pending')
+
+                                <span class="badge bg-warning text-dark">
+                                    Pending
+                                </span>
+
+                            @elseif($paymentRecord->status === 'failed')
+
+                                <span class="badge bg-danger">
+                                    Failed
+                                </span>
+
+                            @elseif($paymentRecord->status === 'cancelled')
+
+                                <span class="badge bg-secondary">
+                                    Cancelled
+                                </span>
+
+                            @else
+
+                                <span class="badge bg-dark">
+                                    {{ ucfirst(
+                                        $paymentRecord->status ?? 'Unknown'
+                                    ) }}
+                                </span>
+
+                            @endif
+
+                        </td>
+
+                        <td class="text-end">
+
+                            ₹{{ number_format(
+                                (float) ($paymentRecord->amount ?? 0),
+                                2
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="text-center"
+                        >
+                            No payment records found.
+                        </td>
+
+                    </tr>
+
+                @endforelse
 
 
-<table class="table table-bordered">
+                {{-- TOTAL --}}
 
-    <tr>
+                <tr class="table-success">
 
-        <th>
-            Paid Months
-        </th>
+                    <th
+                        colspan="6"
+                        class="text-end"
+                    >
+                        Total Paid Amount
+                    </th>
 
-        <td>
+                    <th class="amount-paid text-end">
+
+                        ₹{{ number_format(
+                            $paymentIdTotal,
+                            2
+                        ) }}
+
+                    </th>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+
+        {{-- ======================================================
+             AMOUNT IN WORDS
+        ======================================================= --}}
+
+        <div class="amount-words">
 
             <strong>
-
-                {{ $paidMonthLabel }}
-
+                Amount in Words:
             </strong>
 
-        </td>
+            {{ ucwords($amountInWords) }}
+
+            Rupees Only
+
+        </div>
 
 
-        <th>
-            Total Paid Months
-        </th>
+        {{-- ======================================================
+             SIGNATURE
+        ======================================================= --}}
 
-        <td>
+        <div class="row signature-area">
 
-            <span class="badge bg-success">
+            <div class="col-6 text-center">
 
-                {{ $paidMonthCount }}
+                <div class="signature-line"></div>
 
-                {{ $paidMonthCount == 1
-                    ? 'Month'
-                    : 'Months'
-                }}
-
-            </span>
-
-        </td>
-
-    </tr>
-
-</table>
-
-@endif
-
-
-
-{{-- ================================================================
-    AMOUNT IN WORDS
-================================================================ --}}
-
-<p class="mb-2">
-
-    <strong>
-        Amount in Words:
-    </strong>
-
-    @php
-
-        try {
-
-            $formatter = \NumberFormatter::create(
-                'en',
-                \NumberFormatter::SPELLOUT
-            );
-
-            $amountInWords = $formatter->format(
-                (float) $payment->amount
-            );
-
-        } catch (\Throwable $e) {
-
-            $amountInWords = '';
-
-        }
-
-    @endphp
-
-
-    {{ ucwords($amountInWords) }}
-
-    Rupees Only
-
-</p>
-
-
-
-{{-- ================================================================
-    SIGNATURE SECTION
-================================================================ --}}
-
-<div class="row mt-3">
-
-    <div class="col-6 text-center">
-
-        <div style="height:35px;"></div>
-
-        <hr class="mb-1">
-
-        <strong style="font-size:11px;">
-
-            Student Signature
-
-        </strong>
-
-    </div>
-
-
-    <div class="col-6 text-center">
-
-        <div style="height:35px;"></div>
-
-        <hr class="mb-1">
-
-        <strong style="font-size:11px;">
-
-            Authorized Signature
-
-        </strong>
-
-    </div>
-
-</div>
-
-
-
-{{-- ================================================================
-    FOOTER
-================================================================ --}}
-
-<div
-    class="invoice-footer"
-    style="font-size:10px;"
->
-
-    <div class="row align-items-center">
-
-        <div class="col-8">
-
-            <strong>
-
-                Terms & Conditions
-
-            </strong>
-
-
-            <div>
-
-                • Fees once paid are non-refundable.
+                <div class="signature-title">
+                    Student Signature
+                </div>
 
             </div>
 
+            <div class="col-6 text-center">
 
-            <div>
+                <div class="signature-line"></div>
 
-                • Preserve this receipt for future reference.
-
-            </div>
-
-
-            <div>
-
-                • Computer generated receipt.
+                <div class="signature-title">
+                    Authorized Signature
+                </div>
 
             </div>
 
         </div>
 
 
-        <div class="col-4 text-end">
+        {{-- ======================================================
+             FOOTER
+        ======================================================= --}}
 
-            <strong class="text-success">
+        <div class="invoice-footer">
 
-                Thank You!
+            <div class="row align-items-center">
 
-            </strong>
+                <div class="col-8">
 
+                    <strong>
+                        Terms & Conditions
+                    </strong>
 
-            <div>
+                    <div>
+                        • Fees once paid are non-refundable.
+                    </div>
 
-                FRENZY DANCE STUDIO
+                    <div>
+                        • Preserve this receipt for future reference.
+                    </div>
+
+                    <div>
+                        • Computer generated receipt.
+                    </div>
+
+                </div>
+
+                <div class="col-4 text-end">
+
+                    <strong class="text-success">
+                        Thank You!
+                    </strong>
+
+                    <br>
+
+                    FRENZY DANCE STUDIO
+
+                </div>
 
             </div>
 
         </div>
 
+
     </div>
 
-</div>
 
+    {{-- ==========================================================
+         BOTTOM BUTTONS
+    =========================================================== --}}
 
-</div>
+    <div class="text-center mt-3 no-print">
 
+        <button
+            type="button"
+            class="btn btn-primary"
+            onclick="window.print();"
+        >
 
+            <i class="mdi mdi-printer"></i>
 
-{{-- ================================================================
-    BOTTOM BUTTONS
-================================================================ --}}
+            Print Invoice
 
-<div class="text-center mt-3 no-print">
+        </button>
 
-    <button
-        type="button"
-        class="btn btn-primary"
-        onclick="window.print();"
-    >
+        <a
+            href="{{ route(
+                'billing.payments',
+                $studentCourse->id
+            ) }}"
+            class="btn btn-secondary"
+        >
 
-        <i class="mdi mdi-printer"></i>
+            <i class="mdi mdi-arrow-left"></i>
 
-        Print Invoice
+            Back to Payments
 
-    </button>
+        </a>
 
-
-    <a
-        href="{{ route(
-            'billing.payments',
-            $studentCourse->id
-        ) }}"
-        class="btn btn-secondary"
-    >
-
-        <i class="mdi mdi-arrow-left"></i>
-
-        Back to Payments
-
-    </a>
-
-</div>
+    </div>
 
 
 </div>
@@ -1216,9 +894,6 @@ body{
 <script>
 
 $(function () {
-
-    // Auto print if required
-    // window.print();
 
 });
 

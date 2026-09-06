@@ -60,6 +60,22 @@
                             </li>
 
                             <li>
+                                <a href="#paymentRecords" data-bs-toggle="collapse">
+                                    <i data-feather="calendar"></i>
+                                    <span> Payment Records </span>
+                                    <span class="menu-arrow"></span>
+                                </a>
+                                <div class="collapse" id="paymentRecords">
+                                    <ul class="nav-second-level">
+                                        <li>
+                                            <a href="{{ route('course.payment.index') }}" class="tp-link">Course Payment</a>
+                                            <a href="{{ route('studio-payment.history') }}" class="tp-link">Studio Payment</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+
+                            <li>
                                 <a href="#users" data-bs-toggle="collapse">
                                     <i data-feather="users"></i>
                                     <span> Users </span>
@@ -226,22 +242,6 @@
                                         <li>
                                             <a href="{{ route('syllabus.index') }}" class="tp-link">Syllabus List</a>
                                             <a href="{{ route('syllabus.create') }}" class="tp-link">Create Syllabus</a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </li>
-
-                            <li>
-                                <a href="#paymentRecords" data-bs-toggle="collapse">
-                                    <i data-feather="calendar"></i>
-                                    <span> Payment Records </span>
-                                    <span class="menu-arrow"></span>
-                                </a>
-                                <div class="collapse" id="paymentRecords">
-                                    <ul class="nav-second-level">
-                                        <li>
-                                            <a href="{{ route('course.payment.index') }}" class="tp-link">Course Payment</a>
-                                            <a href="{{ route('studio-payment.history') }}" class="tp-link">Studio Payment</a>
                                         </li>
                                     </ul>
                                 </div>

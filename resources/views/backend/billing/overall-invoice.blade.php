@@ -19,11 +19,13 @@ body{
 }
 
 .invoice-box{
+    width:210mm;
     max-width:210mm;
     margin:10px auto;
     background:#fff;
     border:1px solid #ddd;
     padding:12px;
+    box-sizing:border-box;
 }
 
 .invoice-header{
@@ -60,6 +62,7 @@ body{
 }
 
 .table{
+    width:100%;
     margin-bottom:8px;
 }
 
@@ -94,24 +97,145 @@ body{
     padding-top:8px;
 }
 
+.payment-history-table,
+.monthly-details-table,
+.fine-details-table{
+    page-break-inside:auto;
+}
+
+.payment-history-table tr,
+.monthly-details-table tr,
+.fine-details-table tr{
+    page-break-inside:avoid;
+    page-break-after:auto;
+}
+
+.section-block{
+    page-break-inside:auto;
+}
+
+.invoice-footer{
+    page-break-inside:avoid;
+}
+
+.signature-section{
+    page-break-inside:avoid;
+}
+
 @media print{
 
+    @page{
+        size:A4 portrait;
+        margin:8mm;
+    }
+
+    html,
     body{
-        background:#fff;
+        width:210mm;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+    }
+
+    body{
         font-size:10px;
+        color:#222;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | HIDE EVERYTHING
+    |--------------------------------------------------------------------------
+    */
+
+    body *{
+        visibility:hidden;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SHOW ONLY INVOICE
+    |--------------------------------------------------------------------------
+    */
+
+    .invoice-box,
+    .invoice-box *{
+        visibility:visible;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PRINT ONLY INVOICE AREA
+    |--------------------------------------------------------------------------
+    */
+
+    .invoice-box{
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+        max-width:none;
+        min-height:0;
+        margin:0;
+        padding:0;
+        border:none;
+        box-shadow:none;
+        background:#fff;
     }
 
     .no-print{
-        display:none!important;
+        display:none !important;
     }
 
-    .invoice-box{
-        margin:0;
-        border:none;
-        box-shadow:none;
-        padding:0;
+    /*
+    |--------------------------------------------------------------------------
+    | HEADER
+    |--------------------------------------------------------------------------
+    */
+
+    .invoice-header{
+        padding-bottom:7px;
+        margin-bottom:8px;
+    }
+
+    .logo{
+        max-height:58px;
+        max-width:100%;
+    }
+
+    .company-name{
+        font-size:17px;
+    }
+
+    .company-info{
+        font-size:10px;
+    }
+
+    .invoice-title{
+        font-size:17px;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SECTIONS
+    |--------------------------------------------------------------------------
+    */
+
+    .section-title{
+        font-size:11px;
+        padding:4px 6px;
+        margin:7px 0 5px;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | TABLE
+    |--------------------------------------------------------------------------
+    */
+
+    .table{
         width:100%;
-        max-width:none;
+        margin-bottom:7px;
     }
 
     .table th,
@@ -120,18 +244,56 @@ body{
         font-size:9.5px;
     }
 
-    .company-name{
-        font-size:17px;
+    /*
+    |--------------------------------------------------------------------------
+    | SUMMARY
+    |--------------------------------------------------------------------------
+    */
+
+    .summary-number{
+        font-size:14px;
     }
 
-    .invoice-title{
-        font-size:17px;
+    /*
+    |--------------------------------------------------------------------------
+    | FOOTER
+    |--------------------------------------------------------------------------
+    */
+
+    .invoice-footer{
+        margin-top:10px;
+        padding-top:7px;
+        font-size:9px !important;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAGE BREAK CONTROL
+    |--------------------------------------------------------------------------
+    */
 
     .section-title{
-        font-size:11px;
-        padding:4px 6px;
-        margin:7px 0 5px;
+        page-break-after:avoid;
+    }
+
+    .table thead{
+        display:table-header-group;
+    }
+
+    .table tfoot{
+        display:table-footer-group;
+    }
+
+    tr{
+        page-break-inside:avoid;
+    }
+
+    .signature-section{
+        page-break-inside:avoid;
+    }
+
+    .invoice-footer{
+        page-break-inside:avoid;
     }
 
 }
@@ -692,7 +854,7 @@ body{
 </div>
 
 
-<table class="table table-bordered">
+<table class="table table-bordered payment-history-table">
 
     <thead class="table-primary">
 
@@ -737,9 +899,7 @@ body{
             <tr>
 
                 <td>
-
                     {{ $loop->iteration }}
-
                 </td>
 
 
@@ -875,7 +1035,7 @@ body{
 </div>
 
 
-<table class="table table-bordered">
+<table class="table table-bordered monthly-details-table">
 
     <thead class="table-light">
 
@@ -1015,7 +1175,7 @@ body{
 </div>
 
 
-<table class="table table-bordered">
+<table class="table table-bordered fine-details-table">
 
     <thead class="table-light">
 
@@ -1288,7 +1448,7 @@ body{
     SIGNATURE
 ===================================================== --}}
 
-<div class="row mt-3">
+<div class="row mt-3 signature-section">
 
     <div class="col-6 text-center">
 

@@ -814,8 +814,16 @@ class WebsiteController extends Controller
             |
             */
 
+            $paymentId =
+                'PAY-' .
+                now()->format('Ymd') .
+                '-' .
+                strtoupper(Str::random(6));
+
             $payment = CoursePaymentRecord::create([
 
+                'payment_id' => $paymentId,
+                
                 'student_course_id' => $studentCourse->id,
 
                 'user_id' => $studentCourse->user_id,

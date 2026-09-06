@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class CoursePaymentRecord extends Model
 {
-    protected $table = 'course_payment_records'; 
+    protected $table = 'course_payment_records';
 
     protected $fillable = [
 
+        'payment_id',
         'student_course_id',
         'user_id',
 
