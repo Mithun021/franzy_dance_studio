@@ -279,6 +279,9 @@
                                         <li>
                                             <a href="{{ route('rules.index') }}" class="tp-link">Rules</a>
                                         </li>
+                                        <li>
+                                            <a href="{{ route('payment-gateway.index') }}" class="tp-link">Payment Gateway</a>
+                                        </li>
                                     </ul>
                                 </div>
                             </li>

@@ -164,6 +164,76 @@
 
         </div>
 
+        <hr>
+
+        {{-- Membership Plan --}}
+
+        <div class="row">
+
+            <div class="col-md-12 mb-3">
+
+                <label class="form-label">
+                    Membership Plan
+                    <span class="text-danger">*</span>
+                </label>
+
+                <div class="row" id="membershipPlanContainer">
+
+                    @foreach($membership as $plan)
+
+                        <div class="col-md-4 mb-3">
+
+                            <div
+                                class="form-check border border-primary rounded p-3 h-100 membership-plan-card">
+
+                                <input
+                                    type="radio"
+                                    name="membership_plan_id"
+                                    id="membership_plan_{{ $plan->id }}"
+                                    class="form-check-input membership-plan"
+                                    value="{{ $plan->id }}"
+                                    data-duration="{{ $plan->duration }}"
+                                    data-duration-type="{{ strtolower($plan->duration_type) }}"
+                                    data-discount-type="{{ strtolower($plan->discount_type) }}"
+                                    data-discount-value="{{ $plan->discount_value }}"
+                                >
+
+                                <label
+                                    for="membership_plan_{{ $plan->id }}"
+                                    class="form-check-label w-100 ms-2">
+
+                                    <h5>
+                                        {{ $plan->plan_name }}
+                                    </h5>
+
+                                    <small class="text-muted">
+                                        Duration:
+                                        {{ $plan->duration }}
+                                        {{ ucfirst($plan->duration_type) }}
+                                    </small>
+
+                                    <br>
+
+                                    <small class="text-danger">
+                                        Plan Discount:
+                                        {{ $plan->discount_value }}
+                                        {{ ucfirst($plan->discount_type) }}
+                                    </small>
+
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    @endforeach
+
+                </div>
+
+            </div>
+
+        </div>
+
 
         {{-- ========================================================
             ALREADY PAID MONTHS
@@ -559,6 +629,24 @@
             name="course_penalty_fee"
             id="course_penalty_fee"
             value="0">
+
+        <input
+            type="hidden"
+            name="membership_discount"
+            id="membership_discount"
+            value="0">
+
+        <input
+            type="hidden"
+            name="membership_discount_type"
+            id="membership_discount_type"
+            value="">
+
+        <input
+            type="hidden"
+            name="membership_discount_value"
+            id="membership_discount_value"
+            value="">
 
         <input
             type="hidden"

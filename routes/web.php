@@ -16,6 +16,7 @@ use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LateFineController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\PaymentGatewayController;
 use App\Http\Controllers\PermissionCategoryController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RulesController;
@@ -95,6 +96,7 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::get('/billing/invoice/{payment}',[BillingController::class,'invoice'])->name('billing.invoice');
     Route::get('/billing/overall-invoice/{payment}', [BillingController::class, 'overallInvoice'] )->name('billing.overall-invoice');
     Route::get('/course-payment', [ BillingController::class, 'paymentHistory' ])->name('course.payment.index');
+    Route::get( '/billing/student/{student}/payment-history', [BillingController::class, 'studentPaymentHistory'] )->name('billing.student.payment-history');
 
     Route::prefix('assign-instuructor')->name('assign-instuructor.')->group(function () {
         Route::get('/index', [AssignInstructorController::class, 'index'])
@@ -296,6 +298,12 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
     Route::resource('/permission-categories',PermissionCategoryController::class);
 
     // Route::get('/logout', [AuthController::class, 'logout'])->name('logout.backend');
+
+    Route::get('/payment-gateway', [PaymentGatewayController::class, 'index'])
+    ->name('payment-gateway.index');
+
+    Route::put('/payment-gateway/razorpay', [PaymentGatewayController::class, 'updateRazorpay'])
+        ->name('payment-gateway.razorpay.update');
 
 });
 

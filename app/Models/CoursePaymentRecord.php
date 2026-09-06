@@ -58,4 +58,5 @@ class CoursePaymentRecord extends Model
             'user_id'
         );
     }
+
 }

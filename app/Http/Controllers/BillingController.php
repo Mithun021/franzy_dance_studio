@@ -9,6 +9,7 @@ use App\Models\CourseMonthRecord;
 use App\Models\CoursePaymentRecord;
 use App\Models\LateFine;
 use App\Models\LateFineRecord;
+use App\Models\MembershipPlan;
 use App\Models\StudentCourse;
 use App\Models\StudentPayment;
 use App\Models\User;
@@ -896,9 +897,14 @@ class BillingController extends Controller
             ->orderBy('name')
             ->get();
 
+        $membership = MembershipPlan::where('is_active', true)
+            ->orderBy('id')
+            ->get();
+
+
         return view(
             'backend.billing.create',
-            compact('students')
+            compact('students', 'membership')
         );
     }
 
@@ -999,12 +1005,8 @@ class BillingController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Displayed Billing Values
+            | Billing Values
             |--------------------------------------------------------------------------
-            |
-            | These are NOT trusted blindly.
-            | They are only used as submitted calculation information.
-            |
             */
 
             'late_fine' => [
@@ -1038,6 +1040,30 @@ class BillingController extends Controller
             ],
 
             'total_billing_amount' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Membership Discount
+            |--------------------------------------------------------------------------
+            */
+
+            'membership_discount' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
+            'membership_discount_type' => [
+                'nullable',
+                'string',
+                'in:flat,month,months',
+            ],
+
+            'membership_discount_value' => [
                 'nullable',
                 'numeric',
                 'min:0',
@@ -1159,7 +1185,7 @@ class BillingController extends Controller
                     $paymentDates[$index] ?? now()->toDateString(),
 
                 'payment_mode' =>
-                    $mode,
+                    $paymentModes[$index] ?? null,
 
                 'amount' =>
                     $amount,
@@ -1211,13 +1237,16 @@ class BillingController extends Controller
 
         $billingMonths = [];
 
-        $monthCursor = $billingFrom->copy()->startOfMonth();
+        $monthCursor =
+            $billingFrom->copy()->startOfMonth();
 
-        $lastMonth = $billingTo->copy()->startOfMonth();
+        $lastMonth =
+            $billingTo->copy()->startOfMonth();
 
         while ($monthCursor->lte($lastMonth)) {
 
-            $billingMonths[] = $monthCursor->copy();
+            $billingMonths[] =
+                $monthCursor->copy();
 
             $monthCursor->addMonth();
         }
@@ -1234,72 +1263,52 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 8. CHECK EXISTING MONTH RECORDS
+        | 8. FIRST PAYMENT DETECTION
         |--------------------------------------------------------------------------
-        |
-        | We do not create duplicate fully-paid month records.
-        |
         */
 
-        $existingMonths = CourseMonthRecord::query()
-            ->where('student_course_id', $studentCourse->id)
-            ->whereIn(
-                'fee_month',
-                collect($billingMonths)
-                    ->map(fn ($month) => $month->format('Y-m-01'))
-                    ->values()
-                    ->all()
-            )
-            ->get()
-            ->keyBy(
-                fn ($record) =>
-                    Carbon::parse($record->fee_month)
-                        ->format('Y-m')
-            );
+        $hasPreviousPayment =
+            CoursePaymentRecord::query()
+                ->where(
+                    'student_course_id',
+                    $studentCourse->id
+                )
+                ->exists();
+
+        $isFirstPayment =
+            !$hasPreviousPayment;
 
 
         /*
         |--------------------------------------------------------------------------
-        | 9. FIRST PAYMENT DETECTION
+        | 9. FIRST PAYMENT RULE
         |--------------------------------------------------------------------------
-        */
-
-        $hasPreviousPayment = CoursePaymentRecord::query()
-            ->where(
-                'student_course_id',
-                $studentCourse->id
-            )
-            ->exists();
-
-
-        $isFirstPayment = !$hasPreviousPayment;
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | 10. FIRST PAYMENT RULE
-        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | Rule is based on BILLING DATE FROM.
         |
         | 1 - 15  => 100%
         | 16 - 25 => 50%
-        | 26-End  => 100%, but next month
+        | 26-End  => 100%, next month
         |
         */
 
-        $firstPaymentDate = Carbon::parse(
-            $payments[0]['payment_date']
-        )->startOfDay();
+        $firstPaymentDate =
+            $billingFrom->copy()->startOfDay();
 
         $firstPaymentMultiplier = 1;
 
         $firstPaymentRule = null;
 
-        $actualBillingMonths = $billingMonths;
+        $actualBillingMonths =
+            $billingMonths;
 
 
         if ($isFirstPayment) {
 
-            $day = $firstPaymentDate->day;
+            $day =
+                $firstPaymentDate->day;
 
 
             /*
@@ -1344,10 +1353,6 @@ class BillingController extends Controller
                     '26-End: Full Course Fee, Next Month Billing';
 
 
-                /*
-                | Move billing to next month.
-                */
-
                 $nextMonth =
                     $firstPaymentDate
                         ->copy()
@@ -1364,7 +1369,33 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 11. CALCULATE COURSE FEE
+        | 10. CHECK EXISTING MONTH RECORDS
+        |--------------------------------------------------------------------------
+        */
+
+        $existingMonths = CourseMonthRecord::query()
+            ->where('student_course_id', $studentCourse->id)
+            ->whereIn(
+                'fee_month',
+                collect($actualBillingMonths)
+                    ->map(
+                        fn ($month) =>
+                            $month->format('Y-m-01')
+                    )
+                    ->values()
+                    ->all()
+            )
+            ->get()
+            ->keyBy(
+                fn ($record) =>
+                    Carbon::parse($record->fee_month)
+                        ->format('Y-m')
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 11. BASIC FEES
         |--------------------------------------------------------------------------
         */
 
@@ -1373,12 +1404,10 @@ class BillingController extends Controller
             2
         );
 
-
         $registrationFee = round(
             (float) ($studentCourse->registration_fee ?? 0),
             2
         );
-
 
         $admissionFee = round(
             (float) ($studentCourse->admission_fee ?? 0),
@@ -1388,18 +1417,39 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | First payment:
-        |
-        | Only FIRST monthly record gets the first-payment multiplier.
-        |
-        | Example:
-        |
-        | Monthly Fee = 1000
-        |
-        | First payment 20th
-        |
-        | Month 1 = 500
-        |
+        | 12. MEMBERSHIP DISCOUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $membershipDiscount =
+            round(
+                (float) ($validated['membership_discount'] ?? 0),
+                2
+            );
+
+        $membershipDiscountType =
+            strtolower(
+                trim(
+                    (string) (
+                        $validated['membership_discount_type']
+                        ?? ''
+                    )
+                )
+            );
+
+        $membershipDiscountValue =
+            round(
+                (float) (
+                    $validated['membership_discount_value']
+                    ?? 0
+                ),
+                2
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 13. CALCULATE COURSE MONTH PAYABLES
         |--------------------------------------------------------------------------
         */
 
@@ -1409,6 +1459,12 @@ class BillingController extends Controller
 
             $fee = $monthlyFee;
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | First payment rule applies only to first monthly record
+            |--------------------------------------------------------------------------
+            */
 
             if ($isFirstPayment && $index === 0) {
 
@@ -1429,6 +1485,12 @@ class BillingController extends Controller
                 'monthly_fee' =>
                     $monthlyFee,
 
+                'gross_payable_amount' =>
+                    $fee,
+
+                'waiver_amount' =>
+                    0,
+
                 'payable_amount' =>
                     $fee,
 
@@ -1442,7 +1504,94 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 12. TOTAL COURSE FEE
+        | 14. GROSS COURSE FEE
+        |--------------------------------------------------------------------------
+        */
+
+        $grossCourseFee = round(
+            collect($monthPayables)
+                ->sum('gross_payable_amount'),
+            2
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 15. APPLY MEMBERSHIP DISCOUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $membershipDiscount =
+            min(
+                max($membershipDiscount, 0),
+                $grossCourseFee
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 16. DISTRIBUTE MEMBERSHIP DISCOUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $remainingMembershipDiscount =
+            $membershipDiscount;
+
+
+        foreach ($monthPayables as $index => $monthData) {
+
+            if ($remainingMembershipDiscount <= 0) {
+                break;
+            }
+
+            $grossPayable =
+                round(
+                    (float) $monthData['gross_payable_amount'],
+                    2
+                );
+
+
+            if ($grossPayable <= 0) {
+                continue;
+            }
+
+
+            $waiver =
+                min(
+                    $grossPayable,
+                    $remainingMembershipDiscount
+                );
+
+
+            $waiver =
+                round($waiver, 2);
+
+
+            $payable =
+                round(
+                    $grossPayable - $waiver,
+                    2
+                );
+
+
+            $monthPayables[$index]['waiver_amount'] =
+                $waiver;
+
+            $monthPayables[$index]['payable_amount'] =
+                $payable;
+
+
+            $remainingMembershipDiscount =
+                round(
+                    $remainingMembershipDiscount - $waiver,
+                    2
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 17. FINAL COURSE FEE AFTER MEMBERSHIP DISCOUNT
         |--------------------------------------------------------------------------
         */
 
@@ -1455,23 +1604,14 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 13. LATE FINE / PENALTY
+        | 18. LATE FINE / PENALTY
         |--------------------------------------------------------------------------
-        |
-        | At this stage these values come from the calculation already
-        | performed by your billing calculation AJAX.
-        |
-        | IMPORTANT:
-        | Ideally the exact same calculation should be moved into a
-        | shared BillingService and called here as well.
-        |
         */
 
         $lateFine = round(
             (float) ($validated['late_fine'] ?? 0),
             2
         );
-
 
         $penaltyFee = round(
             (float) ($validated['course_penalty_fee'] ?? 0),
@@ -1481,10 +1621,7 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 14. TOTAL BILLING
-        |--------------------------------------------------------------------------
-        |
-        | Registration + Admission are charged only on first payment.
+        | 19. REGISTRATION / ADMISSION
         |--------------------------------------------------------------------------
         */
 
@@ -1493,28 +1630,34 @@ class BillingController extends Controller
                 ? $registrationFee
                 : 0;
 
-
         $billingAdmissionFee =
             $isFirstPayment
                 ? $admissionFee
                 : 0;
 
 
-        $totalBillingAmount = round(
+        /*
+        |--------------------------------------------------------------------------
+        | 20. FINAL TOTAL BILLING
+        |--------------------------------------------------------------------------
+        */
 
-            $totalCourseFee
-            + $billingRegistrationFee
-            + $billingAdmissionFee
-            + $lateFine
-            + $penaltyFee,
+        $totalBillingAmount =
+            round(
 
-            2
-        );
+                $totalCourseFee
+                + $billingRegistrationFee
+                + $billingAdmissionFee
+                + $lateFine
+                + $penaltyFee,
+
+                2
+            );
 
 
         /*
         |--------------------------------------------------------------------------
-        | 15. PAYMENT MUST MATCH BILLING
+        | 21. PAYMENT MUST MATCH FINAL BILLING
         |--------------------------------------------------------------------------
         */
 
@@ -1535,6 +1678,13 @@ class BillingController extends Controller
             ]);
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | 22. GENERATE PAYMENT ID
+        |--------------------------------------------------------------------------
+        */
+
         $paymentId =
             'PAY-' .
             now()->format('Ymd') .
@@ -1544,7 +1694,7 @@ class BillingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | 16. DATABASE TRANSACTION
+        | 23. DATABASE TRANSACTION
         |--------------------------------------------------------------------------
         */
 
@@ -1566,16 +1716,9 @@ class BillingController extends Controller
                 $month =
                     $monthData['month'];
 
-
                 $monthKey =
                     $month->format('Y-m');
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Existing Record
-                |--------------------------------------------------------------------------
-                */
 
                 $monthRecord =
                     $existingMonths->get($monthKey);
@@ -1594,7 +1737,6 @@ class BillingController extends Controller
                             (float) $monthRecord->payable_amount,
                             2
                         );
-
 
                     $existingPaid =
                         round(
@@ -1617,13 +1759,8 @@ class BillingController extends Controller
                     }
 
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Use existing record
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $monthRecords[] = $monthRecord;
+                    $monthRecords[] =
+                        $monthRecord;
 
                     continue;
                 }
@@ -1633,10 +1770,6 @@ class BillingController extends Controller
                 |--------------------------------------------------------------------------
                 | Due Date
                 |--------------------------------------------------------------------------
-                |
-                | Monthly fee due date = billing month date.
-                | You can change this to your actual studio due-date rule.
-                |
                 */
 
                 $dueDate =
@@ -1645,7 +1778,7 @@ class BillingController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Create Month Record
+                | CREATE MONTH RECORD
                 |--------------------------------------------------------------------------
                 */
 
@@ -1662,7 +1795,7 @@ class BillingController extends Controller
                             $monthData['monthly_fee'],
 
                         'waiver_amount' =>
-                            0,
+                            $monthData['waiver_amount'],
 
                         'payable_amount' =>
                             $monthData['payable_amount'],
@@ -1687,8 +1820,16 @@ class BillingController extends Controller
 
                         'remarks' =>
                             $isFirstPayment
-                                ? 'First payment billing'
-                                : 'Regular billing',
+                                ? (
+                                    $membershipDiscount > 0
+                                        ? 'First payment billing with membership discount'
+                                        : 'First payment billing'
+                                )
+                                : (
+                                    $membershipDiscount > 0
+                                        ? 'Regular billing with membership discount'
+                                        : 'Regular billing'
+                                ),
                     ]);
 
 
@@ -1702,18 +1843,18 @@ class BillingController extends Controller
             | B. ALLOCATE COURSE FEE FROM PAYMENT
             |--------------------------------------------------------------------------
             |
-            | Registration / Admission / Fine / Penalty are not added
+            | Registration / Admission / Fine / Penalty are NOT added
             | to monthly paid_amount.
             |
-            | First the monthly course fee portion is allocated.
-            |--------------------------------------------------------------------------
+            | Only final payable course fee is allocated here.
+            |
             */
 
             $remainingCourseFee =
                 $totalCourseFee;
 
 
-            foreach ($monthRecords as $monthRecord) {
+            foreach ($monthRecords as $index => $monthRecord) {
 
                 if ($remainingCourseFee <= 0) {
                     break;
@@ -1725,7 +1866,6 @@ class BillingController extends Controller
                         (float) $monthRecord->payable_amount,
                         2
                     );
-
 
                 $alreadyPaid =
                     round(
@@ -1760,13 +1900,30 @@ class BillingController extends Controller
                     );
 
 
-                $percentage =
-                    $payable > 0
-                        ? round(
-                            ($newPaid / $payable) * 100,
-                            2
-                        )
-                        : 0;
+                /*
+                |--------------------------------------------------------------------------
+                | PAYMENT PERCENTAGE
+                |--------------------------------------------------------------------------
+                |
+                | 1 - 15       => 100
+                | 16 - 25      => 50
+                | 26 - End     => 100
+                |
+                | IMPORTANT:
+                | This is based on the FIRST PAYMENT BILLING RULE,
+                | NOT on actual paid_amount / payable_amount.
+                |
+                */
+
+                if ($isFirstPayment) {
+
+                    $paymentPercentage =
+                        $firstPaymentMultiplier * 100;
+
+                } else {
+
+                    $paymentPercentage = 100;
+                }
 
 
                 $isFullyPaid =
@@ -1779,7 +1936,7 @@ class BillingController extends Controller
                         $newPaid,
 
                     'payment_percentage' =>
-                        min(100, $percentage),
+                        $paymentPercentage,
 
                     'paid_date' =>
                         $isFullyPaid
@@ -1809,12 +1966,6 @@ class BillingController extends Controller
             */
 
             if ($lateFine > 0) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | Find month to which fine belongs.
-                |--------------------------------------------------------------------------
-                */
 
                 $fineMonth = null;
 
@@ -1859,12 +2010,6 @@ class BillingController extends Controller
                             ->first();
                 }
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Due Date
-                |--------------------------------------------------------------------------
-                */
 
                 $fineDueDate =
                     $fineMonthRecord?->due_date
@@ -1912,10 +2057,6 @@ class BillingController extends Controller
             |--------------------------------------------------------------------------
             | D. SAVE COURSE PENALTY
             |--------------------------------------------------------------------------
-            |
-            | Your model does not have a separate CoursePenaltyRecord table.
-            | Therefore penalty is stored in LateFineRecord.
-            |
             */
 
             if ($penaltyFee > 0) {
@@ -2004,12 +2145,6 @@ class BillingController extends Controller
                     'amount' =>
                         $payment['amount'],
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | No platform fee for now
-                    |--------------------------------------------------------------------------
-                    */
-
                     'platform_fee_percentage' =>
                         0,
 
@@ -2047,18 +2182,24 @@ class BillingController extends Controller
             */
 
             return redirect()
-                ->route('billing.invoice',$paymentId)
+                ->route(
+                    'billing.invoice',
+                    $paymentId
+                )
                 ->with(
                     'success',
                     'Billing saved successfully. Total amount ₹' .
-                    number_format($totalBillingAmount, 2)
+                    number_format(
+                        $totalBillingAmount,
+                        2
+                    )
                 );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | ROLLBACK ON ERROR
+        | ROLLBACK ON VALIDATION ERROR
         |--------------------------------------------------------------------------
         */
 
@@ -2070,26 +2211,2620 @@ class BillingController extends Controller
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | ROLLBACK ON OTHER ERROR
+        |--------------------------------------------------------------------------
+        */
+
         catch (\Throwable $e) {
 
             DB::rollBack();
 
-            Log::error('BILLING STORE ERROR', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'request' => $request->except(['_token']),
-            ]);
+            Log::error(
+                'BILLING STORE ERROR',
+                [
+                    'message' =>
+                        $e->getMessage(),
+
+                    'file' =>
+                        $e->getFile(),
+
+                    'line' =>
+                        $e->getLine(),
+
+                    'trace' =>
+                        $e->getTraceAsString(),
+
+                    'request' =>
+                        $request->except(['_token']),
+                ]
+            );
 
             return back()
                 ->withInput()
                 ->with(
                     'error',
-                    'Billing Save Error: ' . $e->getMessage()
+                    'Billing Save Error: ' .
+                    $e->getMessage()
                 );
         }
     }
+
+
+    // public function store(Request $request)
+    // {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 1. VALIDATE REQUEST
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $validated = $request->validate([
+
+    //         'student_id' => [
+    //             'required',
+    //             'integer',
+    //             'exists:users,id',
+    //         ],
+
+    //         'student_course_id' => [
+    //             'required',
+    //             'integer',
+    //             'exists:student_course,id',
+    //         ],
+
+    //         'billing_from' => [
+    //             'required',
+    //             'date',
+    //         ],
+
+    //         'billing_to' => [
+    //             'required',
+    //             'date',
+    //             'after_or_equal:billing_from',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Payment Entries
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'payment_date' => [
+    //             'required',
+    //             'array',
+    //             'min:1',
+    //         ],
+
+    //         'payment_date.*' => [
+    //             'required',
+    //             'date',
+    //         ],
+
+    //         'payment_mode' => [
+    //             'required',
+    //             'array',
+    //             'min:1',
+    //         ],
+
+    //         'payment_mode.*' => [
+    //             'required',
+    //             'in:Cash,UPI,Card,Bank Transfer,Cheque',
+    //         ],
+
+    //         'amount' => [
+    //             'required',
+    //             'array',
+    //             'min:1',
+    //         ],
+
+    //         'amount.*' => [
+    //             'required',
+    //             'numeric',
+    //             'gt:0',
+    //         ],
+
+    //         'transaction_id' => [
+    //             'nullable',
+    //             'array',
+    //         ],
+
+    //         'transaction_id.*' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'remarks' => [
+    //             'nullable',
+    //             'array',
+    //         ],
+
+    //         'remarks.*' => [
+    //             'nullable',
+    //             'string',
+    //             'max:1000',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Billing Values
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'late_fine' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'course_penalty_fee' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'fine_type' => [
+    //             'nullable',
+    //             'string',
+    //             'max:100',
+    //         ],
+
+    //         'fine_current_month' => [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //         ],
+
+    //         'total_course_fee' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'total_billing_amount' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Membership Discount
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'membership_discount' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'membership_discount_type' => [
+    //             'nullable',
+    //             'string',
+    //             'in:flat,month,months',
+    //         ],
+
+    //         'membership_discount_value' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+    //     ]);
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 2. LOAD STUDENT COURSE
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $studentCourse = StudentCourse::query()
+    //         ->with([
+    //             'student',
+    //             'course',
+    //             'level',
+    //             'category',
+    //             'batch',
+    //         ])
+    //         ->where('id', $validated['student_course_id'])
+    //         ->where('user_id', $validated['student_id'])
+    //         ->first();
+
+    //     if (!$studentCourse) {
+
+    //         throw ValidationException::withMessages([
+    //             'student_course_id' =>
+    //                 'The selected course does not belong to the selected student.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 3. DATE OBJECTS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $billingFrom = Carbon::parse(
+    //         $validated['billing_from']
+    //     )->startOfDay();
+
+    //     $billingTo = Carbon::parse(
+    //         $validated['billing_to']
+    //     )->startOfDay();
+
+
+    //     if ($billingTo->lt($billingFrom)) {
+
+    //         throw ValidationException::withMessages([
+    //             'billing_to' =>
+    //                 'Billing To date cannot be before Billing From date.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 4. PAYMENT DATA
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $paymentDates = $validated['payment_date'] ?? [];
+    //     $paymentModes = $validated['payment_mode'] ?? [];
+    //     $paymentAmounts = $validated['amount'] ?? [];
+    //     $transactionIds = $validated['transaction_id'] ?? [];
+    //     $paymentRemarks = $validated['remarks'] ?? [];
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 5. NORMALIZE PAYMENT ROWS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $payments = [];
+
+    //     foreach ($paymentAmounts as $index => $amount) {
+
+    //         $amount = round((float) $amount, 2);
+
+    //         if ($amount <= 0) {
+    //             continue;
+    //         }
+
+    //         $mode = $paymentModes[$index] ?? null;
+
+    //         $transactionId =
+    //             isset($transactionIds[$index])
+    //                 ? trim((string) $transactionIds[$index])
+    //                 : null;
+
+    //         $remark =
+    //             isset($paymentRemarks[$index])
+    //                 ? trim((string) $paymentRemarks[$index])
+    //                 : null;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Cash does not require transaction ID
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($mode !== 'Cash' && empty($transactionId)) {
+
+    //             throw ValidationException::withMessages([
+    //                 "transaction_id.$index" =>
+    //                     "Transaction / Reference No is required for {$mode} payment.",
+    //             ]);
+    //         }
+
+
+    //         $payments[] = [
+
+    //             'payment_date' =>
+    //                 $paymentDates[$index] ?? now()->toDateString(),
+
+    //             'payment_mode' =>
+    //                 $mode,
+
+    //             'amount' =>
+    //                 $amount,
+
+    //             'transaction_id' =>
+    //                 $transactionId ?: null,
+
+    //             'remarks' =>
+    //                 $remark ?: null,
+    //         ];
+    //     }
+
+
+    //     if (empty($payments)) {
+
+    //         throw ValidationException::withMessages([
+    //             'amount' =>
+    //                 'At least one valid payment entry is required.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 6. TOTAL PAYMENT
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $totalPayment = round(
+    //         collect($payments)->sum('amount'),
+    //         2
+    //     );
+
+
+    //     if ($totalPayment <= 0) {
+
+    //         throw ValidationException::withMessages([
+    //             'amount' =>
+    //                 'Total payment amount must be greater than zero.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 7. GENERATE BILLING MONTHS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $billingMonths = [];
+
+    //     $monthCursor =
+    //         $billingFrom->copy()->startOfMonth();
+
+    //     $lastMonth =
+    //         $billingTo->copy()->startOfMonth();
+
+    //     while ($monthCursor->lte($lastMonth)) {
+
+    //         $billingMonths[] =
+    //             $monthCursor->copy();
+
+    //         $monthCursor->addMonth();
+    //     }
+
+
+    //     if (empty($billingMonths)) {
+
+    //         throw ValidationException::withMessages([
+    //             'billing_from' =>
+    //                 'Unable to generate billing months.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 8. CHECK EXISTING MONTH RECORDS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $existingMonths = CourseMonthRecord::query()
+    //         ->where('student_course_id', $studentCourse->id)
+    //         ->whereIn(
+    //             'fee_month',
+    //             collect($billingMonths)
+    //                 ->map(
+    //                     fn ($month) =>
+    //                         $month->format('Y-m-01')
+    //                 )
+    //                 ->values()
+    //                 ->all()
+    //         )
+    //         ->get()
+    //         ->keyBy(
+    //             fn ($record) =>
+    //                 Carbon::parse($record->fee_month)
+    //                     ->format('Y-m')
+    //         );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 9. FIRST PAYMENT DETECTION
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $hasPreviousPayment =
+    //         CoursePaymentRecord::query()
+    //             ->where(
+    //                 'student_course_id',
+    //                 $studentCourse->id
+    //             )
+    //             ->exists();
+
+    //     $isFirstPayment =
+    //         !$hasPreviousPayment;
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 10. FIRST PAYMENT RULE
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | 1 - 15  => 100%
+    //     | 16 - 25 => 50%
+    //     | 26-End  => 100%, next month
+    //     |
+    //     */
+
+    //     $firstPaymentDate =
+    //         Carbon::parse(
+    //             $payments[0]['payment_date']
+    //         )->startOfDay();
+
+    //     $firstPaymentMultiplier = 1;
+
+    //     $firstPaymentRule = null;
+
+    //     $actualBillingMonths =
+    //         $billingMonths;
+
+
+    //     if ($isFirstPayment) {
+
+    //         $day =
+    //             $firstPaymentDate->day;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | 1 - 15
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($day >= 1 && $day <= 15) {
+
+    //             $firstPaymentMultiplier = 1;
+
+    //             $firstPaymentRule =
+    //                 '1-15: Full Course Fee';
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | 16 - 25
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         } elseif ($day >= 16 && $day <= 25) {
+
+    //             $firstPaymentMultiplier = 0.50;
+
+    //             $firstPaymentRule =
+    //                 '16-25: 50% Course Fee';
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | 26 - Month End
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         } else {
+
+    //             $firstPaymentMultiplier = 1;
+
+    //             $firstPaymentRule =
+    //                 '26-End: Full Course Fee, Next Month Billing';
+
+
+    //             $nextMonth =
+    //                 $firstPaymentDate
+    //                     ->copy()
+    //                     ->addMonth()
+    //                     ->startOfMonth();
+
+
+    //             $actualBillingMonths = [
+    //                 $nextMonth,
+    //             ];
+    //         }
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 11. BASIC FEES
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $monthlyFee = round(
+    //         (float) $studentCourse->monthly_fee,
+    //         2
+    //     );
+
+    //     $registrationFee = round(
+    //         (float) ($studentCourse->registration_fee ?? 0),
+    //         2
+    //     );
+
+    //     $admissionFee = round(
+    //         (float) ($studentCourse->admission_fee ?? 0),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 12. MEMBERSHIP DISCOUNT
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Membership values are calculated in JS and submitted through:
+    //     |
+    //     | membership_discount
+    //     | membership_discount_type
+    //     | membership_discount_value
+    //     |
+    //     | We do NOT allow discount to exceed the actual course fee.
+    //     |
+    //     */
+
+    //     $membershipDiscount =
+    //         round(
+    //             (float) ($validated['membership_discount'] ?? 0),
+    //             2
+    //         );
+
+    //     $membershipDiscountType =
+    //         strtolower(
+    //             trim(
+    //                 (string) (
+    //                     $validated['membership_discount_type']
+    //                     ?? ''
+    //                 )
+    //             )
+    //         );
+
+    //     $membershipDiscountValue =
+    //         round(
+    //             (float) (
+    //                 $validated['membership_discount_value']
+    //                 ?? 0
+    //             ),
+    //             2
+    //         );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 13. CALCULATE COURSE MONTH PAYABLES
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $monthPayables = [];
+
+    //     foreach ($actualBillingMonths as $index => $month) {
+
+    //         $fee = $monthlyFee;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | First payment rule applies only to first monthly record
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($isFirstPayment && $index === 0) {
+
+    //             $fee =
+    //                 round(
+    //                     $monthlyFee *
+    //                     $firstPaymentMultiplier,
+    //                     2
+    //                 );
+    //         }
+
+
+    //         $monthPayables[] = [
+
+    //             'month' =>
+    //                 $month->copy(),
+
+    //             'monthly_fee' =>
+    //                 $monthlyFee,
+
+    //             /*
+    //             | Membership discount will be deducted below.
+    //             */
+    //             'gross_payable_amount' =>
+    //                 $fee,
+
+    //             'waiver_amount' =>
+    //                 0,
+
+    //             'payable_amount' =>
+    //                 $fee,
+
+    //             'payment_rule' =>
+    //                 $isFirstPayment
+    //                     ? $firstPaymentRule
+    //                     : 'Regular Monthly Fee',
+    //         ];
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 14. GROSS COURSE FEE
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $grossCourseFee = round(
+    //         collect($monthPayables)
+    //             ->sum('gross_payable_amount'),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 15. APPLY MEMBERSHIP DISCOUNT
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Discount cannot be greater than gross course fee.
+    //     |
+    //     */
+
+    //     $membershipDiscount =
+    //         min(
+    //             max($membershipDiscount, 0),
+    //             $grossCourseFee
+    //         );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 16. DISTRIBUTE MEMBERSHIP DISCOUNT
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Example:
+    //     |
+    //     | Month 1 = 1000
+    //     | Month 2 = 1000
+    //     | Month 3 = 1000
+    //     |
+    //     | Membership discount = 1500
+    //     |
+    //     | Result:
+    //     |
+    //     | Month 1:
+    //     | waiver = 1000
+    //     | payable = 0
+    //     |
+    //     | Month 2:
+    //     | waiver = 500
+    //     | payable = 500
+    //     |
+    //     | Month 3:
+    //     | waiver = 0
+    //     | payable = 1000
+    //     |
+    //     */
+
+    //     $remainingMembershipDiscount =
+    //         $membershipDiscount;
+
+
+    //     foreach ($monthPayables as $index => $monthData) {
+
+    //         if ($remainingMembershipDiscount <= 0) {
+    //             break;
+    //         }
+
+    //         $grossPayable =
+    //             round(
+    //                 (float) $monthData['gross_payable_amount'],
+    //                 2
+    //             );
+
+
+    //         if ($grossPayable <= 0) {
+    //             continue;
+    //         }
+
+
+    //         $waiver =
+    //             min(
+    //                 $grossPayable,
+    //                 $remainingMembershipDiscount
+    //             );
+
+
+    //         $waiver =
+    //             round($waiver, 2);
+
+
+    //         $payable =
+    //             round(
+    //                 $grossPayable - $waiver,
+    //                 2
+    //             );
+
+
+    //         $monthPayables[$index]['waiver_amount'] =
+    //             $waiver;
+
+    //         $monthPayables[$index]['payable_amount'] =
+    //             $payable;
+
+
+    //         $remainingMembershipDiscount =
+    //             round(
+    //                 $remainingMembershipDiscount - $waiver,
+    //                 2
+    //             );
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 17. FINAL COURSE FEE AFTER MEMBERSHIP DISCOUNT
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $totalCourseFee = round(
+    //         collect($monthPayables)
+    //             ->sum('payable_amount'),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 18. LATE FINE / PENALTY
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $lateFine = round(
+    //         (float) ($validated['late_fine'] ?? 0),
+    //         2
+    //     );
+
+    //     $penaltyFee = round(
+    //         (float) ($validated['course_penalty_fee'] ?? 0),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 19. REGISTRATION / ADMISSION
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Only charged during first payment.
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $billingRegistrationFee =
+    //         $isFirstPayment
+    //             ? $registrationFee
+    //             : 0;
+
+    //     $billingAdmissionFee =
+    //         $isFirstPayment
+    //             ? $admissionFee
+    //             : 0;
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 20. FINAL TOTAL BILLING
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $totalBillingAmount =
+    //         round(
+
+    //             $totalCourseFee
+    //             + $billingRegistrationFee
+    //             + $billingAdmissionFee
+    //             + $lateFine
+    //             + $penaltyFee,
+
+    //             2
+    //         );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 21. PAYMENT MUST MATCH FINAL BILLING
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if (
+    //         abs(
+    //             $totalPayment -
+    //             $totalBillingAmount
+    //         ) > 0.009
+    //     ) {
+
+    //         throw ValidationException::withMessages([
+    //             'amount' =>
+    //                 'Total payment ₹' .
+    //                 number_format($totalPayment, 2) .
+    //                 ' does not match billing amount ₹' .
+    //                 number_format($totalBillingAmount, 2) .
+    //                 '.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 22. GENERATE PAYMENT ID
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $paymentId =
+    //         'PAY-' .
+    //         now()->format('Ymd') .
+    //         '-' .
+    //         strtoupper(Str::random(6));
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 23. DATABASE TRANSACTION
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | A. CREATE / UPDATE MONTH RECORDS
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $monthRecords = [];
+
+
+    //         foreach ($monthPayables as $monthData) {
+
+    //             $month =
+    //                 $monthData['month'];
+
+    //             $monthKey =
+    //                 $month->format('Y-m');
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Existing Record
+    //             |--------------------------------------------------------------------------
+    //             */
+
+    //             $monthRecord =
+    //                 $existingMonths->get($monthKey);
+
+
+    //             if ($monthRecord) {
+
+    //                 /*
+    //                 |--------------------------------------------------------------------------
+    //                 | Prevent duplicate payment for already-paid month
+    //                 |--------------------------------------------------------------------------
+    //                 */
+
+    //                 $existingPayable =
+    //                     round(
+    //                         (float) $monthRecord->payable_amount,
+    //                         2
+    //                     );
+
+    //                 $existingPaid =
+    //                     round(
+    //                         (float) $monthRecord->paid_amount,
+    //                         2
+    //                     );
+
+
+    //                 if (
+    //                     $existingPayable > 0 &&
+    //                     $existingPaid >= $existingPayable
+    //                 ) {
+
+    //                     throw ValidationException::withMessages([
+    //                         'billing_from' =>
+    //                             'The billing month ' .
+    //                             $month->format('F Y') .
+    //                             ' is already fully paid.',
+    //                     ]);
+    //                 }
+
+
+    //                 /*
+    //                 |--------------------------------------------------------------------------
+    //                 | Use existing record
+    //                 |--------------------------------------------------------------------------
+    //                 */
+
+    //                 $monthRecords[] =
+    //                     $monthRecord;
+
+    //                 continue;
+    //             }
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Due Date
+    //             |--------------------------------------------------------------------------
+    //             */
+
+    //             $dueDate =
+    //                 $month->copy()->endOfMonth();
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | CREATE MONTH RECORD
+    //             |--------------------------------------------------------------------------
+    //             |
+    //             | IMPORTANT:
+    //             |
+    //             | waiver_amount = membership discount for this month
+    //             | payable_amount = gross fee - membership discount
+    //             |
+    //             */
+
+    //             $monthRecord =
+    //                 CourseMonthRecord::create([
+
+    //                     'student_course_id' =>
+    //                         $studentCourse->id,
+
+    //                     'fee_month' =>
+    //                         $month->format('Y-m-01'),
+
+    //                     'monthly_fee' =>
+    //                         $monthData['monthly_fee'],
+
+    //                     'waiver_amount' =>
+    //                         $monthData['waiver_amount'],
+
+    //                     'payable_amount' =>
+    //                         $monthData['payable_amount'],
+
+    //                     'paid_amount' =>
+    //                         0,
+
+    //                     'due_date' =>
+    //                         $dueDate->format('Y-m-d'),
+
+    //                     'paid_date' =>
+    //                         null,
+
+    //                     'payment_percentage' =>
+    //                         0,
+
+    //                     'payment_rule' =>
+    //                         $monthData['payment_rule'],
+
+    //                     'status' =>
+    //                         'unpaid',
+
+    //                     'remarks' =>
+    //                         $isFirstPayment
+    //                             ? (
+    //                                 $membershipDiscount > 0
+    //                                     ? 'First payment billing with membership discount'
+    //                                     : 'First payment billing'
+    //                             )
+    //                             : (
+    //                                 $membershipDiscount > 0
+    //                                     ? 'Regular billing with membership discount'
+    //                                     : 'Regular billing'
+    //                             ),
+    //                 ]);
+
+
+    //             $monthRecords[] =
+    //                 $monthRecord;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | B. ALLOCATE COURSE FEE FROM PAYMENT
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Registration / Admission / Fine / Penalty are NOT added
+    //         | to monthly paid_amount.
+    //         |
+    //         | Only final payable course fee is allocated here.
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $remainingCourseFee =
+    //             $totalCourseFee;
+
+
+    //         foreach ($monthRecords as $monthRecord) {
+
+    //             if ($remainingCourseFee <= 0) {
+    //                 break;
+    //             }
+
+
+    //             $payable =
+    //                 round(
+    //                     (float) $monthRecord->payable_amount,
+    //                     2
+    //                 );
+
+    //             $alreadyPaid =
+    //                 round(
+    //                     (float) $monthRecord->paid_amount,
+    //                     2
+    //                 );
+
+
+    //             $outstanding =
+    //                 max(
+    //                     0,
+    //                     $payable - $alreadyPaid
+    //                 );
+
+
+    //             if ($outstanding <= 0) {
+    //                 continue;
+    //             }
+
+
+    //             $allocated =
+    //                 min(
+    //                     $remainingCourseFee,
+    //                     $outstanding
+    //                 );
+
+
+    //             $newPaid =
+    //                 round(
+    //                     $alreadyPaid + $allocated,
+    //                     2
+    //                 );
+
+
+    //             $percentage =
+    //                 $payable > 0
+    //                     ? round(
+    //                         ($newPaid / $payable) * 100,
+    //                         2
+    //                     )
+    //                     : 0;
+
+
+    //             $isFullyPaid =
+    //                 $newPaid >= $payable;
+
+
+    //             $monthRecord->update([
+
+    //                 'paid_amount' =>
+    //                     $newPaid,
+
+    //                 'payment_percentage' =>
+    //                     min(100, $percentage),
+
+    //                 'paid_date' =>
+    //                     $isFullyPaid
+    //                         ? $payments[0]['payment_date']
+    //                         : null,
+
+    //                 'status' =>
+    //                     $isFullyPaid
+    //                         ? 'paid'
+    //                         : 'partial',
+    //             ]);
+
+
+    //             $remainingCourseFee =
+    //                 round(
+    //                     $remainingCourseFee -
+    //                     $allocated,
+    //                     2
+    //                 );
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | C. SAVE LATE FINE
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($lateFine > 0) {
+
+    //             $fineMonth = null;
+
+
+    //             if (!empty($validated['fine_current_month'])) {
+
+    //                 try {
+
+    //                     $fineMonth =
+    //                         Carbon::parse(
+    //                             $validated['fine_current_month'] . '-01'
+    //                         )->startOfMonth();
+
+    //                 } catch (\Throwable $e) {
+
+    //                     $fineMonth =
+    //                         $actualBillingMonths[0] ?? null;
+    //                 }
+
+    //             } else {
+
+    //                 $fineMonth =
+    //                     $actualBillingMonths[0] ?? null;
+    //             }
+
+
+    //             $fineMonthRecord = null;
+
+
+    //             if ($fineMonth) {
+
+    //                 $fineMonthRecord =
+    //                     CourseMonthRecord::query()
+    //                         ->where(
+    //                             'student_course_id',
+    //                             $studentCourse->id
+    //                         )
+    //                         ->whereDate(
+    //                             'fee_month',
+    //                             $fineMonth->format('Y-m-01')
+    //                         )
+    //                         ->first();
+    //             }
+
+
+    //             $fineDueDate =
+    //                 $fineMonthRecord?->due_date
+    //                 ?? (
+    //                     $fineMonth
+    //                         ? $fineMonth->copy()->endOfMonth()
+    //                         : $billingFrom
+    //                 );
+
+
+    //             LateFineRecord::create([
+
+    //                 'student_course_id' =>
+    //                     $studentCourse->id,
+
+    //                 'course_month_record_id' =>
+    //                     $fineMonthRecord?->id,
+
+    //                 'fine_date' =>
+    //                     now()->toDateString(),
+
+    //                 'due_date' =>
+    //                     $fineDueDate,
+
+    //                 'fine_amount' =>
+    //                     $lateFine,
+
+    //                 'paid_amount' =>
+    //                     $lateFine,
+
+    //                 'waived_amount' =>
+    //                     0,
+
+    //                 'status' =>
+    //                     'paid',
+
+    //                 'remarks' =>
+    //                     $validated['fine_type']
+    //                         ?? 'Late Fine',
+    //             ]);
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | D. SAVE COURSE PENALTY
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($penaltyFee > 0) {
+
+    //             $penaltyMonth =
+    //                 $actualBillingMonths[0] ?? null;
+
+
+    //             $penaltyMonthRecord = null;
+
+
+    //             if ($penaltyMonth) {
+
+    //                 $penaltyMonthRecord =
+    //                     CourseMonthRecord::query()
+    //                         ->where(
+    //                             'student_course_id',
+    //                             $studentCourse->id
+    //                         )
+    //                         ->whereDate(
+    //                             'fee_month',
+    //                             $penaltyMonth->format('Y-m-01')
+    //                         )
+    //                         ->first();
+    //             }
+
+
+    //             LateFineRecord::create([
+
+    //                 'student_course_id' =>
+    //                     $studentCourse->id,
+
+    //                 'course_month_record_id' =>
+    //                     $penaltyMonthRecord?->id,
+
+    //                 'fine_date' =>
+    //                     now()->toDateString(),
+
+    //                 'due_date' =>
+    //                     $penaltyMonthRecord?->due_date
+    //                     ?? now()->toDateString(),
+
+    //                 'fine_amount' =>
+    //                     $penaltyFee,
+
+    //                 'paid_amount' =>
+    //                     $penaltyFee,
+
+    //                 'waived_amount' =>
+    //                     0,
+
+    //                 'status' =>
+    //                     'paid',
+
+    //                 'remarks' =>
+    //                     'Course Penalty Fee',
+    //             ]);
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | E. SAVE PAYMENT ENTRIES
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         foreach ($payments as $payment) {
+
+    //             CoursePaymentRecord::create([
+
+    //                 'payment_id' =>
+    //                     $paymentId,
+
+    //                 'student_course_id' =>
+    //                     $studentCourse->id,
+
+    //                 'user_id' =>
+    //                     $studentCourse->user_id,
+
+    //                 'payment_date' =>
+    //                     $payment['payment_date'],
+
+    //                 'payment_mode' =>
+    //                     $payment['payment_mode'],
+
+    //                 'amount' =>
+    //                     $payment['amount'],
+
+    //                 'platform_fee_percentage' =>
+    //                     0,
+
+    //                 'platform_fee_amount' =>
+    //                     0,
+
+    //                 'transaction_id' =>
+    //                     $payment['transaction_id'],
+
+    //                 'payment_proof' =>
+    //                     null,
+
+    //                 'status' =>
+    //                     'success',
+
+    //                 'remarks' =>
+    //                     $payment['remarks'],
+    //             ]);
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | F. COMMIT
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         DB::commit();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | SUCCESS
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         return redirect()
+    //             ->route(
+    //                 'billing.invoice',
+    //                 $paymentId
+    //             )
+    //             ->with(
+    //                 'success',
+    //                 'Billing saved successfully. Total amount ₹' .
+    //                 number_format(
+    //                     $totalBillingAmount,
+    //                     2
+    //                 )
+    //             );
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | ROLLBACK ON VALIDATION ERROR
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     catch (ValidationException $e) {
+
+    //         DB::rollBack();
+
+    //         throw $e;
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | ROLLBACK ON OTHER ERROR
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     catch (\Throwable $e) {
+
+    //         DB::rollBack();
+
+    //         Log::error(
+    //             'BILLING STORE ERROR',
+    //             [
+    //                 'message' =>
+    //                     $e->getMessage(),
+
+    //                 'file' =>
+    //                     $e->getFile(),
+
+    //                 'line' =>
+    //                     $e->getLine(),
+
+    //                 'trace' =>
+    //                     $e->getTraceAsString(),
+
+    //                 'request' =>
+    //                     $request->except(['_token']),
+    //             ]
+    //         );
+
+    //         return back()
+    //             ->withInput()
+    //             ->with(
+    //                 'error',
+    //                 'Billing Save Error: ' .
+    //                 $e->getMessage()
+    //             );
+    //     }
+    // }
+
+    // public function store(Request $request)
+    // {
+
+    //     // dd($request->all());
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 1. VALIDATE REQUEST
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $validated = $request->validate([
+
+    //         'student_id' => [
+    //             'required',
+    //             'integer',
+    //             'exists:users,id',
+    //         ],
+
+    //         'student_course_id' => [
+    //             'required',
+    //             'integer',
+    //             'exists:student_course,id',
+    //         ],
+
+    //         'billing_from' => [
+    //             'required',
+    //             'date',
+    //         ],
+
+    //         'billing_to' => [
+    //             'required',
+    //             'date',
+    //             'after_or_equal:billing_from',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Payment Entries
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'payment_date' => [
+    //             'required',
+    //             'array',
+    //             'min:1',
+    //         ],
+
+    //         'payment_date.*' => [
+    //             'required',
+    //             'date',
+    //         ],
+
+    //         'payment_mode' => [
+    //             'required',
+    //             'array',
+    //             'min:1',
+    //         ],
+
+    //         'payment_mode.*' => [
+    //             'required',
+    //             'in:Cash,UPI,Card,Bank Transfer,Cheque',
+    //         ],
+
+    //         'amount' => [
+    //             'required',
+    //             'array',
+    //             'min:1',
+    //         ],
+
+    //         'amount.*' => [
+    //             'required',
+    //             'numeric',
+    //             'gt:0',
+    //         ],
+
+    //         'transaction_id' => [
+    //             'nullable',
+    //             'array',
+    //         ],
+
+    //         'transaction_id.*' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'remarks' => [
+    //             'nullable',
+    //             'array',
+    //         ],
+
+    //         'remarks.*' => [
+    //             'nullable',
+    //             'string',
+    //             'max:1000',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Displayed Billing Values
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | These are NOT trusted blindly.
+    //         | They are only used as submitted calculation information.
+    //         |
+    //         */
+
+    //         'late_fine' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'course_penalty_fee' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'fine_type' => [
+    //             'nullable',
+    //             'string',
+    //             'max:100',
+    //         ],
+
+    //         'fine_current_month' => [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //         ],
+
+    //         'total_course_fee' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'total_billing_amount' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+    //     ]);
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 2. LOAD STUDENT COURSE
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $studentCourse = StudentCourse::query()
+    //         ->with([
+    //             'student',
+    //             'course',
+    //             'level',
+    //             'category',
+    //             'batch',
+    //         ])
+    //         ->where('id', $validated['student_course_id'])
+    //         ->where('user_id', $validated['student_id'])
+    //         ->first();
+
+    //     if (!$studentCourse) {
+
+    //         throw ValidationException::withMessages([
+    //             'student_course_id' =>
+    //                 'The selected course does not belong to the selected student.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 3. DATE OBJECTS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $billingFrom = Carbon::parse(
+    //         $validated['billing_from']
+    //     )->startOfDay();
+
+    //     $billingTo = Carbon::parse(
+    //         $validated['billing_to']
+    //     )->startOfDay();
+
+
+    //     if ($billingTo->lt($billingFrom)) {
+
+    //         throw ValidationException::withMessages([
+    //             'billing_to' =>
+    //                 'Billing To date cannot be before Billing From date.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 4. PAYMENT DATA
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $paymentDates = $validated['payment_date'] ?? [];
+    //     $paymentModes = $validated['payment_mode'] ?? [];
+    //     $paymentAmounts = $validated['amount'] ?? [];
+    //     $transactionIds = $validated['transaction_id'] ?? [];
+    //     $paymentRemarks = $validated['remarks'] ?? [];
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 5. NORMALIZE PAYMENT ROWS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $payments = [];
+
+    //     foreach ($paymentAmounts as $index => $amount) {
+
+    //         $amount = round((float) $amount, 2);
+
+    //         if ($amount <= 0) {
+    //             continue;
+    //         }
+
+    //         $mode = $paymentModes[$index] ?? null;
+
+    //         $transactionId =
+    //             isset($transactionIds[$index])
+    //                 ? trim((string) $transactionIds[$index])
+    //                 : null;
+
+    //         $remark =
+    //             isset($paymentRemarks[$index])
+    //                 ? trim((string) $paymentRemarks[$index])
+    //                 : null;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Cash does not require transaction ID
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($mode !== 'Cash' && empty($transactionId)) {
+
+    //             throw ValidationException::withMessages([
+    //                 "transaction_id.$index" =>
+    //                     "Transaction / Reference No is required for {$mode} payment.",
+    //             ]);
+    //         }
+
+
+    //         $payments[] = [
+
+    //             'payment_date' =>
+    //                 $paymentDates[$index] ?? now()->toDateString(),
+
+    //             'payment_mode' =>
+    //                 $mode,
+
+    //             'amount' =>
+    //                 $amount,
+
+    //             'transaction_id' =>
+    //                 $transactionId ?: null,
+
+    //             'remarks' =>
+    //                 $remark ?: null,
+    //         ];
+    //     }
+
+
+    //     if (empty($payments)) {
+
+    //         throw ValidationException::withMessages([
+    //             'amount' =>
+    //                 'At least one valid payment entry is required.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 6. TOTAL PAYMENT
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $totalPayment = round(
+    //         collect($payments)->sum('amount'),
+    //         2
+    //     );
+
+
+    //     if ($totalPayment <= 0) {
+
+    //         throw ValidationException::withMessages([
+    //             'amount' =>
+    //                 'Total payment amount must be greater than zero.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 7. GENERATE BILLING MONTHS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $billingMonths = [];
+
+    //     $monthCursor = $billingFrom->copy()->startOfMonth();
+
+    //     $lastMonth = $billingTo->copy()->startOfMonth();
+
+    //     while ($monthCursor->lte($lastMonth)) {
+
+    //         $billingMonths[] = $monthCursor->copy();
+
+    //         $monthCursor->addMonth();
+    //     }
+
+
+    //     if (empty($billingMonths)) {
+
+    //         throw ValidationException::withMessages([
+    //             'billing_from' =>
+    //                 'Unable to generate billing months.',
+    //         ]);
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 8. CHECK EXISTING MONTH RECORDS
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | We do not create duplicate fully-paid month records.
+    //     |
+    //     */
+
+    //     $existingMonths = CourseMonthRecord::query()
+    //         ->where('student_course_id', $studentCourse->id)
+    //         ->whereIn(
+    //             'fee_month',
+    //             collect($billingMonths)
+    //                 ->map(fn ($month) => $month->format('Y-m-01'))
+    //                 ->values()
+    //                 ->all()
+    //         )
+    //         ->get()
+    //         ->keyBy(
+    //             fn ($record) =>
+    //                 Carbon::parse($record->fee_month)
+    //                     ->format('Y-m')
+    //         );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 9. FIRST PAYMENT DETECTION
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $hasPreviousPayment = CoursePaymentRecord::query()
+    //         ->where(
+    //             'student_course_id',
+    //             $studentCourse->id
+    //         )
+    //         ->exists();
+
+
+    //     $isFirstPayment = !$hasPreviousPayment;
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 10. FIRST PAYMENT RULE
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | 1 - 15  => 100%
+    //     | 16 - 25 => 50%
+    //     | 26-End  => 100%, but next month
+    //     |
+    //     */
+
+    //     $firstPaymentDate = Carbon::parse(
+    //         $payments[0]['payment_date']
+    //     )->startOfDay();
+
+    //     $firstPaymentMultiplier = 1;
+
+    //     $firstPaymentRule = null;
+
+    //     $actualBillingMonths = $billingMonths;
+
+
+    //     if ($isFirstPayment) {
+
+    //         $day = $firstPaymentDate->day;
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | 1 - 15
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($day >= 1 && $day <= 15) {
+
+    //             $firstPaymentMultiplier = 1;
+
+    //             $firstPaymentRule =
+    //                 '1-15: Full Course Fee';
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | 16 - 25
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         } elseif ($day >= 16 && $day <= 25) {
+
+    //             $firstPaymentMultiplier = 0.50;
+
+    //             $firstPaymentRule =
+    //                 '16-25: 50% Course Fee';
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | 26 - Month End
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         } else {
+
+    //             $firstPaymentMultiplier = 1;
+
+    //             $firstPaymentRule =
+    //                 '26-End: Full Course Fee, Next Month Billing';
+
+
+    //             /*
+    //             | Move billing to next month.
+    //             */
+
+    //             $nextMonth =
+    //                 $firstPaymentDate
+    //                     ->copy()
+    //                     ->addMonth()
+    //                     ->startOfMonth();
+
+
+    //             $actualBillingMonths = [
+    //                 $nextMonth,
+    //             ];
+    //         }
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 11. CALCULATE COURSE FEE
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $monthlyFee = round(
+    //         (float) $studentCourse->monthly_fee,
+    //         2
+    //     );
+
+
+    //     $registrationFee = round(
+    //         (float) ($studentCourse->registration_fee ?? 0),
+    //         2
+    //     );
+
+
+    //     $admissionFee = round(
+    //         (float) ($studentCourse->admission_fee ?? 0),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | First payment:
+    //     |
+    //     | Only FIRST monthly record gets the first-payment multiplier.
+    //     |
+    //     | Example:
+    //     |
+    //     | Monthly Fee = 1000
+    //     |
+    //     | First payment 20th
+    //     |
+    //     | Month 1 = 500
+    //     |
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $monthPayables = [];
+
+    //     foreach ($actualBillingMonths as $index => $month) {
+
+    //         $fee = $monthlyFee;
+
+
+    //         if ($isFirstPayment && $index === 0) {
+
+    //             $fee =
+    //                 round(
+    //                     $monthlyFee *
+    //                     $firstPaymentMultiplier,
+    //                     2
+    //                 );
+    //         }
+
+
+    //         $monthPayables[] = [
+
+    //             'month' =>
+    //                 $month->copy(),
+
+    //             'monthly_fee' =>
+    //                 $monthlyFee,
+
+    //             'payable_amount' =>
+    //                 $fee,
+
+    //             'payment_rule' =>
+    //                 $isFirstPayment
+    //                     ? $firstPaymentRule
+    //                     : 'Regular Monthly Fee',
+    //         ];
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 12. TOTAL COURSE FEE
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $totalCourseFee = round(
+    //         collect($monthPayables)
+    //             ->sum('payable_amount'),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 13. LATE FINE / PENALTY
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | At this stage these values come from the calculation already
+    //     | performed by your billing calculation AJAX.
+    //     |
+    //     | IMPORTANT:
+    //     | Ideally the exact same calculation should be moved into a
+    //     | shared BillingService and called here as well.
+    //     |
+    //     */
+
+    //     $lateFine = round(
+    //         (float) ($validated['late_fine'] ?? 0),
+    //         2
+    //     );
+
+
+    //     $penaltyFee = round(
+    //         (float) ($validated['course_penalty_fee'] ?? 0),
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 14. TOTAL BILLING
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Registration + Admission are charged only on first payment.
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $billingRegistrationFee =
+    //         $isFirstPayment
+    //             ? $registrationFee
+    //             : 0;
+
+
+    //     $billingAdmissionFee =
+    //         $isFirstPayment
+    //             ? $admissionFee
+    //             : 0;
+
+
+    //     $totalBillingAmount = round(
+
+    //         $totalCourseFee
+    //         + $billingRegistrationFee
+    //         + $billingAdmissionFee
+    //         + $lateFine
+    //         + $penaltyFee,
+
+    //         2
+    //     );
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 15. PAYMENT MUST MATCH BILLING
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if (
+    //         abs(
+    //             $totalPayment -
+    //             $totalBillingAmount
+    //         ) > 0.009
+    //     ) {
+
+    //         throw ValidationException::withMessages([
+    //             'amount' =>
+    //                 'Total payment ₹' .
+    //                 number_format($totalPayment, 2) .
+    //                 ' does not match billing amount ₹' .
+    //                 number_format($totalBillingAmount, 2) .
+    //                 '.',
+    //         ]);
+    //     }
+
+    //     $paymentId =
+    //         'PAY-' .
+    //         now()->format('Ymd') .
+    //         '-' .
+    //         strtoupper(Str::random(6));
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | 16. DATABASE TRANSACTION
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | A. CREATE / UPDATE MONTH RECORDS
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $monthRecords = [];
+
+
+    //         foreach ($monthPayables as $monthData) {
+
+    //             $month =
+    //                 $monthData['month'];
+
+
+    //             $monthKey =
+    //                 $month->format('Y-m');
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Existing Record
+    //             |--------------------------------------------------------------------------
+    //             */
+
+    //             $monthRecord =
+    //                 $existingMonths->get($monthKey);
+
+
+    //             if ($monthRecord) {
+
+    //                 /*
+    //                 |--------------------------------------------------------------------------
+    //                 | Prevent duplicate payment for already-paid month
+    //                 |--------------------------------------------------------------------------
+    //                 */
+
+    //                 $existingPayable =
+    //                     round(
+    //                         (float) $monthRecord->payable_amount,
+    //                         2
+    //                     );
+
+
+    //                 $existingPaid =
+    //                     round(
+    //                         (float) $monthRecord->paid_amount,
+    //                         2
+    //                     );
+
+
+    //                 if (
+    //                     $existingPayable > 0 &&
+    //                     $existingPaid >= $existingPayable
+    //                 ) {
+
+    //                     throw ValidationException::withMessages([
+    //                         'billing_from' =>
+    //                             'The billing month ' .
+    //                             $month->format('F Y') .
+    //                             ' is already fully paid.',
+    //                     ]);
+    //                 }
+
+
+    //                 /*
+    //                 |--------------------------------------------------------------------------
+    //                 | Use existing record
+    //                 |--------------------------------------------------------------------------
+    //                 */
+
+    //                 $monthRecords[] = $monthRecord;
+
+    //                 continue;
+    //             }
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Due Date
+    //             |--------------------------------------------------------------------------
+    //             |
+    //             | Monthly fee due date = billing month date.
+    //             | You can change this to your actual studio due-date rule.
+    //             |
+    //             */
+
+    //             $dueDate =
+    //                 $month->copy()->endOfMonth();
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Create Month Record
+    //             |--------------------------------------------------------------------------
+    //             */
+
+    //             $monthRecord =
+    //                 CourseMonthRecord::create([
+
+    //                     'student_course_id' =>
+    //                         $studentCourse->id,
+
+    //                     'fee_month' =>
+    //                         $month->format('Y-m-01'),
+
+    //                     'monthly_fee' =>
+    //                         $monthData['monthly_fee'],
+
+    //                     'waiver_amount' =>
+    //                         0,
+
+    //                     'payable_amount' =>
+    //                         $monthData['payable_amount'],
+
+    //                     'paid_amount' =>
+    //                         0,
+
+    //                     'due_date' =>
+    //                         $dueDate->format('Y-m-d'),
+
+    //                     'paid_date' =>
+    //                         null,
+
+    //                     'payment_percentage' =>
+    //                         0,
+
+    //                     'payment_rule' =>
+    //                         $monthData['payment_rule'],
+
+    //                     'status' =>
+    //                         'unpaid',
+
+    //                     'remarks' =>
+    //                         $isFirstPayment
+    //                             ? 'First payment billing'
+    //                             : 'Regular billing',
+    //                 ]);
+
+
+    //             $monthRecords[] =
+    //                 $monthRecord;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | B. ALLOCATE COURSE FEE FROM PAYMENT
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Registration / Admission / Fine / Penalty are not added
+    //         | to monthly paid_amount.
+    //         |
+    //         | First the monthly course fee portion is allocated.
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $remainingCourseFee =
+    //             $totalCourseFee;
+
+
+    //         foreach ($monthRecords as $monthRecord) {
+
+    //             if ($remainingCourseFee <= 0) {
+    //                 break;
+    //             }
+
+
+    //             $payable =
+    //                 round(
+    //                     (float) $monthRecord->payable_amount,
+    //                     2
+    //                 );
+
+
+    //             $alreadyPaid =
+    //                 round(
+    //                     (float) $monthRecord->paid_amount,
+    //                     2
+    //                 );
+
+
+    //             $outstanding =
+    //                 max(
+    //                     0,
+    //                     $payable - $alreadyPaid
+    //                 );
+
+
+    //             if ($outstanding <= 0) {
+    //                 continue;
+    //             }
+
+
+    //             $allocated =
+    //                 min(
+    //                     $remainingCourseFee,
+    //                     $outstanding
+    //                 );
+
+
+    //             $newPaid =
+    //                 round(
+    //                     $alreadyPaid + $allocated,
+    //                     2
+    //                 );
+
+
+    //             $percentage =
+    //                 $payable > 0
+    //                     ? round(
+    //                         ($newPaid / $payable) * 100,
+    //                         2
+    //                     )
+    //                     : 0;
+
+
+    //             $isFullyPaid =
+    //                 $newPaid >= $payable;
+
+
+    //             $monthRecord->update([
+
+    //                 'paid_amount' =>
+    //                     $newPaid,
+
+    //                 'payment_percentage' =>
+    //                     min(100, $percentage),
+
+    //                 'paid_date' =>
+    //                     $isFullyPaid
+    //                         ? $payments[0]['payment_date']
+    //                         : null,
+
+    //                 'status' =>
+    //                     $isFullyPaid
+    //                         ? 'paid'
+    //                         : 'partial',
+    //             ]);
+
+
+    //             $remainingCourseFee =
+    //                 round(
+    //                     $remainingCourseFee -
+    //                     $allocated,
+    //                     2
+    //                 );
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | C. SAVE LATE FINE
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($lateFine > 0) {
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Find month to which fine belongs.
+    //             |--------------------------------------------------------------------------
+    //             */
+
+    //             $fineMonth = null;
+
+
+    //             if (!empty($validated['fine_current_month'])) {
+
+    //                 try {
+
+    //                     $fineMonth =
+    //                         Carbon::parse(
+    //                             $validated['fine_current_month'] . '-01'
+    //                         )->startOfMonth();
+
+    //                 } catch (\Throwable $e) {
+
+    //                     $fineMonth =
+    //                         $actualBillingMonths[0] ?? null;
+    //                 }
+
+    //             } else {
+
+    //                 $fineMonth =
+    //                     $actualBillingMonths[0] ?? null;
+    //             }
+
+
+    //             $fineMonthRecord = null;
+
+
+    //             if ($fineMonth) {
+
+    //                 $fineMonthRecord =
+    //                     CourseMonthRecord::query()
+    //                         ->where(
+    //                             'student_course_id',
+    //                             $studentCourse->id
+    //                         )
+    //                         ->whereDate(
+    //                             'fee_month',
+    //                             $fineMonth->format('Y-m-01')
+    //                         )
+    //                         ->first();
+    //             }
+
+
+    //             /*
+    //             |--------------------------------------------------------------------------
+    //             | Due Date
+    //             |--------------------------------------------------------------------------
+    //             */
+
+    //             $fineDueDate =
+    //                 $fineMonthRecord?->due_date
+    //                 ?? (
+    //                     $fineMonth
+    //                         ? $fineMonth->copy()->endOfMonth()
+    //                         : $billingFrom
+    //                 );
+
+
+    //             LateFineRecord::create([
+
+    //                 'student_course_id' =>
+    //                     $studentCourse->id,
+
+    //                 'course_month_record_id' =>
+    //                     $fineMonthRecord?->id,
+
+    //                 'fine_date' =>
+    //                     now()->toDateString(),
+
+    //                 'due_date' =>
+    //                     $fineDueDate,
+
+    //                 'fine_amount' =>
+    //                     $lateFine,
+
+    //                 'paid_amount' =>
+    //                     $lateFine,
+
+    //                 'waived_amount' =>
+    //                     0,
+
+    //                 'status' =>
+    //                     'paid',
+
+    //                 'remarks' =>
+    //                     $validated['fine_type']
+    //                         ?? 'Late Fine',
+    //             ]);
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | D. SAVE COURSE PENALTY
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Your model does not have a separate CoursePenaltyRecord table.
+    //         | Therefore penalty is stored in LateFineRecord.
+    //         |
+    //         */
+
+    //         if ($penaltyFee > 0) {
+
+    //             $penaltyMonth =
+    //                 $actualBillingMonths[0] ?? null;
+
+
+    //             $penaltyMonthRecord = null;
+
+
+    //             if ($penaltyMonth) {
+
+    //                 $penaltyMonthRecord =
+    //                     CourseMonthRecord::query()
+    //                         ->where(
+    //                             'student_course_id',
+    //                             $studentCourse->id
+    //                         )
+    //                         ->whereDate(
+    //                             'fee_month',
+    //                             $penaltyMonth->format('Y-m-01')
+    //                         )
+    //                         ->first();
+    //             }
+
+
+    //             LateFineRecord::create([
+
+    //                 'student_course_id' =>
+    //                     $studentCourse->id,
+
+    //                 'course_month_record_id' =>
+    //                     $penaltyMonthRecord?->id,
+
+    //                 'fine_date' =>
+    //                     now()->toDateString(),
+
+    //                 'due_date' =>
+    //                     $penaltyMonthRecord?->due_date
+    //                     ?? now()->toDateString(),
+
+    //                 'fine_amount' =>
+    //                     $penaltyFee,
+
+    //                 'paid_amount' =>
+    //                     $penaltyFee,
+
+    //                 'waived_amount' =>
+    //                     0,
+
+    //                 'status' =>
+    //                     'paid',
+
+    //                 'remarks' =>
+    //                     'Course Penalty Fee',
+    //             ]);
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | E. SAVE PAYMENT ENTRIES
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         foreach ($payments as $payment) {
+
+    //             CoursePaymentRecord::create([
+
+    //                 'payment_id' =>
+    //                     $paymentId,
+
+    //                 'student_course_id' =>
+    //                     $studentCourse->id,
+
+    //                 'user_id' =>
+    //                     $studentCourse->user_id,
+
+    //                 'payment_date' =>
+    //                     $payment['payment_date'],
+
+    //                 'payment_mode' =>
+    //                     $payment['payment_mode'],
+
+    //                 'amount' =>
+    //                     $payment['amount'],
+
+    //                 /*
+    //                 |--------------------------------------------------------------------------
+    //                 | No platform fee for now
+    //                 |--------------------------------------------------------------------------
+    //                 */
+
+    //                 'platform_fee_percentage' =>
+    //                     0,
+
+    //                 'platform_fee_amount' =>
+    //                     0,
+
+    //                 'transaction_id' =>
+    //                     $payment['transaction_id'],
+
+    //                 'payment_proof' =>
+    //                     null,
+
+    //                 'status' =>
+    //                     'success',
+
+    //                 'remarks' =>
+    //                     $payment['remarks'],
+    //             ]);
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | F. COMMIT
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         DB::commit();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | SUCCESS
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         return redirect()
+    //             ->route('billing.invoice',$paymentId)
+    //             ->with(
+    //                 'success',
+    //                 'Billing saved successfully. Total amount ₹' .
+    //                 number_format($totalBillingAmount, 2)
+    //             );
+    //     }
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | ROLLBACK ON ERROR
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     catch (ValidationException $e) {
+
+    //         DB::rollBack();
+
+    //         throw $e;
+    //     }
+
+
+    //     catch (\Throwable $e) {
+
+    //         DB::rollBack();
+
+    //         Log::error('BILLING STORE ERROR', [
+    //             'message' => $e->getMessage(),
+    //             'file' => $e->getFile(),
+    //             'line' => $e->getLine(),
+    //             'trace' => $e->getTraceAsString(),
+    //             'request' => $request->except(['_token']),
+    //         ]);
+
+    //         return back()
+    //             ->withInput()
+    //             ->with(
+    //                 'error',
+    //                 'Billing Save Error: ' . $e->getMessage()
+    //             );
+    //     }
+    // }
 
     public function manage(StudentCourse $student_course)
     {
@@ -6363,5 +9098,144 @@ class BillingController extends Controller
                     $e->getMessage()
                 );
         }
+    }
+
+    public function studentPaymentHistory(User $student)
+    {
+        $latestPaymentDate = CoursePaymentRecord::where(
+            'user_id',
+            $student->id
+        )
+            ->whereNotNull('payment_date')
+            ->max('payment_date');
+
+        if (!$latestPaymentDate) {
+            return response()->json([
+                'status' => true,
+                'exists' => false,
+                'message' => 'No payment exists.',
+                'data' => [],
+            ]);
+        }
+
+        $latestDate = Carbon::parse($latestPaymentDate);
+
+        $fromDate = $latestDate
+            ->copy()
+            ->startOfMonth()
+            ->subMonths(5);
+
+        $toDate = $latestDate
+            ->copy()
+            ->endOfMonth();
+
+        $records = CoursePaymentRecord::where(
+            'user_id',
+            $student->id
+        )
+            ->whereBetween('payment_date', [
+                $fromDate->toDateString(),
+                $toDate->toDateString(),
+            ])
+            ->orderByDesc('payment_date')
+            ->orderByDesc('payment_id')
+            ->get();
+
+        if ($records->isEmpty()) {
+            return response()->json([
+                'status' => true,
+                'exists' => false,
+                'message' => 'No payment exists.',
+                'data' => [],
+                'from_date' => $fromDate->format('d M Y'),
+                'to_date' => $toDate->format('d M Y'),
+            ]);
+        }
+
+        $payments = $records
+            ->groupBy(function ($record) {
+                return $record->payment_id
+                    ?? 'record_' . $record->id;
+            })
+            ->map(function ($paymentRecords) {
+
+                $first = $paymentRecords->first();
+
+                $totalAmount = $paymentRecords->sum(function ($record) {
+                    return (float) $record->amount;
+                });
+
+                $modes = $paymentRecords
+                    ->groupBy(function ($record) {
+                        return strtolower(
+                            trim($record->payment_mode ?: 'Other')
+                        );
+                    })
+                    ->map(function ($modeRecords, $mode) {
+
+                        return [
+                            'mode' => ucwords(
+                                str_replace('_', ' ', $mode)
+                            ),
+                            'amount' => round(
+                                $modeRecords->sum(function ($record) {
+                                    return (float) $record->amount;
+                                }),
+                                2
+                            ),
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'payment_id' => $first->payment_id,
+
+                    'payment_date' => $first->payment_date
+                        ? $first->payment_date->format('d M Y')
+                        : '-',
+
+                    'amount' => round($totalAmount, 2),
+
+                    'payment_modes' => $modes,
+
+                    'transaction_ids' => $paymentRecords
+                        ->pluck('transaction_id')
+                        ->filter()
+                        ->unique()
+                        ->values(),
+
+                    'remarks' => $paymentRecords
+                        ->pluck('remarks')
+                        ->filter()
+                        ->unique()
+                        ->values(),
+
+                    'records_count' => $paymentRecords->count(),
+                ];
+            })
+            ->values();
+
+        $totalAmount = $payments->sum(function ($payment) {
+            return (float) $payment['amount'];
+        });
+
+        return response()->json([
+            'status' => true,
+            'exists' => true,
+
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->name,
+            ],
+
+            'from_date' => $fromDate->format('d M Y'),
+            'to_date' => $toDate->format('d M Y'),
+
+            'payment_count' => $payments->count(),
+
+            'total_amount' => round($totalAmount, 2),
+
+            'data' => $payments,
+        ]);
     }
 }

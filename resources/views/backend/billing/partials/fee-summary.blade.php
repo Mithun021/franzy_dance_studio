@@ -199,6 +199,24 @@
 
                     </div>
 
+                    <div
+                        id="summaryMembershipDiscountRow"
+                        class="d-flex justify-content-between mb-2 d-none">
+
+                        <span class="text-success">
+                            Membership Discount
+                        </span>
+
+                        <strong
+                            id="summaryMembershipDiscount"
+                            class="text-success">
+
+                            - ₹ 0.00
+
+                        </strong>
+
+                    </div>
+
 
                     <div
                         id="summaryRegistrationRow"

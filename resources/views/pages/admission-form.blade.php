@@ -663,67 +663,67 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {{-- Aadhar Front Image --}}
-                <div>
+                    {{-- Aadhar Front Image --}}
+                    <div>
 
-                    <label class="block text-sm font-semibold text-pink-300 mb-2">
-                        Aadhar Front Image<span class="text-red-600">*</span>
-                    </label>
+                        <label class="block text-sm font-semibold text-pink-300 mb-2">
+                            Aadhar Front Image<span class="text-red-600">*</span>
+                        </label>
 
-                    @if(!empty($student->aadhar_front_image))
+                        @if(!empty($student->aadhar_front_image))
 
-                        <img
-                            src="{{ asset('storage/'.$student->aadhar_front_image) }}"
-                            alt="Aadhar Front Image"
-                            class="w-full max-w-md h-48 rounded-xl object-contain border-2 border-pink-500 bg-white shadow-lg">
+                            <img
+                                src="{{ asset('storage/'.$student->aadhar_front_image) }}"
+                                alt="Aadhar Front Image"
+                                class="w-full max-w-md h-48 rounded-xl object-contain border-2 border-pink-500 bg-white shadow-lg">
 
-                    @else
+                        @else
 
-                        <input
-                            type="file"
-                            name="aadhar_front_image"
-                            accept="image/*"
-                            class="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white file:font-semibold hover:file:bg-pink-700 file:cursor-pointer cursor-pointer focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition">
+                            <input
+                                type="file"
+                                name="aadhar_front_image"
+                                accept="image/*"
+                                class="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white file:font-semibold hover:file:bg-pink-700 file:cursor-pointer cursor-pointer focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 transition">
 
-                        @error('aadhar_front_image')
-                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                        @enderror
+                            @error('aadhar_front_image')
+                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                            @enderror
 
-                    @endif
+                        @endif
+
+                    </div>
+
+                    {{-- Aadhar Back Image --}}
+                    <div>
+
+                        <label class="block text-sm font-semibold text-blue-300 mb-2">
+                            Aadhar Back Image<span class="text-red-600">*</span>
+                        </label>
+
+                        @if(!empty($student->aadhar_back_image))
+
+                            <img
+                                src="{{ asset('storage/'.$student->aadhar_back_image) }}"
+                                alt="Aadhar Back Image"
+                                class="w-full max-w-md h-48 rounded-xl object-contain border-2 border-blue-500 bg-white shadow-lg">
+
+                        @else
+
+                            <input
+                                type="file"
+                                name="aadhar_back_image"
+                                accept="image/*"
+                                class="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:font-semibold hover:file:bg-blue-700 file:cursor-pointer cursor-pointer focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition">
+
+                            @error('aadhar_back_image')
+                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                            @enderror
+
+                        @endif
+
+                    </div>
 
                 </div>
-
-                {{-- Aadhar Back Image --}}
-                <div>
-
-                    <label class="block text-sm font-semibold text-blue-300 mb-2">
-                        Aadhar Back Image<span class="text-red-600">*</span>
-                    </label>
-
-                    @if(!empty($student->aadhar_back_image))
-
-                        <img
-                            src="{{ asset('storage/'.$student->aadhar_back_image) }}"
-                            alt="Aadhar Back Image"
-                            class="w-full max-w-md h-48 rounded-xl object-contain border-2 border-blue-500 bg-white shadow-lg">
-
-                    @else
-
-                        <input
-                            type="file"
-                            name="aadhar_back_image"
-                            accept="image/*"
-                            class="w-full px-4 py-3 rounded-xl bg-slate-800/70 border border-slate-700 text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:font-semibold hover:file:bg-blue-700 file:cursor-pointer cursor-pointer focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition">
-
-                        @error('aadhar_back_image')
-                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                        @enderror
-
-                    @endif
-
-                </div>
-
-            </div>
 
                 <!-- Photo & Signature -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

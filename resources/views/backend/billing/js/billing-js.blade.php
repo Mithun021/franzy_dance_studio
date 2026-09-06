@@ -1,9 +1,621 @@
 <script>
+$(document).ready(function () {
+
+    const $student = $('#student_id');
+
+    const $paymentHistoryAction = $('#paymentHistoryAction');
+
+    const $noPaymentHistory = $('#noPaymentHistory');
+
+    const $viewPaymentHistoryBtn =
+        $('#viewPaymentHistoryBtn');
+
+    const $paymentHistoryCount =
+        $('#paymentHistoryCount');
+
+    const $paymentHistoryContent =
+        $('#paymentHistoryContent');
+
+    const $paymentHistoryLoading =
+        $('#paymentHistoryLoading');
+
+    const $paymentHistoryPeriod =
+        $('#paymentHistoryPeriod');
+
+
+    function paymentHistoryUrl(studentId)
+    {
+        return "{{ route('billing.student.payment-history', ':student') }}"
+            .replace(':student', studentId);
+    }
+
+
+    function resetPaymentHistory()
+    {
+        $paymentHistoryAction.addClass('d-none');
+
+        $noPaymentHistory.addClass('d-none');
+
+        $paymentHistoryCount.text('0');
+
+        $viewPaymentHistoryBtn
+            .prop('disabled', false)
+            .html(`
+                <i class="fa fa-history me-1"></i>
+                View Payment History
+
+                <span
+                    class="badge bg-primary ms-1"
+                    id="paymentHistoryCount">
+                    0
+                </span>
+            `);
+
+        $viewPaymentHistoryBtn.removeData(
+            'payment-history'
+        );
+
+        $paymentHistoryContent.html('');
+
+        $paymentHistoryPeriod.text('');
+    }
+
+
+    function money(value)
+    {
+        const amount = parseFloat(value) || 0;
+
+        return '₹' + amount.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+
+    function escapeHtml(value)
+    {
+        if (
+            value === null ||
+            value === undefined
+        ) {
+            return '';
+        }
+
+        return $('<div>')
+            .text(value)
+            .html();
+    }
+
+
+    function fetchPaymentHistory(studentId)
+    {
+        resetPaymentHistory();
+
+        if (!studentId) {
+            return;
+        }
+
+        $.ajax({
+
+            url: paymentHistoryUrl(studentId),
+
+            type: 'GET',
+
+            dataType: 'json',
+
+            beforeSend: function () {
+
+                $paymentHistoryAction
+                    .removeClass('d-none');
+
+                $viewPaymentHistoryBtn
+                    .prop('disabled', true)
+                    .html(`
+                        <span
+                            class="spinner-border spinner-border-sm me-1">
+                        </span>
+
+                        Checking Payment History...
+                    `);
+            },
+
+            success: function (response) {
+
+                if (
+                    response.status &&
+                    response.exists &&
+                    response.data &&
+                    response.data.length
+                ) {
+
+                    $paymentHistoryAction
+                        .removeClass('d-none');
+
+                    $noPaymentHistory
+                        .addClass('d-none');
+
+                    $paymentHistoryCount.text(
+                        response.payment_count
+                    );
+
+                    $viewPaymentHistoryBtn
+                        .prop('disabled', false)
+                        .html(`
+                            <i class="fa fa-history me-1"></i>
+
+                            View Payment History
+
+                            <span
+                                class="badge bg-primary ms-1"
+                                id="paymentHistoryCount">
+                                ${response.payment_count}
+                            </span>
+                        `);
+
+                    $viewPaymentHistoryBtn.data(
+                        'payment-history',
+                        response
+                    );
+
+                } else {
+
+                    $paymentHistoryAction
+                        .addClass('d-none');
+
+                    $noPaymentHistory
+                        .removeClass('d-none');
+
+                }
+            },
+
+            error: function (xhr) {
+
+                console.error(
+                    'Payment History Error:',
+                    xhr.responseText
+                );
+
+                $paymentHistoryAction
+                    .addClass('d-none');
+
+                $noPaymentHistory
+                    .removeClass('d-none');
+
+                $noPaymentHistory.html(`
+                    <span class="text-danger">
+
+                        <i class="fa fa-exclamation-circle me-1"></i>
+
+                        Unable to load payment history.
+
+                    </span>
+                `);
+            }
+
+        });
+    }
+
+
+    function openPaymentHistoryModal(response)
+    {
+        $paymentHistoryContent.html('');
+
+        $paymentHistoryLoading
+            .removeClass('d-none');
+
+        $paymentHistoryPeriod.text(
+            response.from_date +
+            ' - ' +
+            response.to_date
+        );
+
+        const modalElement =
+            document.getElementById(
+                'paymentHistoryModal'
+            );
+
+        const modal =
+            bootstrap.Modal.getOrCreateInstance(
+                modalElement
+            );
+
+        modal.show();
+
+        renderPaymentHistory(response);
+
+        $paymentHistoryLoading
+            .addClass('d-none');
+    }
+
+
+    function renderPaymentHistory(response)
+    {
+        const payments = response.data || [];
+
+        if (!payments.length) {
+
+            $paymentHistoryContent.html(`
+                <div class="alert alert-info mb-0">
+
+                    <i class="fa fa-info-circle me-1"></i>
+
+                    No payment exists.
+
+                </div>
+            `);
+
+            return;
+        }
+
+
+        let html = '';
+
+
+        html += `
+
+            <div class="row mb-3">
+
+                <div class="col-md-4">
+
+                    <div class="card border">
+
+                        <div class="card-body">
+
+                            <small class="text-muted">
+                                Total Payments
+                            </small>
+
+                            <h5 class="mb-0">
+                                ${response.payment_count}
+                            </h5>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="card border">
+
+                        <div class="card-body">
+
+                            <small class="text-muted">
+                                Total Amount
+                            </small>
+
+                            <h5 class="mb-0 text-success">
+                                ${money(response.total_amount)}
+                            </h5>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="card border">
+
+                        <div class="card-body">
+
+                            <small class="text-muted">
+                                Payment Period
+                            </small>
+
+                            <h6 class="mb-0">
+
+                                ${escapeHtml(response.from_date)}
+
+                                -
+
+                                ${escapeHtml(response.to_date)}
+
+                            </h6>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        html += `
+
+            <div class="table-responsive">
+
+                <table
+                    class="table table-bordered table-hover align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th width="50">
+                                #
+                            </th>
+
+                            <th>
+                                Payment Date
+                            </th>
+
+                            <th>
+                                Payment ID
+                            </th>
+
+                            <th>
+                                Payment Mode
+                            </th>
+
+                            <th>
+                                Transaction ID
+                            </th>
+
+                            <th>
+                                Remarks
+                            </th>
+
+                            <th class="text-end">
+                                Amount
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+        `;
+
+
+        payments.forEach(function (payment, index) {
+
+            let modesHtml = '-';
+
+            if (
+                payment.payment_modes &&
+                payment.payment_modes.length
+            ) {
+
+                modesHtml = '';
+
+                payment.payment_modes.forEach(
+                    function (mode) {
+
+                        modesHtml += `
+
+                            <div class="mb-1">
+
+                                <span
+                                    class="badge bg-light text-dark border">
+
+                                    ${escapeHtml(mode.mode)}
+
+                                </span>
+
+                                <strong>
+                                    ${money(mode.amount)}
+                                </strong>
+
+                            </div>
+
+                        `;
+
+                    }
+                );
+            }
+
+
+            let transactionHtml = '-';
+
+            if (
+                payment.transaction_ids &&
+                payment.transaction_ids.length
+            ) {
+
+                transactionHtml =
+                    payment.transaction_ids
+                        .map(function (transaction) {
+
+                            return `
+                                <span
+                                    class="badge bg-secondary">
+
+                                    ${escapeHtml(transaction)}
+
+                                </span>
+                            `;
+
+                        })
+                        .join('<br>');
+
+            }
+
+
+            let remarksHtml = '-';
+
+            if (
+                payment.remarks &&
+                payment.remarks.length
+            ) {
+
+                remarksHtml =
+                    payment.remarks
+                        .map(function (remark) {
+
+                            return `
+                                <div class="small">
+                                    ${escapeHtml(remark)}
+                                </div>
+                            `;
+
+                        })
+                        .join('');
+
+            }
+
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${index + 1}
+                    </td>
+
+                    <td>
+                        <strong>
+                            ${escapeHtml(
+                                payment.payment_date
+                            )}
+                        </strong>
+                    </td>
+
+                    <td>
+
+                        ${
+                            payment.payment_id
+                            ? `
+                                <span
+                                    class="badge bg-primary">
+
+                                    #${escapeHtml(
+                                        payment.payment_id
+                                    )}
+
+                                </span>
+                            `
+                            : '-'
+                        }
+
+                    </td>
+
+                    <td>
+                        ${modesHtml}
+                    </td>
+
+                    <td>
+                        ${transactionHtml}
+                    </td>
+
+                    <td>
+                        ${remarksHtml}
+                    </td>
+
+                    <td class="text-end">
+
+                        <strong class="text-success">
+
+                            ${money(payment.amount)}
+
+                        </strong>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        });
+
+
+        html += `
+
+                    </tbody>
+
+                    <tfoot>
+
+                        <tr class="table-light">
+
+                            <th
+                                colspan="6"
+                                class="text-end">
+
+                                Total
+
+                            </th>
+
+                            <th class="text-end">
+
+                                <strong class="text-success">
+
+                                    ${money(
+                                        response.total_amount
+                                    )}
+
+                                </strong>
+
+                            </th>
+
+                        </tr>
+
+                    </tfoot>
+
+                </table>
+
+            </div>
+
+        `;
+
+
+        $paymentHistoryContent.html(html);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Student Change
+    |--------------------------------------------------------------------------
+    */
+
+    $student.on('change', function () {
+
+        const studentId = $(this).val();
+
+        fetchPaymentHistory(studentId);
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | View Payment History
+    |--------------------------------------------------------------------------
+    */
+
+    $(document).on(
+        'click',
+        '#viewPaymentHistoryBtn',
+        function () {
+
+            const response =
+                $(this).data('payment-history');
+
+            if (response) {
+
+                openPaymentHistoryModal(response);
+
+            }
+
+        }
+    );
+
+});
+</script>
+<script>
 $(document).ready(function() {
 
     let isFirstPayment = false;
     let monthlyCourseFee = 0;
     let firstPaymentRuleRunning = false;
+    let firstPaymentRuleInitialized = false;
 
     function number(value) {
         let result = parseFloat(value);
@@ -175,6 +787,11 @@ $(document).ready(function() {
         $('#summaryCourseFee').text('₹ 0.00');
         $('#summaryLateFine').text('₹ 0.00');
         $('#summaryPenaltyFee').text('₹ 0.00');
+        $('#summaryMembershipDiscount')
+            .text('- ₹ 0.00');
+
+        $('#summaryMembershipDiscountRow')
+            .addClass('d-none');
         $('#summaryRegistrationFee').text('₹ 0.00');
         $('#summaryAdmissionFee').text('₹ 0.00');
 
@@ -230,6 +847,14 @@ $(document).ready(function() {
         $('#alreadyPaidMonthsList').empty();
         $('#pendingMonthsList').empty();
 
+        $('.membership-plan')
+            .prop('checked', false)
+            .prop('disabled', false);
+
+        $('#membership_discount').val('0');
+        $('#membership_discount_type').val('');
+        $('#membership_discount_value').val('');
+
         $('#alreadyPaidMonthsSection').addClass('d-none');
         $('#pendingMonthsSection').addClass('d-none');
 
@@ -263,6 +888,9 @@ $(document).ready(function() {
 
         monthlyCourseFee = 0;
         isFirstPayment = false;
+
+        firstPaymentRuleRunning = false;
+        firstPaymentRuleInitialized = false;
 
         resetSummary();
         updatePaymentSummary();
@@ -361,6 +989,8 @@ $(document).ready(function() {
             1;
 
         $('#billing_month_count').val(months);
+
+        updateMembershipPlan(months);
 
         $('#billing_months').val(
             months +
@@ -484,6 +1114,262 @@ $(document).ready(function() {
         );
     }
 
+    function updateMembershipPlan(monthCount) {
+
+        let plans = $('.membership-plan');
+
+        if (!plans.length) {
+            return;
+        }
+
+        monthCount = number(monthCount);
+
+        let minDuration = null;
+        let selectedPlan = null;
+
+        plans.each(function() {
+
+            let duration =
+                number($(this).data('duration'));
+
+            if (
+                duration > 0 &&
+                (
+                    minDuration === null ||
+                    duration < minDuration
+                )
+            ) {
+                minDuration = duration;
+            }
+
+            if (
+                duration > 0 &&
+                duration <= monthCount &&
+                (
+                    selectedPlan === null ||
+                    duration > selectedPlan.duration
+                )
+            ) {
+                selectedPlan = {
+                    element: $(this),
+                    duration: duration
+                };
+            }
+        });
+
+        plans
+            .prop('checked', false)
+            .prop('disabled', false);
+
+        if (
+            !selectedPlan ||
+            monthCount < minDuration
+        ) {
+
+            plans.prop('disabled', true);
+
+            $('#membership_discount').val('0');
+            $('#membership_discount_type').val('');
+            $('#membership_discount_value').val('');
+
+            $('#summaryMembershipDiscount')
+                .text('- ₹ 0.00');
+
+            $('#summaryMembershipDiscountRow')
+                .addClass('d-none');
+
+            return;
+        }
+
+        plans.prop('disabled', true);
+
+        selectedPlan.element
+            .prop('checked', true)
+            .prop('disabled', false);
+
+        calculateMembershipDiscount();
+    }
+
+    // function calculateMembershipDiscount() {
+
+    //     let selectedPlan =
+    //         $('.membership-plan:checked');
+
+    //     if (!selectedPlan.length) {
+
+    //         $('#membership_discount').val('0');
+    //         $('#membership_discount_type').val('');
+    //         $('#membership_discount_value').val('');
+
+    //         $('#summaryMembershipDiscount')
+    //             .text('- ₹ 0.00');
+
+    //         $('#summaryMembershipDiscountRow')
+    //             .addClass('d-none');
+
+    //         return 0;
+    //     }
+
+    //     let discountType =
+    //         String(
+    //             selectedPlan.data('discount-type') ?? ''
+    //         ).toLowerCase();
+
+    //     let discountValue =
+    //         number(
+    //             selectedPlan.data('discount-value')
+    //         );
+
+    //     let monthCount =
+    //         number(
+    //             $('#billing_month_count').val()
+    //         );
+
+    //     let monthlyFee =
+    //         monthlyCourseFee;
+
+    //     let grossCourseFee =
+    //         monthlyFee * monthCount;
+
+    //     let discountAmount = 0;
+
+    //     if (discountType === 'flat') {
+
+    //         discountAmount =
+    //             discountValue;
+
+    //     } else if (
+    //         discountType === 'month' ||
+    //         discountType === 'months'
+    //     ) {
+
+    //         discountAmount =
+    //             monthlyFee * discountValue;
+    //     }
+
+    //     if (discountAmount < 0) {
+    //         discountAmount = 0;
+    //     }
+
+    //     if (discountAmount > grossCourseFee) {
+    //         discountAmount = grossCourseFee;
+    //     }
+
+    //     $('#membership_discount')
+    //         .val(discountAmount);
+
+    //     $('#membership_discount_type')
+    //         .val(discountType);
+
+    //     $('#membership_discount_value')
+    //         .val(discountValue);
+
+    //     $('#summaryMembershipDiscount')
+    //         .text('- ₹ ' + money(discountAmount));
+
+    //     $('#summaryMembershipDiscountRow')
+    //         .toggleClass(
+    //             'd-none',
+    //             discountAmount <= 0
+    //         );
+
+    //     return discountAmount;
+    // }
+
+    function calculateMembershipDiscount() {
+
+        let selectedPlan =
+            $('.membership-plan:checked');
+
+        if (!selectedPlan.length) {
+
+            $('#membership_discount').val('0');
+            $('#membership_discount_type').val('');
+            $('#membership_discount_value').val('');
+
+            $('#summaryMembershipDiscount')
+                .text('- ₹ 0.00');
+
+            $('#summaryMembershipDiscountRow')
+                .addClass('d-none');
+
+            return 0;
+        }
+
+        let discountType =
+            String(
+                selectedPlan.data('discount-type') ?? ''
+            ).toLowerCase();
+
+        let discountValue =
+            number(
+                selectedPlan.data('discount-value')
+            );
+
+        let monthCount =
+            number(
+                $('#billing_month_count').val()
+            );
+
+        if (monthCount <= 0) {
+            monthCount = 1;
+        }
+
+        let courseFee =
+            number(
+                $('#billing_course_fee').val()
+            );
+
+        if (courseFee <= 0) {
+
+            courseFee =
+                monthlyCourseFee * monthCount;
+        }
+
+        let discountAmount = 0;
+
+        if (discountType === 'flat') {
+
+            discountAmount =
+                discountValue;
+
+        } else if (
+            discountType === 'month' ||
+            discountType === 'months'
+        ) {
+
+            discountAmount =
+                monthlyCourseFee *
+                discountValue;
+        }
+
+        discountAmount =
+            Math.min(
+                Math.max(discountAmount, 0),
+                courseFee
+            );
+
+        $('#membership_discount')
+            .val(discountAmount);
+
+        $('#membership_discount_type')
+            .val(discountType);
+
+        $('#membership_discount_value')
+            .val(discountValue);
+
+        $('#summaryMembershipDiscount')
+            .text('- ₹ ' + money(discountAmount));
+
+        $('#summaryMembershipDiscountRow')
+            .toggleClass(
+                'd-none',
+                discountAmount <= 0
+            );
+
+        return discountAmount;
+    }
+
     function updateBillingSummary(response) {
 
         let monthCount =
@@ -522,7 +1408,26 @@ $(document).ready(function() {
                 response.course_penalty_fee
             );
 
-        let totalAmount =
+        // let totalAmount =
+        //     number(
+        //         response.total_billing_amount ??
+        //         response.total_amount
+        //     );
+
+        // if (
+        //     !response.total_billing_amount &&
+        //     !response.total_amount
+        // ) {
+
+        //     totalAmount =
+        //         totalCourseFee +
+        //         registrationFee +
+        //         admissionFee +
+        //         lateFine +
+        //         penaltyFee;
+        // }
+
+        totalAmount =
             number(
                 response.total_billing_amount ??
                 response.total_amount
@@ -533,13 +1438,37 @@ $(document).ready(function() {
             !response.total_amount
         ) {
 
-            totalAmount =
+            let totalAmount =
                 totalCourseFee +
                 registrationFee +
                 admissionFee +
                 lateFine +
                 penaltyFee;
         }
+
+        let billingMonthCount =
+            number(
+                response.billing_month_count
+            );
+
+        updateMembershipPlan(
+            billingMonthCount
+        );
+
+        let membershipDiscount =
+            calculateMembershipDiscount();
+
+        totalCourseFee =
+            Math.max(
+                0,
+                totalCourseFee - membershipDiscount
+            );
+
+        totalAmount =
+            Math.max(
+                0,
+                totalAmount - membershipDiscount
+            );
 
         $('#billing_month_count').val(monthCount);
 
@@ -638,19 +1567,28 @@ $(document).ready(function() {
 
     function applyFirstPaymentRule() {
 
-        if (!isFirstPayment || firstPaymentRuleRunning) {
+        if (
+            !isFirstPayment ||
+            firstPaymentRuleRunning ||
+            firstPaymentRuleInitialized
+        ) {
             return;
         }
 
-        let paymentDate =
-            $('#paymentTable tbody tr:first .payment-date').val();
+        // RULE IS BASED ON BILLING DATE FROM
+        let billingFromValue =
+            $('#billing_from').val();
 
-        if (!paymentDate) {
+        if (!billingFromValue) {
             return;
         }
 
         let date =
-            new Date(paymentDate + 'T00:00:00');
+            new Date(billingFromValue + 'T00:00:00');
+
+        if (isNaN(date.getTime())) {
+            return;
+        }
 
         let day =
             date.getDate();
@@ -661,31 +1599,21 @@ $(document).ready(function() {
         let ruleText;
 
         /*
-         * FIRST PAYMENT RULE
-         *
-         * 1 - 15:
-         * Full Course Fee
-         * Billing From = Payment Date
-         * Billing To   = Payment Date
-         *
-         * 16 - 25:
-         * 50% Course Fee
-         * Billing From = Payment Date
-         * Billing To   = Payment Date
-         *
-         * 26 - Month End:
-         * Full Course Fee
-         * Billing shifts to next month
-         * Billing From = Next Month 1st
-         * Billing To   = Next Month Last Date
-         */
+        * FIRST PAYMENT RULE
+        *
+        * Billing Date From:
+        *
+        * 1 - 15  = 100% Course Fee
+        * 16 - 25 = 50% Course Fee
+        * 26-End  = 100% Course Fee + Next Month Billing
+        */
 
         if (day >= 1 && day <= 15) {
 
             feeMultiplier = 1;
 
             ruleText =
-                '1 - 15: Full Course Fee';
+                '1 - 15: 100% Course Fee';
 
             billingFrom =
                 new Date(
@@ -727,7 +1655,7 @@ $(document).ready(function() {
             feeMultiplier = 1;
 
             ruleText =
-                '26 - Month End: Full Course Fee, Next Month Billing';
+                '26 - Month End: 100% Course Fee, Next Month Billing';
 
             billingFrom =
                 new Date(
@@ -775,8 +1703,12 @@ $(document).ready(function() {
             );
 
         firstPaymentRuleRunning = true;
+        firstPaymentRuleInitialized = true;
 
-        calculateLateFine(true, feeMultiplier);
+        calculateLateFine(
+            true,
+            feeMultiplier
+        );
     }
 
     /*
@@ -794,8 +1726,22 @@ $(document).ready(function() {
             return;
         }
 
+        // let courseFee =
+        //     monthlyCourseFee * feeMultiplier;
+
+        let monthCount =
+            number(
+                $('#billing_month_count').val()
+            );
+
+        if (monthCount <= 0) {
+            monthCount = 1;
+        }
+
         let courseFee =
-            monthlyCourseFee * feeMultiplier;
+            monthlyCourseFee *
+            monthCount *
+            feeMultiplier;
 
         let registrationFee =
             number($('#billing_registration_fee').val());
@@ -818,8 +1764,33 @@ $(document).ready(function() {
         let lateFine =
             number($('#late_fine').val());
 
+        // let penaltyFee =
+        //     number($('#course_penalty_fee').val());
+
+        // let totalAmount =
+        //     courseFee +
+        //     registrationFee +
+        //     admissionFee +
+        //     lateFine +
+        //     penaltyFee;
+
         let penaltyFee =
             number($('#course_penalty_fee').val());
+
+        let membershipDiscount =
+            calculateMembershipDiscount();
+
+        membershipDiscount =
+            Math.min(
+                membershipDiscount,
+                courseFee
+            );
+
+        courseFee =
+            Math.max(
+                0,
+                courseFee - membershipDiscount
+            );
 
         let totalAmount =
             courseFee +
@@ -1250,7 +2221,20 @@ $(document).ready(function() {
                 isFirstPayment =
                     response.is_first_payment === true;
 
-                if (isFirstPayment && !skipFirstPaymentRule) {
+                // if (isFirstPayment && !skipFirstPaymentRule) {
+
+                //     firstPaymentRuleRunning = false;
+
+                //     applyFirstPaymentRule();
+
+                //     return;
+                // }
+
+                if (
+                    isFirstPayment &&
+                    !skipFirstPaymentRule &&
+                    !firstPaymentRuleInitialized
+                ) {
 
                     firstPaymentRuleRunning = false;
 
@@ -1568,6 +2552,7 @@ $(document).ready(function() {
                 if (isFirstPayment) {
 
                     firstPaymentRuleRunning = false;
+                    firstPaymentRuleInitialized = false;
 
                     applyFirstPaymentRule();
 
@@ -1756,22 +2741,23 @@ $(document).ready(function() {
         }
     );
 
-    $(document).on(
-        'change',
-        '.payment-date',
-        function() {
+    // $(document).on(
+    //     'change',
+    //     '.payment-date',
+    //     function() {
 
-            if (
-                isFirstPayment &&
-                this === $('#paymentTable tbody tr:first .payment-date')[0]
-            ) {
+    //         if (
+    //             isFirstPayment &&
+    //             this === $('#paymentTable tbody tr:first .payment-date')[0]
+    //         ) {
 
-                firstPaymentRuleRunning = false;
+    //             firstPaymentRuleRunning = false;
+    //             firstPaymentRuleInitialized = false;
 
-                applyFirstPaymentRule();
-            }
-        }
-    );
+    //             applyFirstPaymentRule();
+    //         }
+    //     }
+    // );
 
     $('#paymentTable tbody tr:first')
         .find('.payment-mode')
