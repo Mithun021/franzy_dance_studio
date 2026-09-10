@@ -16,31 +16,32 @@
         }
 
         @page {
-            margin: 18px 25px;
+            size: A4 portrait;
+            margin: 12mm 14mm;
         }
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 8.5px;
             color: #222;
-            line-height: 1.35;
+            line-height: 1.2;
             margin: 0;
-            padding: 5px;
+            padding: 20px;
         }
 
         .invoice {
             width: 100%;
         }
 
-        /* ==============================
-           Header
-        ============================== */
+        /* =========================
+           HEADER
+        ========================= */
 
         .header {
             width: 100%;
             border-bottom: 2px solid #e91e63;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
         }
 
         .header table {
@@ -52,41 +53,48 @@
         }
 
         .company-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #e91e63;
         }
 
+        .company-tagline {
+            font-size: 8px;
+            color: #444;
+            font-weight: bold;
+            margin-top: 1px;
+        }
+
         .company-sub {
             color: #555;
-            font-size: 9px;
-            margin-top: 2px;
+            font-size: 7.5px;
+            margin-top: 1px;
         }
 
         .invoice-title {
-            font-size: 24px;
+            font-size: 21px;
             font-weight: bold;
             color: #1565C0;
             text-align: right;
         }
 
         .invoice-number {
-            margin-top: 4px;
+            margin-top: 2px;
             text-align: right;
-            font-size: 9px;
+            font-size: 8px;
         }
 
-        /* ==============================
-           Section
-        ============================== */
+        /* =========================
+           SECTION
+        ========================= */
 
         .section-title {
             background: #1565C0;
             color: #fff;
-            padding: 6px 9px;
-            font-size: 11px;
+            padding: 4px 7px;
+            font-size: 9px;
             font-weight: bold;
-            margin-top: 10px;
+            margin-top: 5px;
             margin-bottom: 0;
         }
 
@@ -96,17 +104,17 @@
         }
 
         .table {
-            border: 1px solid #d9d9d9;
+            border: 1px solid #d5d5d5;
         }
 
         .table td {
-            border: 1px solid #d9d9d9;
-            padding: 5px 7px;
+            border: 1px solid #d5d5d5;
+            padding: 3px 5px;
             vertical-align: middle;
         }
 
         .label {
-            width: 23%;
+            width: 20%;
             font-weight: bold;
             background: #f7f7f7;
         }
@@ -119,73 +127,73 @@
             text-align: center;
         }
 
-        /* ==============================
-           Badges
-        ============================== */
+        /* =========================
+           BADGES
+        ========================= */
 
         .badge {
             display: inline-block;
-            padding: 3px 7px;
-            border-radius: 3px;
+            padding: 2px 5px;
+            border-radius: 2px;
             background: #fff3cd;
             color: #856404;
-            font-size: 9px;
+            font-size: 7.5px;
             font-weight: bold;
         }
 
         .badge-blue {
             display: inline-block;
-            padding: 3px 7px;
-            border-radius: 3px;
+            padding: 2px 5px;
+            border-radius: 2px;
             background: #e3f2fd;
             color: #1565C0;
-            font-size: 9px;
+            font-size: 7.5px;
             font-weight: bold;
         }
 
         .badge-green {
             display: inline-block;
-            padding: 3px 7px;
-            border-radius: 3px;
+            padding: 2px 5px;
+            border-radius: 2px;
             background: #e8f5e9;
             color: #2e7d32;
-            font-size: 9px;
+            font-size: 7.5px;
             font-weight: bold;
         }
 
         .amount-highlight {
-            font-size: 13px;
+            font-size: 10px;
             font-weight: bold;
             color: #1565C0;
         }
 
         .current-payment {
-            font-size: 13px;
+            font-size: 10px;
             font-weight: bold;
             color: #2e7d32;
         }
 
         .small {
-            font-size: 8px;
+            font-size: 7px;
             color: #666;
         }
 
-        /* ==============================
-           Invoice Summary
-        ============================== */
+        /* =========================
+           SUMMARY
+        ========================= */
 
         .summary-table th {
-            border: 1px solid #d9d9d9;
-            padding: 5px 6px;
+            border: 1px solid #d5d5d5;
+            padding: 3px 4px;
             background: #f1f3f5;
-            font-size: 9px;
+            font-size: 7.5px;
             font-weight: bold;
         }
 
         .summary-table td {
-            border: 1px solid #d9d9d9;
-            padding: 5px 6px;
-            font-size: 9px;
+            border: 1px solid #d5d5d5;
+            padding: 3px 4px;
+            font-size: 7.8px;
         }
 
         .summary-total {
@@ -195,38 +203,63 @@
 
         .grand-total {
             background: #e3f2fd;
-            font-size: 12px !important;
+            font-size: 10px !important;
             font-weight: bold;
             color: #1565C0;
         }
 
-        /* ==============================
-           Notes / Terms
-        ============================== */
+        /* =========================
+           NOTE / TERMS
+        ========================= */
 
         .note-box {
-            font-size: 8.5px;
+            font-size: 7px;
             color: #666;
-            line-height: 1.5;
-            padding-top: 7px;
+            line-height: 1.3;
+            padding-top: 4px;
         }
 
         .terms {
-            font-size: 8.5px;
-            line-height: 1.5;
+            font-size: 7px;
+            line-height: 1.3;
         }
 
-        /* ==============================
-           Footer
-        ============================== */
+        /* =========================
+           FOOTER
+        ========================= */
 
         .footer {
-            font-size: 8px;
+            font-size: 6.5px;
             color: #777;
         }
 
         .signature {
-            font-size: 9px;
+            font-size: 7.5px;
+        }
+
+        .signature-line {
+            margin-top: 8px;
+        }
+
+        .thank-you {
+            text-align: center;
+            padding-top: 4px;
+        }
+
+        .thank-you-title {
+            color: #1565C0;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .thank-you-text {
+            margin-top: 2px;
+            color: #666;
+            font-size: 7px;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
         }
 
     </style>
@@ -236,12 +269,6 @@
 <body>
 
 @php
-
-    /*
-    |--------------------------------------------------------------------------
-    | Booking Variables
-    |--------------------------------------------------------------------------
-    */
 
     $booking = $payment->booking;
 
@@ -267,19 +294,7 @@
 
     $rate = $booking->rate ?? 0;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Booking Total
-    |--------------------------------------------------------------------------
-    */
-
     $totalAmount = $booking->studio_amount ?? 0;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Current Payment
-    |--------------------------------------------------------------------------
-    */
 
     $currentPayment = $payment->amount ?? 0;
 
@@ -289,9 +304,7 @@
 <div class="invoice">
 
 
-    {{-- ========================================================= --}}
-    {{-- HEADER --}}
-    {{-- ========================================================= --}}
+    <!-- ================= HEADER ================= -->
 
     <div class="header">
 
@@ -299,50 +312,49 @@
 
             <tr>
 
-                <td width="68%">
+                <td width="65%">
 
                     <div class="company-name">
-                        YOUR COMPANY NAME
+                        FRENZY DANCE STUDIO
+                    </div>
+
+                    <div class="company-tagline">
+                        A Complete Performing & Fine Art Center
                     </div>
 
                     <div class="company-sub">
-                        Ranchi, Jharkhand - India
+                        Dance • Music • Art • Fitness
                     </div>
 
                     <div class="company-sub">
-                        Mobile : +91 XXXXX XXXXX
+                        📍 Chaputoli Chowk, Argora, Ranchi – 834004
                     </div>
 
                     <div class="company-sub">
-                        Email : info@example.com
-                    </div>
-
-                    <div class="company-sub">
-                        Website : www.example.com
+                        📞 +91 8294755348
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        ✉ frenzydancestudio@gmail.com
                     </div>
 
                 </td>
 
-                <td width="32%">
+                <td width="35%">
 
                     <div class="invoice-title">
                         INVOICE
                     </div>
 
                     <div class="invoice-number">
-                        <strong>Invoice No :</strong>
+                        <strong>Invoice No:</strong>
                         {{ $payment->payment_id }}
                     </div>
 
                     <div class="invoice-number">
-
-                        <strong>Date :</strong>
-
+                        <strong>Date:</strong>
                         {{ $payment->payment_date
                             ? $payment->payment_date->format('d M Y')
                             : now()->format('d M Y')
                         }}
-
                     </div>
 
                 </td>
@@ -354,9 +366,7 @@
     </div>
 
 
-    {{-- ========================================================= --}}
-    {{-- CUSTOMER INFORMATION --}}
-    {{-- ========================================================= --}}
+    <!-- ================= CUSTOMER ================= -->
 
     <div class="section-title">
         Customer Information
@@ -419,9 +429,7 @@
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- STUDIO INFORMATION --}}
-    {{-- ========================================================= --}}
+    <!-- ================= STUDIO ================= -->
 
     <div class="section-title">
         Studio Information
@@ -468,11 +476,8 @@
             </td>
 
             <td>
-
                 {{ number_format($duration, 2) }}
-
                 {{ $durationUnit }}
-
             </td>
 
         </tr>
@@ -491,15 +496,9 @@
                 }}
 
                 @if($booking->booking_from_time)
-
-                    <br>
-
                     <span class="small">
-
                         {{ \Carbon\Carbon::parse($booking->booking_from_time)->format('h:i A') }}
-
                     </span>
-
                 @endif
 
             </td>
@@ -522,12 +521,8 @@
 
                 @if($booking->booking_to_time)
 
-                    <br>
-
                     <span class="small">
-
                         {{ \Carbon\Carbon::parse($booking->booking_to_time)->format('h:i A') }}
-
                     </span>
 
                 @endif
@@ -543,9 +538,7 @@
             </td>
 
             <td>
-
                 {{ $booking->enquiry_status }}
-
             </td>
 
             <td class="label">
@@ -553,11 +546,8 @@
             </td>
 
             <td>
-
                 {{ number_format($duration, 2) }}
-
                 {{ $durationUnit }}
-
             </td>
 
         </tr>
@@ -565,9 +555,7 @@
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- INVOICE SUMMARY --}}
-    {{-- ========================================================= --}}
+    <!-- ================= INVOICE SUMMARY ================= -->
 
     <div class="section-title">
         Invoice Summary
@@ -579,19 +567,19 @@
 
             <tr>
 
-                <th width="7%" class="text-center">
+                <th width="6%" class="text-center">
                     #
                 </th>
 
-                <th width="43%">
+                <th width="44%">
                     Description
                 </th>
 
-                <th width="15%" class="text-center">
+                <th width="14%" class="text-center">
                     Qty
                 </th>
 
-                <th width="17%" class="text-right">
+                <th width="18%" class="text-right">
                     Rate
                 </th>
 
@@ -657,17 +645,12 @@
 
             </tr>
 
-
-            {{-- Calculation Row --}}
-
             <tr class="summary-total">
 
                 <td colspan="4" class="text-right">
 
                     {{ number_format($rate, 2) }}
-
                     ×
-
                     {{ number_format($duration, 2) }}
 
                 </td>
@@ -680,21 +663,14 @@
 
             </tr>
 
-
-            {{-- Grand Total --}}
-
             <tr>
 
                 <td colspan="4" class="text-right grand-total">
-
                     GRAND TOTAL
-
                 </td>
 
                 <td class="text-right grand-total">
-
                     ₹ {{ number_format($totalAmount, 2) }}
-
                 </td>
 
             </tr>
@@ -704,9 +680,7 @@
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- PAYMENT INFORMATION --}}
-    {{-- ========================================================= --}}
+    <!-- ================= PAYMENT ================= -->
 
     <div class="section-title">
         Payment Information
@@ -783,34 +757,10 @@
 
         </tr>
 
-        <tr>
-
-            <td class="label">
-                Payment Proof
-            </td>
-
-            <td colspan="3">
-
-                @if($payment->payment_proof)
-
-                    Uploaded successfully and awaiting verification.
-
-                @else
-
-                    No payment proof uploaded.
-
-                @endif
-
-            </td>
-
-        </tr>
-
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- AMOUNT SUMMARY --}}
-    {{-- ========================================================= --}}
+    <!-- ================= AMOUNT SUMMARY ================= -->
 
     <div class="section-title">
         Amount Summary
@@ -833,11 +783,8 @@
             </td>
 
             <td>
-
                 {{ number_format($duration, 2) }}
-
                 {{ $durationUnit }}
-
             </td>
 
         </tr>
@@ -857,9 +804,7 @@
             </td>
 
             <td class="amount-highlight">
-
                 ₹ {{ number_format($totalAmount, 2) }}
-
             </td>
 
         </tr>
@@ -871,9 +816,7 @@
             </td>
 
             <td class="current-payment">
-
                 ₹ {{ number_format($currentPayment, 2) }}
-
             </td>
 
             <td class="label">
@@ -883,9 +826,7 @@
             <td>
 
                 <span class="badge-green">
-
                     {{ strtoupper($payment->payment_status) }}
-
                 </span>
 
             </td>
@@ -895,9 +836,7 @@
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- ADDITIONAL INFORMATION --}}
-    {{-- ========================================================= --}}
+    <!-- ================= REMARKS ================= -->
 
     @if($payment->remarks)
 
@@ -924,25 +863,21 @@
     @endif
 
 
-    {{-- ========================================================= --}}
-    {{-- NOTE --}}
-    {{-- ========================================================= --}}
+    <!-- ================= NOTE ================= -->
 
     <div class="note-box">
 
-        <strong>Note :</strong>
+        <strong>Note:</strong>
 
         This invoice is generated electronically after submission of your
-        studio booking payment request. Payment verification is pending
-        and the booking will be confirmed after successful verification
-        by the accounts team.
+        studio booking payment request. Payment verification is pending and
+        the booking will be confirmed after successful verification by the
+        accounts team.
 
     </div>
 
 
-    {{-- ========================================================= --}}
-    {{-- TERMS & CONDITIONS --}}
-    {{-- ========================================================= --}}
+    <!-- ================= TERMS ================= -->
 
     <div class="section-title">
         Terms & Conditions
@@ -955,21 +890,21 @@
             <td class="terms">
 
                 <strong>1.</strong>
-                This invoice is automatically generated by the Franzy Dance Studio.
+                This invoice is automatically generated by FRENZY DANCE STUDIO.
 
-                <br>
+                &nbsp;&nbsp;
 
                 <strong>2.</strong>
                 Submission of payment proof does not confirm your booking.
-                Booking will be confirmed only after payment verification by our Accounts Team.
+                Booking will be confirmed only after payment verification.
 
-                <br>
+                &nbsp;&nbsp;
 
                 <strong>3.</strong>
-                In case of any payment discrepancy, kindly contact our support team
-                with your <strong>Payment ID</strong> and <strong>Booking ID</strong>.
+                For payment discrepancies, contact our support team with your
+                Payment ID and Booking ID.
 
-                <br>
+                &nbsp;&nbsp;
 
                 <strong>4.</strong>
                 Please preserve this invoice for future reference.
@@ -981,13 +916,9 @@
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- SIGNATURE --}}
-    {{-- ========================================================= --}}
+    <!-- ================= SIGNATURE ================= -->
 
-    <br>
-
-    <table width="100%" class="signature">
+    <table width="100%" class="signature" style="margin-top:7px;">
 
         <tr>
 
@@ -997,9 +928,9 @@
                     Customer Signature
                 </strong>
 
-                <br><br>
-
-                ______________________
+                <div class="signature-line">
+                    __________________________
+                </div>
 
             </td>
 
@@ -1009,47 +940,9 @@
                     Authorized Signature
                 </strong>
 
-                <br><br>
-
-                ______________________
-
-            </td>
-
-        </tr>
-
-    </table>
-
-
-    {{-- ========================================================= --}}
-    {{-- THANK YOU --}}
-    {{-- ========================================================= --}}
-
-    <br>
-
-    <table width="100%">
-
-        <tr>
-
-            <td align="center">
-
-                <h2 style="color:#1565C0;font-size:15px;">
-
-                    Thank You For Choosing Us!
-
-                </h2>
-
-                <p style="margin-top:4px;color:#666;font-size:9px;">
-
-                    We appreciate your trust in our studio services.
-
-                </p>
-
-                <p style="margin-top:3px;color:#888;font-size:8px;">
-
-                    For any queries regarding your booking,
-                    please contact our support team.
-
-                </p>
+                <div class="signature-line">
+                    __________________________
+                </div>
 
             </td>
 
@@ -1058,21 +951,32 @@
     </table>
 
 
-    {{-- ========================================================= --}}
-    {{-- FOOTER --}}
-    {{-- ========================================================= --}}
+    <!-- ================= THANK YOU ================= -->
 
-    <br>
+    <div class="thank-you">
 
-    <hr style="border:0;border-top:1px solid #ddd;">
+        <div class="thank-you-title">
+            Thank You For Choosing FRENZY DANCE STUDIO!
+        </div>
 
-    <table width="100%" style="margin-top:6px;">
+        <div class="thank-you-text">
+            We appreciate your trust in our studio services.
+        </div>
+
+    </div>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <hr style="border:0;border-top:1px solid #ddd;margin-top:5px;">
+
+    <table width="100%" style="margin-top:3px;">
 
         <tr>
 
             <td class="footer">
 
-                Generated On :
+                Generated On:
                 {{ now()->format('d M Y h:i A') }}
 
             </td>

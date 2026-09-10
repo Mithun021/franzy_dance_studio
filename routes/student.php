@@ -17,6 +17,20 @@ Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/student/certificate', [StudentController::class, 'certificate'])->name('student.certificate');
     Route::get('/student/payments', [StudentController::class, 'payments'])->name('student.payments');
     Route::get('/student/payment/invoice/{id}',[StudentController::class,'paymentInvoice'])->name('student.payment.invoice');
+    Route::get(
+        '/custom-monthly-fee-pay',
+        [StudentController::class, 'customMonthlyFeePay']
+    )->name('custom-monthly-fee-pay');
+
+    Route::post(
+        '/custom-monthly-fee-pay/details',
+        [StudentController::class, 'customMonthlyFeePayDetails']
+    )->name('custom-monthly-fee-pay.details');
+
+    Route::post(
+        '/student/monthly-fee-pay/proceed',
+        [StudentController::class, 'customMonthlyFeePayProceed']
+    )->name('custom-monthly-fee-pay.proceed');
 });
 
 ?>

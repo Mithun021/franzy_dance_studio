@@ -40,6 +40,7 @@ return new class extends Migration
                 'Card',
                 'Bank Transfer',
                 'Cheque',
+                'Razorpay',
             ]);
 
             $table->decimal('amount', 10, 2);

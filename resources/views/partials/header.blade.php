@@ -117,6 +117,10 @@ if (auth()->check() && auth()->user()->user_type == 'student') {
                 'url' => route('student.payments'),
             ],
             [
+                'title' => 'Pay Course Fee',
+                'url' => route('custom-monthly-fee-pay'),
+            ],
+            [
                 'title' => 'Logout',
                 'url' => route('logout.backend'),
             ],
