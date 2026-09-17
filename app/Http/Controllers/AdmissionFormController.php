@@ -35,6 +35,49 @@ class AdmissionFormController extends Controller
 
     public function admission_form()
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Student Profile KYC Check
+        |--------------------------------------------------------------------------
+        */
+        if (Auth::check() && Auth::user()->user_type === 'student') {
+
+            $user = Auth::user();
+
+            $kycFields = [
+                'whatsapp_no',
+                'religion',
+                'mother_tongue',
+                'occupation',
+                'qualification',
+
+                'guardian_name',
+                'guardian_contact',
+                'guardian_occupation',
+
+                'local_guardian_name',
+                'local_guardian_relation',
+
+                'address',
+                'profile_image',
+                'signature',
+                'aadhar_front_image',
+                'aadhar_back_image',
+
+                'city',
+                'state',
+                'country',
+                'pincode',
+            ];
+
+            foreach ($kycFields as $field) {
+                if (blank($user->{$field})) {
+                    return redirect()
+                        ->route('student.edit-profile')
+                        ->with('error', 'Please complete your profile details before proceeding with admission.');
+                }
+            }
+        }
         $courses = Course::orderBy('course_name')->get();
         $levels = Level::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
@@ -46,6 +89,516 @@ class AdmissionFormController extends Controller
         ));
     }
 
+    // public function save_admission_form(Request $request)
+    // {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Validation
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $validated = $request->validate([
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Student
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'name' => [
+    //             'required',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'phone' => [
+    //             'required',
+    //             'string',
+    //             'max:15',
+    //         ],
+
+    //         'email' => [
+    //             'nullable',
+    //             'email',
+    //             'max:255',
+    //         ],
+
+    //         'date_of_birth' => [
+    //             'required',
+    //             'date',
+    //         ],
+
+    //         'religion' => [
+    //             'nullable',
+    //             'string',
+    //             'max:100',
+    //         ],
+
+    //         'mother_tongue' => [
+    //             'nullable',
+    //             'string',
+    //             'max:100',
+    //         ],
+
+    //         'occupation' => [
+    //             'nullable',
+    //             'string',
+    //             'max:150',
+    //         ],
+
+    //         'qualification' => [
+    //             'nullable',
+    //             'string',
+    //             'max:150',
+    //         ],
+
+    //         'whatsapp_no' => [
+    //             'nullable',
+    //             'string',
+    //             'max:15',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Guardian
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'guardian_name' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'guardian_contact' => [
+    //             'nullable',
+    //             'string',
+    //             'max:20',
+    //         ],
+
+    //         'guardian_occupation' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Local Guardian
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'local_guardian_name' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'local_guardian_relation' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Address
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'address' => [
+    //             'nullable',
+    //             'string',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Profile Image / Signature
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'profile_image' => [
+    //             'nullable',
+    //             'image',
+    //             'mimes:jpg,jpeg,png',
+    //             'max:2048',
+    //         ],
+
+    //         'signature' => [
+    //             'nullable',
+    //             'image',
+    //             'mimes:jpg,jpeg,png',
+    //             'max:2048',
+    //         ],
+
+    //         'aadhar_front_image' => [
+    //             'nullable',
+    //             'image',
+    //             'mimes:jpg,jpeg,png',
+    //             'max:2048',
+    //         ],
+
+    //         'aadhar_back_image' => [
+    //             'nullable',
+    //             'image',
+    //             'mimes:jpg,jpeg,png',
+    //             'max:2048',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Admission
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'admission_no' => [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //             'unique:student_course,admission_no',
+    //         ],
+
+    //         'admission_date' => [
+    //             'required',
+    //             'date',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Course
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'course_id' => [
+    //             'required',
+    //             'exists:courses,id',
+    //         ],
+
+    //         'course_duration' => [
+    //             'nullable',
+    //             'integer',
+    //             'min:1',
+    //         ],
+
+    //         'duration_type' => [
+    //             'nullable',
+    //             'string',
+    //             'max:20',
+    //         ],
+
+    //         'level_id' => [
+    //             'nullable',
+    //             'exists:levels,id',
+    //         ],
+
+    //         'category_id' => [
+    //             'nullable',
+    //             'exists:categories,id',
+    //         ],
+
+    //         'batch_id' => [
+    //             'nullable',
+    //             'exists:batches,id',
+    //         ],
+
+    //         'instructor_id' => [
+    //             'nullable',
+    //             'exists:users,id',
+    //         ],
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Fees
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         'registration_fee' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'admission_fee' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'monthly_fee' => [
+    //             'required',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+    //     ]);
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Database Transaction
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Logged In Student
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $user = Auth::user();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Upload Profile Image
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($request->hasFile('profile_image')) {
+
+    //             $profileImage = $request
+    //                 ->file('profile_image')
+    //                 ->store('students', 'public');
+
+    //         } else {
+
+    //             $profileImage = $user->profile_image;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Upload Signature
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($request->hasFile('signature')) {
+
+    //             $signature = $request
+    //                 ->file('signature')
+    //                 ->store('students/signatures', 'public');
+
+    //         } else {
+
+    //             $signature = $user->signature;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Upload Aadhar Front Image
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($request->hasFile('aadhar_front_image')) {
+
+    //             $aadharFrontImage = $request
+    //                 ->file('aadhar_front_image')
+    //                 ->store('students/aadhar', 'public');
+
+    //         } else {
+
+    //             $aadharFrontImage = $user->aadhar_front_image;
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Upload Aadhar Back Image
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($request->hasFile('aadhar_back_image')) {
+
+    //             $aadharBackImage = $request
+    //                 ->file('aadhar_back_image')
+    //                 ->store('students/aadhar', 'public');
+
+    //         } else {
+
+    //             $aadharBackImage = $user->aadhar_back_image;
+    //         }
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Update Student Profile
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $user->update([
+
+    //             'name' => $validated['name'],
+
+    //             'email' => $validated['email'] ?? null,
+
+    //             'phone' => $validated['phone'],
+
+    //             'date_of_birth' => $validated['date_of_birth'],
+
+    //             'religion' => $validated['religion'] ?? null,
+
+    //             'mother_tongue' => $validated['mother_tongue'] ?? null,
+
+    //             'occupation' => $validated['occupation'] ?? null,
+
+    //             'qualification' => $validated['qualification'] ?? null,
+
+    //             'whatsapp_no' => $validated['whatsapp_no'] ?? null,
+
+    //             'guardian_name' => $validated['guardian_name'] ?? null,
+
+    //             'guardian_contact' => $validated['guardian_contact'] ?? null,
+
+    //             'guardian_occupation' => $validated['guardian_occupation'] ?? null,
+
+    //             'local_guardian_name' => $validated['local_guardian_name'] ?? null,
+
+    //             'local_guardian_relation' => $validated['local_guardian_relation'] ?? null,
+
+    //             'address' => $validated['address'] ?? null,
+
+    //             'profile_image' => $profileImage,
+
+    //             'signature' => $signature,
+
+    //             'aadhar_front_image' => $aadharFrontImage,
+
+    //             'aadhar_back_image' => $aadharBackImage,
+    //         ]);
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Check Already Enrolled
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $alreadyEnrolled = StudentCourse::where(
+    //                 'user_id',
+    //                 $user->id
+    //             )
+    //             ->where(
+    //                 'course_id',
+    //                 $validated['course_id']
+    //             )
+    //             ->activeEnroll()
+    //             ->exists();
+
+
+    //         if ($alreadyEnrolled) {
+
+    //             DB::rollBack();
+
+    //             return redirect()
+    //                 ->back()
+    //                 ->withInput()
+    //                 ->with(
+    //                     'error',
+    //                     'You are already enrolled in this course.'
+    //                 );
+    //         }
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Generate Admission Number
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $admissionNo = $validated['admission_no']
+    //             ?? $this->generateAdmissionNo();
+
+    //         $course = Course::findOrFail($validated['course_id']);
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Create Student Course
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $studentCourse = StudentCourse::create([
+
+    //             'user_id' => $user->id,
+
+    //             'admission_no' => $admissionNo,
+
+    //             'admission_date' => $validated['admission_date'],
+
+    //             'course_id' => $validated['course_id'],
+
+    //             'course_duration' => $course['duration'] ?? null,
+
+    //             'duration_type' => $course['duration_type'] ?? null,
+
+    //             'level_id' => $validated['level_id'] ?? null,
+
+    //             'category_id' => $validated['category_id'] ?? null,
+
+    //             'batch_id' => $validated['batch_id'] ?? null,
+
+    //             'instructor_id' => $validated['instructor_id'] ?? null,
+
+    //             'registration_fee' => $validated['registration_fee'] ?? 0,
+
+    //             'admission_fee' => $validated['admission_fee'] ?? 0,
+
+    //             'monthly_fee' => $validated['monthly_fee'],
+
+    //             /*
+    //             | Payment successful hone ke baad 1 hoga
+    //             */
+
+    //             'is_enroll' => 0,
+
+    //             'status' => 'ongoing',
+
+    //             'completion_date' => null,
+    //         ]);
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Commit
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         DB::commit();
+
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Redirect To Payment Page
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         return redirect()
+    //             ->route(
+    //                 'student.payment-page',
+    //                 $studentCourse->id
+    //             )
+    //             ->with(
+    //                 'success',
+    //                 'Admission saved successfully.'
+    //             );
+
+
+    //     } catch (\Exception $e) {
+
+    //         DB::rollBack();
+
+    //         return redirect()
+    //             ->back()
+    //             ->withInput()
+    //             ->with(
+    //                 'error',
+    //                 $e->getMessage()
+    //             );
+    //     }
+    // }
     public function save_admission_form(Request $request)
     {
         /*
@@ -189,14 +742,14 @@ class AdmissionFormController extends Controller
             ],
 
             'aadhar_front_image' => [
-                'required',
+                'nullable',
                 'image',
                 'mimes:jpg,jpeg,png',
                 'max:2048',
             ],
 
             'aadhar_back_image' => [
-                'required',
+                'nullable',
                 'image',
                 'mimes:jpg,jpeg,png',
                 'max:2048',

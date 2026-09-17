@@ -79,7 +79,7 @@
                         class="px-6 py-3 rounded-xl bg-pink-600 text-white font-semibold hover:bg-pink-700 transition">
 
                         Login Now
-
+ 
                     </a>
 
                     <a href="{{ route('student.register') }}"

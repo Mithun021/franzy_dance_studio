@@ -556,6 +556,56 @@
 
                 <div class="grid md:grid-cols-2 gap-8">
 
+                    {{-- Aadhar Front Image --}}
+                    <div class="rounded-2xl bg-slate-800/60 border border-slate-700 p-6">
+
+                        <h3 class="text-lg font-bold text-pink-400 mb-5">
+
+                            Aadhar Front Image
+
+                        </h3>
+
+                        @if($student->aadhar_front_image)
+
+                            <img
+                                src="{{ asset('storage/'.$student->aadhar_front_image) }}"
+                                class="w-40 h-40 rounded-2xl object-cover border-4 border-pink-500 mb-5">
+
+                        @endif
+
+                        <input type="file"
+                            name="aadhar_front_image"
+                            class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white p-3">
+
+                    </div>
+
+                    {{-- Aadhar Back Image --}}
+                    <div class="rounded-2xl bg-slate-800/60 border border-slate-700 p-6">
+
+                        <h3 class="text-lg font-bold text-blue-400 mb-5">
+
+                            Aadhar Back Image
+
+                        </h3>
+
+                        @if($student->aadhar_back_image)
+
+                            <img
+                                src="{{ asset('storage/'.$student->aadhar_back_image) }}"
+                                class="h-28 bg-white rounded-xl p-2 mb-5">
+
+                        @endif
+
+                        <input type="file"
+                            name="aadhar_back_image"
+                            class="w-full rounded-xl bg-slate-900 border border-slate-700 text-white p-3">
+
+                    </div>
+
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+
                     {{-- Profile --}}
                     <div class="rounded-2xl bg-slate-800/60 border border-slate-700 p-6">
 

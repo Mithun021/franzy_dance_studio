@@ -1,6 +1,7 @@
 @extends('partials.master')
 @section('content')
     @include('component.banner')
+    @include('component.pay-monthly-fee')
     @include('component.about-us')
     @include('component.admission-box')
     @include('component.courses')

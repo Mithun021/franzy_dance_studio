@@ -139,6 +139,59 @@
 
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        {{-- Aadhar Front --}}
+                        <div class="rounded-2xl bg-slate-800/60 border border-slate-700 p-6">
+
+                            <h4 class="text-lg font-semibold text-pink-400 mb-4">
+                                Aadhar Front
+                            </h4>
+
+                            @if($student->aadhar_front_image)
+
+                                <img
+                                    src="{{ asset('storage/'.$student->aadhar_front_image) }}"
+                                    alt="Aadhar Front"
+                                    class="w-full max-h-80 object-contain bg-white rounded-lg p-3">
+
+                            @else
+
+                                <p class="text-slate-500">
+                                    No Aadhar Front Uploaded
+                                </p>
+
+                            @endif
+
+                        </div>
+
+
+                        {{-- Aadhar Back --}}
+                        <div class="rounded-2xl bg-slate-800/60 border border-slate-700 p-6">
+
+                            <h4 class="text-lg font-semibold text-pink-400 mb-4">
+                                Aadhar Back
+                            </h4>
+
+                            @if($student->aadhar_back_image)
+
+                                <img
+                                    src="{{ asset('storage/'.$student->aadhar_back_image) }}"
+                                    alt="Aadhar Back"
+                                    class="w-full max-h-80 object-contain bg-white rounded-lg p-3">
+
+                            @else
+
+                                <p class="text-slate-500">
+                                    No Aadhar Back Uploaded
+                                </p>
+
+                            @endif
+
+                        </div>
+
+                    </div>
+
                 </div>
 
                 {{-- Right --}}

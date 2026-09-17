@@ -7,14 +7,18 @@ use App\Models\Certificate;
 use App\Models\CourseMonthRecord;
 use App\Models\CoursePaymentRecord;
 use App\Models\LateFine;
+use App\Models\LateFineRecord;
 use App\Models\MembershipPlan;
 use App\Models\StudentCourse;
+use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
@@ -108,6 +112,19 @@ class StudentController extends Controller
             'profile_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
 
             'signature' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'aadhar_front_image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
+
+            'aadhar_back_image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
 
         ]);
 
@@ -174,6 +191,42 @@ class StudentController extends Controller
 
             }
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Upload Aadhar Front Image
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->hasFile('aadhar_front_image')) {
+
+                $aadharFrontImage = $request
+                    ->file('aadhar_front_image')
+                    ->store('students/aadhar', 'public');
+
+            } else {
+
+                $aadharFrontImage = $student->aadhar_front_image;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Upload Aadhar Back Image
+            |--------------------------------------------------------------------------
+            */
+
+            if ($request->hasFile('aadhar_back_image')) {
+
+                $aadharBackImage = $request
+                    ->file('aadhar_back_image')
+                    ->store('students/aadhar', 'public');
+
+            } else {
+
+                $aadharBackImage = $student->aadhar_back_image;
+            }
+
             /*
             |--------------------------------------------------------------------------
             | Update Profile
@@ -223,8 +276,11 @@ class StudentController extends Controller
                 'pincode' => $request->pincode,
 
                 'profile_image' => $profileImage,
-
                 'signature' => $signature,
+
+                'aadhar_front_image' => $aadharFrontImage,
+
+                'aadhar_back_image' => $aadharBackImage,
 
             ]);
 
@@ -269,6 +325,24 @@ class StudentController extends Controller
         return view(
             'student.id-card',
             compact('student', 'course')
+        );
+    }
+
+    public function downloadIdCard($studentId)
+    {
+        $student = User::findOrFail($studentId);
+
+        $course = null;
+
+        $pdf = Pdf::loadView('student.download-id-card', compact(
+            'student',
+            'course'
+        ));
+
+        $pdf->setPaper([0, 0, 243.78, 153.07], 'landscape');
+
+        return $pdf->download(
+            'Frenzy-Dance-Studio-ID-Card-' . $student->id . '.pdf'
         );
     }
 
@@ -1837,4 +1911,1171 @@ class StudentController extends Controller
         ]);
     }
 
+    public function customMonthlyFeePayProceed(Request $request)
+{
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Student Authentication
+    |--------------------------------------------------------------------------
+    */
+
+    $user = Auth::user();
+
+    if (!$user || $user->user_type !== 'student') {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Unauthorized access.'
+        ], 403);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Validation
+    |--------------------------------------------------------------------------
+    */
+
+    $validated = $request->validate([
+
+        'from_date' => [
+            'required',
+            'date',
+            'after_or_equal:today',
+        ],
+
+        'to_date' => [
+            'required',
+            'date',
+            'after_or_equal:from_date',
+        ],
+
+        'student_course_id' => [
+            'required',
+            'integer',
+        ],
+
+    ]);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Student Course
+    |--------------------------------------------------------------------------
+    */
+
+    $studentCourse = StudentCourse::with([
+        'course',
+        'level',
+        'category',
+        'batch',
+    ])
+        ->where('id', $validated['student_course_id'])
+        ->where('user_id', $user->id)
+        ->where('is_enroll', 1)
+        ->first();
+
+
+    if (!$studentCourse) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'Invalid course selected.'
+        ], 404);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Recalculate Fee
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | Never trust amount/discount/late fine coming from frontend.
+    | Recalculate everything from backend.
+    |
+    */
+
+    $fromDate = Carbon::parse(
+        $validated['from_date']
+    )->startOfMonth();
+
+    $toDate = Carbon::parse(
+        $validated['to_date']
+    )->startOfMonth();
+
+    $today = Carbon::today();
+
+    $todayMonth = $today->copy()->startOfMonth();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Monthly Fee
+    |--------------------------------------------------------------------------
+    */
+
+    $monthlyFee = (float) $studentCourse->monthly_fee;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Existing Paid Months
+    |--------------------------------------------------------------------------
+    */
+
+    $paidRecords = CourseMonthRecord::where(
+        'student_course_id',
+        $studentCourse->id
+    )
+        ->where('status', 'paid')
+        ->get();
+
+
+    $paidMonths = $paidRecords
+        ->map(function ($record) {
+
+            return Carbon::parse(
+                $record->fee_month
+            )
+                ->startOfMonth()
+                ->format('Y-m');
+
+        })
+        ->unique()
+        ->values()
+        ->toArray();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. Late Fine Settings
+    |--------------------------------------------------------------------------
+    */
+
+    $lateFine = LateFine::first();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. Generate Months
+    |--------------------------------------------------------------------------
+    */
+
+    $months = [];
+
+    $currentMonth = $fromDate->copy();
+
+
+    while ($currentMonth->lte($toDate)) {
+
+        $feeMonth = $currentMonth->copy();
+
+        $monthKey = $feeMonth->format('Y-m');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Already Paid
+        |--------------------------------------------------------------------------
+        */
+
+        if (in_array($monthKey, $paidMonths)) {
+
+            $currentMonth->addMonth();
+
+            continue;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Future / Advance
+        |--------------------------------------------------------------------------
+        */
+
+        if ($feeMonth->gt($todayMonth)) {
+
+            $months[] = [
+
+                'month' => $monthKey,
+
+                'month_name' =>
+                    $feeMonth->format('F Y'),
+
+                'monthly_fee' =>
+                    $monthlyFee,
+
+                'late_fine' => 0,
+
+                'payable_amount' =>
+                    $monthlyFee,
+
+                'status' =>
+                    'unpaid',
+
+                'advance_payment' =>
+                    true,
+
+                'arrear' =>
+                    false,
+
+                'late_fine_decision' =>
+                    'ADVANCE_PAYMENT',
+
+            ];
+
+            $currentMonth->addMonth();
+
+            continue;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Previous Paid Month
+        |--------------------------------------------------------------------------
+        */
+
+        $previousPaid = CourseMonthRecord::where(
+            'student_course_id',
+            $studentCourse->id
+        )
+            ->where('status', 'paid')
+            ->whereDate(
+                'fee_month',
+                '<',
+                $feeMonth->copy()->startOfMonth()
+            )
+            ->orderBy(
+                'fee_month',
+                'desc'
+            )
+            ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | First Payment
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$previousPaid) {
+
+            $months[] = [
+
+                'month' => $monthKey,
+
+                'month_name' =>
+                    $feeMonth->format('F Y'),
+
+                'monthly_fee' =>
+                    $monthlyFee,
+
+                'late_fine' => 0,
+
+                'payable_amount' =>
+                    $monthlyFee,
+
+                'status' =>
+                    'unpaid',
+
+                'advance_payment' =>
+                    false,
+
+                'arrear' =>
+                    false,
+
+                'late_fine_decision' =>
+                    'FIRST_PAYMENT',
+
+            ];
+
+            $currentMonth->addMonth();
+
+            continue;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Previous Month
+        |--------------------------------------------------------------------------
+        */
+
+        $previousMonth = Carbon::parse(
+            $previousPaid->fee_month
+        )
+            ->startOfMonth();
+
+
+        $monthDiff = (int) $previousMonth->diffInMonths(
+            $feeMonth->copy()->startOfMonth()
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Skipped Months
+        |--------------------------------------------------------------------------
+        */
+
+        $gapMonths = max(
+            0,
+            $monthDiff - 1
+        );
+
+
+        $lateFineAmount = 0;
+
+        $lateFineDecision =
+            'NO_LATE_FINE';
+
+        $lateFineReason =
+            'No late fine applicable.';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Late Fine Calculation
+        |--------------------------------------------------------------------------
+        */
+
+        if ($lateFine) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Immediate Next Month
+            |--------------------------------------------------------------------------
+            */
+
+            if ($gapMonths === 0) {
+
+                if (
+                    $today->day >
+                    (int) $lateFine->due_date
+                ) {
+
+                    $lateFineAmount =
+                        (float)
+                        $lateFine->same_month_late_fee;
+
+                    $lateFineDecision =
+                        'SAME_MONTH_LATE_FEE';
+
+                    $lateFineReason =
+                        'Due date has passed. Same month late fee applied.';
+                }
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | One Skipped Month
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($gapMonths === 1) {
+
+                $lateFineAmount =
+                    (float)
+                    $lateFine->next_month_late_fee;
+
+                $lateFineDecision =
+                    'NEXT_MONTH_LATE_FEE';
+
+                $lateFineReason =
+                    'One month payment gap found. Next month late fee applied.';
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Two Or More Skipped Months
+            |--------------------------------------------------------------------------
+            */
+
+            elseif ($gapMonths >= 2) {
+
+                $hasPresentInSkippedMonth =
+                    false;
+
+
+                for (
+                    $i = 1;
+                    $i <= $gapMonths;
+                    $i++
+                ) {
+
+                    $skippedMonth =
+                        $previousMonth
+                            ->copy()
+                            ->addMonths($i)
+                            ->startOfMonth();
+
+                    $skippedMonthStart =
+                        $skippedMonth
+                            ->copy()
+                            ->startOfMonth();
+
+                    $skippedMonthEnd =
+                        $skippedMonth
+                            ->copy()
+                            ->endOfMonth();
+
+
+                    $attendanceRecords =
+                        Attendance::query()
+                            ->where(
+                                'user_id',
+                                $user->id
+                            )
+                            ->where(
+                                'course_id',
+                                $studentCourse->course_id
+                            )
+                            ->whereBetween(
+                                'attendance_date',
+                                [
+                                    $skippedMonthStart
+                                        ->toDateString(),
+
+                                    $skippedMonthEnd
+                                        ->toDateString(),
+                                ]
+                            )
+                            ->get();
+
+
+                    $hasPresent =
+                        $attendanceRecords->contains(
+                            function ($record) {
+
+                                return trim(
+                                    (string)
+                                    $record->status
+                                ) === 'Present';
+                            }
+                        );
+
+
+                    if ($hasPresent) {
+
+                        $hasPresentInSkippedMonth =
+                            true;
+                    }
+                }
+
+
+                if ($hasPresentInSkippedMonth) {
+
+                    $lateFineAmount =
+                        (float)
+                        $lateFine->next_month_late_fee;
+
+                    $lateFineDecision =
+                        'NEXT_MONTH_LATE_FEE_PRESENT_FOUND';
+
+                    $lateFineReason =
+                        'Present attendance found in skipped month. Next month late fee applied.';
+
+                } else {
+
+                    $lateFineAmount =
+                        $monthlyFee *
+                        (
+                            (float)
+                            $lateFine->absent_charge_percentage
+                            / 100
+                        );
+
+                    $lateFineDecision =
+                        'ABSENT_CHARGE_PERCENTAGE';
+
+                    $lateFineReason =
+                        'All skipped months are absent/no attendance. Absent charge percentage applied.';
+                }
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Month Payable
+        |--------------------------------------------------------------------------
+        */
+
+        $payableAmount =
+            $monthlyFee +
+            $lateFineAmount;
+
+
+        $months[] = [
+
+            'month' =>
+                $monthKey,
+
+            'month_name' =>
+                $feeMonth->format('F Y'),
+
+            'monthly_fee' =>
+                $monthlyFee,
+
+            'late_fine' =>
+                round(
+                    $lateFineAmount,
+                    2
+                ),
+
+            'payable_amount' =>
+                round(
+                    $payableAmount,
+                    2
+                ),
+
+            'status' =>
+                'unpaid',
+
+            'advance_payment' =>
+                false,
+
+            'arrear' =>
+                false,
+
+            'late_fine_decision' =>
+                $lateFineDecision,
+
+            'late_fine_reason' =>
+                $lateFineReason,
+        ];
+
+
+        $currentMonth->addMonth();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 9. Unpaid Months
+    |--------------------------------------------------------------------------
+    */
+
+    $unpaidMonths = collect($months)
+        ->where('status', 'unpaid')
+        ->values();
+
+
+    $unpaidMonthCount =
+        $unpaidMonths->count();
+
+
+    if ($unpaidMonthCount <= 0) {
+
+        return response()->json([
+            'status' => false,
+            'message' => 'No unpaid monthly fee found for the selected period.'
+        ], 422);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 10. Membership Discount
+    |--------------------------------------------------------------------------
+    */
+
+    $membershipPlans =
+        MembershipPlan::where(
+            'is_active',
+            1
+        )
+            ->orderBy('duration')
+            ->get();
+
+
+    $discount = 0;
+
+    $discountPlan = null;
+
+
+    $durationToMonths = function ($plan) {
+
+        $duration =
+            (float) $plan->duration;
+
+        $type =
+            strtolower(
+                trim(
+                    (string)
+                    $plan->duration_type
+                )
+            );
+
+
+        if ($type === 'year') {
+
+            return $duration * 12;
+        }
+
+
+        if ($type === 'day') {
+
+            return $duration / 30;
+        }
+
+
+        return $duration;
+    };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Applicable Membership Plan
+    |--------------------------------------------------------------------------
+    */
+
+    if ($unpaidMonthCount >= 3) {
+
+        $applicablePlans =
+            $membershipPlans
+                ->filter(
+                    function ($plan)
+                    use (
+                        $unpaidMonthCount,
+                        $durationToMonths
+                    ) {
+
+                        return
+                            $durationToMonths($plan)
+                            <= $unpaidMonthCount;
+                    }
+                )
+                ->sortByDesc(
+                    function ($plan)
+                    use ($durationToMonths) {
+
+                        return
+                            $durationToMonths($plan);
+                    }
+                );
+
+
+        $discountPlan =
+            $applicablePlans->first();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Discount Calculation
+    |--------------------------------------------------------------------------
+    */
+
+    if ($discountPlan) {
+
+        $discountType =
+            strtolower(
+                trim(
+                    (string)
+                    $discountPlan->discount_type
+                )
+            );
+
+
+        $discountValue =
+            (float)
+            $discountPlan->discount_value;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Flat
+        |--------------------------------------------------------------------------
+        */
+
+        if ($discountType === 'flat') {
+
+            $discount =
+                $discountValue;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Percentage
+        |--------------------------------------------------------------------------
+        */
+
+        elseif ($discountType === 'percentage') {
+
+            $monthlyFeeTotal =
+                $unpaidMonths->sum(
+                    'monthly_fee'
+                );
+
+
+            $discount =
+                $monthlyFeeTotal *
+                (
+                    $discountValue / 100
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Month
+        |--------------------------------------------------------------------------
+        */
+
+        elseif ($discountType === 'month') {
+
+            $planMonths =
+                (int) round(
+                    $durationToMonths(
+                        $discountPlan
+                    )
+                );
+
+
+            $freeMonths = 0;
+
+
+            if (
+                $planMonths >= 6 &&
+                $planMonths < 12
+            ) {
+
+                $freeMonths = 1;
+
+            } elseif ($planMonths >= 12) {
+
+                $freeMonths = 2;
+            }
+
+
+            $freeMonths =
+                min(
+                    $freeMonths,
+                    $unpaidMonthCount
+                );
+
+
+            $discount =
+                $monthlyFee *
+                $freeMonths;
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Discount Cannot Exceed Monthly Fee
+    |--------------------------------------------------------------------------
+    */
+
+    $totalMonthlyFee =
+        $unpaidMonths->sum(
+            'monthly_fee'
+        );
+
+
+    $totalLateFine =
+        $unpaidMonths->sum(
+            'late_fine'
+        );
+
+
+    $grossPayable =
+        $totalMonthlyFee +
+        $totalLateFine;
+
+
+    $totalDiscount =
+        min(
+            $discount,
+            $totalMonthlyFee
+        );
+
+
+    $finalPayable =
+        max(
+            0,
+            $grossPayable -
+            $totalDiscount
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 11. Payment ID
+    |--------------------------------------------------------------------------
+    */
+
+    $paymentId =
+        'PAY-' .
+        now()->format('Ymd') .
+        '-' .
+        strtoupper(
+            Str::random(8)
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 12. Database Transaction
+    |--------------------------------------------------------------------------
+    */
+
+    try {
+
+        $result = DB::transaction(
+            function () use (
+                $user,
+                $studentCourse,
+                $paymentId,
+                $finalPayable,
+                $totalDiscount,
+                $discountPlan,
+                $unpaidMonths,
+                $monthlyFee,
+                $validated
+            ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | A. FIRST CREATE PAYMENT RECORD
+                |--------------------------------------------------------------------------
+                */
+
+                $paymentRecord =
+                    CoursePaymentRecord::create([
+
+                        'payment_id' =>
+                            $paymentId,
+
+                        'student_course_id' =>
+                            $studentCourse->id,
+
+                        'user_id' =>
+                            $user->id,
+
+                        'payment_date' =>
+                            now()->toDateString(),
+
+                        'payment_mode' =>
+                            'Razorpay',
+
+                        'amount' =>
+                            round(
+                                $finalPayable,
+                                2
+                            ),
+
+                        'platform_fee_percentage' =>
+                            0,
+
+                        'platform_fee_amount' =>
+                            0,
+
+                        'transaction_id' =>
+                            null,
+
+                        'payment_proof' =>
+                            null,
+
+                        'status' =>
+                            'pending',
+
+                        'remarks' =>
+                            'Monthly fee payment initiated. ' .
+                            'Period: ' .
+                            $validated['from_date'] .
+                            ' to ' .
+                            $validated['to_date'] .
+                            (
+                                $discountPlan
+                                    ? ' | Membership Discount: ' .
+                                      $discountPlan->plan_name .
+                                      ' | Discount: ₹' .
+                                      number_format(
+                                          $totalDiscount,
+                                          2
+                                      )
+                                    : ''
+                            ),
+                    ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | B. CREATE MONTH RECORDS
+                |--------------------------------------------------------------------------
+                */
+
+                foreach (
+                    $unpaidMonths
+                    as $index => $month
+                ) {
+
+                    $monthMonthlyFee =
+                        (float)
+                        $month['monthly_fee'];
+
+                    $monthLateFine =
+                        (float)
+                        $month['late_fine'];
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Membership Discount Distribution
+                    |--------------------------------------------------------------------------
+                    |
+                    | Discount is stored as waiver_amount.
+                    |
+                    */
+
+                    $monthWaiver = 0;
+
+
+                    if (
+                        $totalDiscount > 0 &&
+                        $totalDiscount >
+                        0
+                    ) {
+
+                        /*
+                        | Apply discount sequentially
+                        | to monthly fee.
+                        */
+
+                        static $remainingDiscount = null;
+
+
+                        if (
+                            $remainingDiscount === null
+                        ) {
+
+                            $remainingDiscount =
+                                (float)
+                                $totalDiscount;
+                        }
+
+
+                        $monthWaiver =
+                            min(
+                                $monthMonthlyFee,
+                                $remainingDiscount
+                            );
+
+
+                        $remainingDiscount -=
+                            $monthWaiver;
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Month Payable After Waiver
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $monthPayable =
+                        max(
+                            0,
+                            $monthMonthlyFee -
+                            $monthWaiver +
+                            $monthLateFine
+                        );
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Month Status
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $monthStatus =
+                        $monthPayable <= 0
+                            ? 'waived'
+                            : 'unpaid';
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Create Course Month Record
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $monthRecord =
+                        CourseMonthRecord::create([
+
+                            'student_course_id' =>
+                                $studentCourse->id,
+
+                            'fee_month' =>
+                                Carbon::createFromFormat(
+                                    'Y-m',
+                                    $month['month']
+                                )->startOfMonth(),
+
+                            'monthly_fee' =>
+                                round(
+                                    $monthMonthlyFee,
+                                    2
+                                ),
+
+                            'waiver_amount' =>
+                                round(
+                                    $monthWaiver,
+                                    2
+                                ),
+
+                            'payable_amount' =>
+                                round(
+                                    $monthPayable,
+                                    2
+                                ),
+
+                            'paid_amount' =>
+                                0,
+
+                            'due_date' =>
+                                $this->getMonthlyFeeDueDate(
+                                    $month['month']
+                                ),
+
+                            'paid_date' =>
+                                null,
+
+                            'payment_percentage' =>
+                                0,
+
+                            'payment_rule' =>
+                                'custom_monthly_fee',
+
+                            'status' =>
+                                $monthStatus,
+
+                            'remarks' =>
+                                'Payment ID: ' .
+                                $paymentId .
+                                (
+                                    $discountPlan
+                                        ? ' | Membership Discount: ' .
+                                          $discountPlan->plan_name
+                                        : ''
+                                ),
+                        ]);
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Late Fine Record
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($monthLateFine > 0) {
+
+                        LateFineRecord::create([
+
+                            'student_course_id' =>
+                                $studentCourse->id,
+
+                            'course_month_record_id' =>
+                                $monthRecord->id,
+
+                            'fine_date' =>
+                                now()->toDateString(),
+
+                            'due_date' =>
+                                $monthRecord->due_date,
+
+                            'fine_amount' =>
+                                round(
+                                    $monthLateFine,
+                                    2
+                                ),
+
+                            'paid_amount' =>
+                                0,
+
+                            'waived_amount' =>
+                                0,
+
+                            'status' =>
+                                'unpaid',
+
+                            'remarks' =>
+                                'Late fine generated with payment ID: ' .
+                                $paymentId .
+                                ' | Decision: ' .
+                                ($month['late_fine_decision'] ?? ''),
+                        ]);
+                    }
+                }
+
+
+                return $paymentRecord;
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | 13. Payment URL
+        |--------------------------------------------------------------------------
+        */
+
+        return response()->json([
+
+            'status' =>
+                true,
+
+            'message' =>
+                'Payment record created successfully.',
+
+            'payment_id' =>
+                $result->payment_id,
+
+            'payment_url' =>
+                route(
+                    'student.payment-page',
+                    $studentCourse->id
+                ),
+
+        ]);
+
+
+    } catch (\Throwable $e) {
+
+        report($e);
+
+        return response()->json([
+
+            'status' =>
+                false,
+
+            'message' =>
+                'Unable to create payment record. Please try again.',
+
+            'error' =>
+                config('app.debug')
+                    ? $e->getMessage()
+                    : null,
+
+        ], 500);
+    }
+}
+
+private function getMonthlyFeeDueDate($month)
+{
+    $date = Carbon::createFromFormat(
+        'Y-m',
+        $month
+    )->startOfMonth();
+
+    return $date->copy()->addDays(9)->toDateString();
+}
 }

@@ -31,7 +31,7 @@ class User extends Authenticatable
         'aadhar_front_image',
         'aadhar_back_image',
         'city',
-        'state',
+        'state', 
         'country',
         'pincode',
         'address',

@@ -12,6 +12,8 @@ Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/student/profile/edit',[StudentController::class, 'editProfile'])->name('student.edit-profile');
     Route::post('/student/profile/update',[StudentController::class, 'updateProfile'])->name('student.update-profile');
     Route::get( '/student/id-card', [StudentController::class, 'studentIdCard'] )->name('student.id-card');
+    Route::get('/student/{student}/id-card/download', [StudentController::class, 'downloadIdCard'])
+    ->name('student.id-card.download');
     Route::get('/student/my-courses', [StudentController::class, 'myCourses'])->name('student.my-courses');
     Route::get( '/student/my-course/{studentCourse}', [StudentController::class, 'courseDetails'] )->name('student.course-details');
     Route::get('/student/certificate', [StudentController::class, 'certificate'])->name('student.certificate');

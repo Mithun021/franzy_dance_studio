@@ -362,6 +362,13 @@ class AuthController extends Controller
 
     }
 
+    // public function showProfileKycForm()
+    // {
+    //     $user = Auth::user();
+
+    //     return view('student.profile-kyc', compact('user'));
+    // }
+
     public function logout(Request $request)
     {
         Auth::logout();

@@ -5,15 +5,17 @@
 @section('content')
 
 <style>
-    /*=====================================================
-            GOOGLE FONT
-======================================================*/
+
+/*=====================================================
+        GOOGLE FONT
+=====================================================*/
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
+
 /*=====================================================
-                RESET
-======================================================*/
+        RESET
+=====================================================*/
 
 *{
     margin:0;
@@ -23,15 +25,16 @@
 
 body{
 
-    background:#edf3fb;
+    background:#E4E4E4;
 
     font-family:'Poppins',sans-serif;
 
 }
 
+
 /*=====================================================
-                PAGE
-======================================================*/
+        PAGE
+=====================================================*/
 
 .id-wrapper{
 
@@ -47,9 +50,10 @@ body{
 
 }
 
+
 /*=====================================================
-                CARD
-======================================================*/
+        CARD
+=====================================================*/
 
 .id-card{
 
@@ -69,7 +73,7 @@ body{
 
     box-shadow:
         0 25px 60px rgba(0,0,0,.18),
-        0 8px 20px rgba(13,116,209,.12);
+        0 8px 20px rgba(214,166,41,.12);
 
     transition:.35s ease;
 
@@ -81,13 +85,14 @@ body{
 
     box-shadow:
         0 40px 80px rgba(0,0,0,.20),
-        0 15px 35px rgba(13,116,209,.15);
+        0 15px 35px rgba(214,166,41,.15);
 
 }
 
+
 /*=====================================================
-            LEFT STRIP
-======================================================*/
+        LEFT STRIP
+=====================================================*/
 
 .left-strip{
 
@@ -95,9 +100,9 @@ body{
 
     background:linear-gradient(
         180deg,
-        #1685ff 0%,
-        #0d66d8 40%,
-        #084fae 100%
+        #000000 0%,
+        #000000 40%,
+        #D6A629 100%
     );
 
     position:relative;
@@ -111,6 +116,7 @@ body{
     overflow:hidden;
 
 }
+
 
 /* Decorative circles */
 
@@ -126,7 +132,7 @@ body{
 
     border-radius:50%;
 
-    background:rgba(255,255,255,.08);
+    background:rgba(214,166,41,.12);
 
     top:-90px;
 
@@ -154,6 +160,7 @@ body{
 
 }
 
+
 /* Extra Pattern */
 
 .strip-pattern{
@@ -180,9 +187,10 @@ body{
 
 }
 
+
 /*=====================================================
         VERTICAL COMPANY NAME
-======================================================*/
+=====================================================*/
 
 .vertical-company{
 
@@ -196,7 +204,7 @@ body{
 
     white-space:nowrap;
 
-    color:#fff;
+    color:#D6A629;
 
     font-size:16px;
 
@@ -208,9 +216,10 @@ body{
 
 }
 
+
 /*=====================================================
-            RIGHT SIDE
-======================================================*/
+        RIGHT SIDE
+=====================================================*/
 
 .right-side{
 
@@ -228,9 +237,39 @@ body{
 
 }
 
+
 /*=====================================================
-            TOP HEADER
-======================================================*/
+        LOGO WATERMARK
+=====================================================*/
+
+.logo-watermark{
+
+    position:absolute;
+
+    z-index:1;
+
+    top:50%;
+
+    left:50%;
+
+    width:245px;
+
+    height:245px;
+
+    transform:translate(-50%,-50%);
+
+    object-fit:contain;
+
+    opacity:.055;
+
+    pointer-events:none;
+
+}
+
+
+/*=====================================================
+        TOP HEADER
+=====================================================*/
 
 .top-header{
 
@@ -246,8 +285,9 @@ body{
 
     background:linear-gradient(
         90deg,
-        #1685ff,
-        #0d66d8
+        #000000 0%,
+        #111111 55%,
+        #D6A629 100%
     );
 
     border-bottom-left-radius:55px;
@@ -266,7 +306,7 @@ body{
 
     height:70px;
 
-    background:rgba(255,255,255,.15);
+    background:rgba(214,166,41,.15);
 
     border-radius:50px;
 
@@ -274,9 +314,10 @@ body{
 
 }
 
+
 /*=====================================================
-                LOGO
-======================================================*/
+        LOGO SECTION
+=====================================================*/
 
 .logo-section{
 
@@ -293,6 +334,12 @@ body{
     align-items:center;
 
 }
+
+
+/*
+    Logo visible nahi rakha gaya hai.
+    Logo watermark ke form mein background mein use hoga.
+*/
 
 .company-logo{
 
@@ -330,7 +377,7 @@ body{
 
     font-weight:700;
 
-    color:#0d66d8;
+    color:#000000;
 
     box-shadow:0 8px 20px rgba(0,0,0,.15);
 
@@ -352,7 +399,7 @@ body{
 
 .logo-section p{
 
-    color:#eef6ff;
+    color:#F0D98A;
 
     font-size:11px;
 
@@ -362,9 +409,10 @@ body{
 
 }
 
+
 /*=====================================================
-                PHOTO
-======================================================*/
+        PHOTO
+=====================================================*/
 
 .photo-section{
 
@@ -387,13 +435,13 @@ body{
     background:linear-gradient(
         135deg,
         #ffffff,
-        #d9ebff
+        #E4E4E4
     );
 
     padding:5px;
 
     box-shadow:
-        0 12px 25px rgba(13,116,209,.22);
+        0 12px 25px rgba(214,166,41,.22);
 
 }
 
@@ -425,21 +473,22 @@ body{
 
     align-items:center;
 
-    background:#eef5fc;
+    background:#E4E4E4;
 
-    color:#94a3b8;
+    color:#777;
 
     border:4px solid #fff;
 
 }
 
+
 /*=====================================================
-            STUDENT INFO
-======================================================*/
+        STUDENT INFO
+=====================================================*/
 
 .student-info{
 
-    margin-top:20px;
+    margin-top:10px;
 
     text-align:center;
 
@@ -447,9 +496,9 @@ body{
 
 .student-info h1{
 
-    font-size:23px;
+    font-size:18px;
 
-    color:#17365d;
+    color:#000000;
 
     font-weight:700;
 
@@ -459,43 +508,50 @@ body{
 
 }
 
+
+/*=====================================================
+        STUDENT BADGE
+=====================================================*/
+
 .student-badge{
 
     display:inline-block;
 
-    margin-top:10px;
+    margin-top:6px;
 
-    padding:6px 20px;
+    padding:6px 15px;
 
     border-radius:40px;
 
     background:linear-gradient(
         90deg,
-        #1685ff,
-        #0d66d8
+        #000000,
+        #D6A629
     );
 
     color:#fff;
 
-    font-size:11px;
+    font-size:9px;
 
     font-weight:700;
 
     letter-spacing:2px;
 
-    box-shadow:0 8px 18px rgba(13,116,209,.25);
+    box-shadow:
+        0 8px 18px rgba(214,166,41,.25);
 
 }
 
+
 /*=====================================================
-                DETAILS SECTION
-======================================================*/
+        DETAILS SECTION
+=====================================================*/
 
 .details-section{
 
     width:100%;
 
-    margin-top:22px;
+    margin-top:18px;
 
     display:flex;
 
@@ -513,11 +569,11 @@ body{
 
     align-items:center;
 
-    background:#f8fbff;
+    background:#FAFAFA;
 
-    border:1px solid #e3eefc;
+    border:1px solid #E4E4E4;
 
-    border-left:4px solid #0d66d8;
+    border-left:4px solid #D6A629;
 
     border-radius:10px;
 
@@ -529,7 +585,7 @@ body{
 
 .detail-box:hover{
 
-    background:#eef6ff;
+    background:#FFF9E8;
 
     transform:translateX(3px);
 
@@ -555,7 +611,7 @@ body{
 
     font-weight:600;
 
-    color:#17365d;
+    color:#000000;
 
     text-align:right;
 
@@ -565,9 +621,10 @@ body{
 
 }
 
+
 /*=====================================================
-                BOTTOM SECTION
-======================================================*/
+        BOTTOM SECTION
+=====================================================*/
 
 .bottom-section{
 
@@ -583,9 +640,10 @@ body{
 
 }
 
-/*=====================
+
+/*=====================================================
         QR
-======================*/
+=====================================================*/
 
 .qr-area{
 
@@ -603,7 +661,7 @@ body{
 
     height:58px;
 
-    border:2px dashed #0d66d8;
+    border:2px dashed #D6A629;
 
     border-radius:8px;
 
@@ -617,9 +675,21 @@ body{
 
     font-weight:700;
 
-    color:#0d66d8;
+    color:#D6A629;
 
     background:#fff;
+
+    padding:4px;
+
+}
+
+.qr-box img{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:contain;
 
 }
 
@@ -635,9 +705,10 @@ body{
 
 }
 
-/*=====================
-    SIGNATURE
-======================*/
+
+/*=====================================================
+        SIGNATURE
+=====================================================*/
 
 .sign-area{
 
@@ -649,7 +720,7 @@ body{
 
 .sign-line{
 
-    border-bottom:2px solid #17365d;
+    border-bottom:2px solid #000000;
 
     margin-bottom:6px;
 
@@ -657,7 +728,7 @@ body{
 
 .sign-area span{
 
-    font-size:10px;
+    font-size:8px;
 
     color:#64748b;
 
@@ -667,9 +738,10 @@ body{
 
 }
 
+
 /*=====================================================
-                    FOOTER
-======================================================*/
+        FOOTER
+=====================================================*/
 
 .footer{
 
@@ -679,8 +751,9 @@ body{
 
     background:linear-gradient(
         90deg,
-        #17365d,
-        #0d66d8
+        #000000,
+        #111111,
+        #D6A629
     );
 
     color:#fff;
@@ -715,9 +788,10 @@ body{
 
 }
 
+
 /*=====================================================
-                SCROLL SAFE
-======================================================*/
+        SCROLL SAFE
+=====================================================*/
 
 img{
 
@@ -727,9 +801,10 @@ img{
 
 }
 
+
 /*=====================================================
-                RESPONSIVE
-======================================================*/
+        RESPONSIVE
+=====================================================*/
 
 @media(max-width:480px){
 
@@ -749,9 +824,10 @@ img{
 
 }
 
+
 /*=====================================================
-                PRINT
-======================================================*/
+        PRINT
+=====================================================*/
 
 @page{
 
@@ -784,6 +860,7 @@ img{
     }
 
     .id-card,
+
     .id-card *{
 
         visibility:visible;
@@ -824,12 +901,15 @@ img{
 
 }
 
+
 /*=====================================================
-                NICE ANIMATION
-======================================================*/
+        NICE ANIMATION
+=====================================================*/
 
 .company-logo,
+
 .photo-ring,
+
 .student-badge{
 
     transition:.35s;
@@ -853,19 +933,23 @@ img{
     letter-spacing:3px;
 
 }
+
 </style>
+
 
 @php
     $course = $course ?? null;
 @endphp
 
+
 <div class="id-wrapper">
 
     <div class="id-card">
 
+
         <!--========================
             LEFT STRIP
-        =========================-->
+        ========================-->
 
         <div class="left-strip">
 
@@ -882,13 +966,24 @@ img{
 
         <!--========================
             RIGHT SIDE
-        =========================-->
+        ========================-->
 
         <div class="right-side">
 
+
+            <!--========================
+                LOGO WATERMARK
+            ========================-->
+
+            <img
+                src="{{ asset('images/logo.png') }}"
+                class="logo-watermark"
+                alt="">
+
+
             <!--========================
                 TOP HEADER
-            =========================-->
+            ========================-->
 
             <div class="top-header">
 
@@ -898,47 +993,8 @@ img{
 
 
             <!--========================
-                LOGO
-            =========================-->
-
-            {{-- <div class="logo-section">
-
-                @if(!empty($setting->logo))
-
-                    <img
-                        src="{{ asset('storage/'.$setting->logo) }}"
-                        class="company-logo"
-                        alt="Logo">
-
-                @else
-
-                    <div class="logo-placeholder">
-
-                        LOGO
-
-                    </div>
-
-                @endif
-
-                <h2>
-
-                    FRENZY
-
-                </h2>
-
-                <p>
-
-                    DANCE STUDIO
-
-                </p>
-
-            </div> --}}
-
-
-
-            <!--========================
                 STUDENT PHOTO
-            =========================-->
+            ========================-->
 
             <div class="photo-section">
 
@@ -954,17 +1010,19 @@ img{
 
                         <div class="photo-placeholder">
 
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 width="55"
-                                 height="55"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke="currentColor">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="55"
+                                height="55"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor">
 
-                                <path stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      stroke-width="1.8"
-                                      d="M5.121 17.804A9 9 0 1118.88 17.8M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M5.121 17.804A9 9 0 1118.88 17.8M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
 
                             </svg>
 
@@ -977,10 +1035,9 @@ img{
             </div>
 
 
-
             <!--========================
                 STUDENT NAME
-            =========================-->
+            ========================-->
 
             <div class="student-info">
 
@@ -997,40 +1054,55 @@ img{
                 </span>
 
             </div>
-                        <!--=================================
-                    DETAILS SECTION
+
+
+            <!--=================================
+                DETAILS SECTION
             ==================================-->
 
             <div class="details-section">
 
+
                 <div class="detail-box">
 
                     <div class="label">
+
                         Student ID
+
                     </div>
 
                     <div class="value">
+
                         {{ str_pad($student->id, 4, '0', STR_PAD_LEFT) }}
+
                     </div>
 
                 </div>
 
+
                 <div class="detail-box">
 
                     <div class="label">
+
                         Phone
+
                     </div>
 
                     <div class="value">
+
                         {{ $student->phone ?? '-' }}
+
                     </div>
 
                 </div>
 
+
                 <div class="detail-box">
 
                     <div class="label">
+
                         DOB
+
                     </div>
 
                     <div class="value">
@@ -1049,15 +1121,61 @@ img{
 
                 </div>
 
+
             </div>
 
 
-
             <!--=================================
-                    FOOTER
+                QR + SIGNATURE
             ==================================-->
 
-            <div class="footer">
+            <div class="bottom-section">
+
+
+                <!-- QR CODE - BOTTOM LEFT -->
+
+                <div class="qr-area">
+
+                    <div class="qr-box">
+
+                        <img
+                            src="{{ asset('images/payment-qr.png') }}"
+                            alt="Payment QR">
+
+                    </div>
+
+                    <small>
+
+                        SCAN TO PAY
+
+                    </small>
+
+                </div>
+
+
+                <!-- SIGNATURE - BOTTOM RIGHT -->
+
+                <div class="sign-area">
+
+                    <div class="sign-line"></div>
+
+                    <span>
+
+                        AUTHORIZED SIGNATURE
+
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+            <!--=================================
+                FOOTER
+            ==================================-->
+
+            {{-- <div class="footer">
 
                 <div class="footer-title">
 
@@ -1071,12 +1189,20 @@ img{
 
                 </div>
 
-            </div>
+            </div> --}}
+
 
         </div>
 
     </div>
 
 </div>
+
+<a
+    href="{{ route('student.id-card.download', $student->id) }}"
+    class="btn btn-dark"
+>
+    Download ID Card
+</a>
 
 @endsection
