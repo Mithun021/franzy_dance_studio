@@ -11,11 +11,13 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\FeeStructureController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LateFineController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\PaymentGatewayController;
 use App\Http\Controllers\PermissionCategoryController;
 use App\Http\Controllers\PermissionController;
@@ -304,6 +306,11 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
 
     Route::put('/payment-gateway/razorpay', [PaymentGatewayController::class, 'updateRazorpay'])
         ->name('payment-gateway.razorpay.update');
+
+
+    Route::resource('notice', NoticeController::class);
+    Route::resource('events', EventController::class)
+    ->except(['show']);
 
 });
 

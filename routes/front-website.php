@@ -1,8 +1,17 @@
 <?php
 
 use App\Http\Controllers\AdmissionFormController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\WebsiteController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/notice-details/{id}', [WebsiteController::class, 'noticeDetails'])
+    ->name('website.notice-details');
+Route::get('/frenzy/events', [EventController::class, 'events'])
+    ->name('website.events');
+
+Route::get('/frenzy/event-details/{slug}', [EventController::class, 'eventDetails'])
+    ->name('website.event-details');
 
 Route::get('/studio', [WebsiteController::class, 'studio_booking']) ->name('studio-booking');
 Route::get('/studio/{studio}/booking', [WebsiteController::class, 'studioBookingForm'])

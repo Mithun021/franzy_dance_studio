@@ -512,10 +512,26 @@
 
                     @if($studentCourse->batch)
 
+                        @php
+
+                            $batch = $studentCourse->batch;
+
+                            $scheduleDays = [
+                                'monday' => 'Monday',
+                                'tuesday' => 'Tuesday',
+                                'wednesday' => 'Wednesday',
+                                'thursday' => 'Thursday',
+                                'friday' => 'Friday',
+                                'saturday' => 'Saturday',
+                                'sunday' => 'Sunday',
+                            ];
+
+                        @endphp
+
+
                         <div class="row">
 
                             {{-- Batch Name --}}
-
                             <div class="col-md-3 mb-3">
 
                                 <strong>
@@ -524,39 +540,7 @@
 
                                 <p class="mb-0">
 
-                                    {{ $studentCourse->batch->batch_name ?? 'N/A' }}
-
-                                </p>
-
-                            </div>
-
-
-                            {{-- Timing --}}
-
-                            <div class="col-md-3 mb-3">
-
-                                <strong>
-                                    Timing
-                                </strong>
-
-                                <p class="mb-0">
-
-                                    @if(
-                                        !empty($studentCourse->batch->start_time) &&
-                                        !empty($studentCourse->batch->end_time)
-                                    )
-
-                                        {{ date('h:i A', strtotime($studentCourse->batch->start_time)) }}
-
-                                        -
-
-                                        {{ date('h:i A', strtotime($studentCourse->batch->end_time)) }}
-
-                                    @else
-
-                                        N/A
-
-                                    @endif
+                                    {{ $batch->batch_name ?? 'N/A' }}
 
                                 </p>
 
@@ -564,7 +548,6 @@
 
 
                             {{-- Capacity --}}
-
                             <div class="col-md-3 mb-3">
 
                                 <strong>
@@ -573,7 +556,7 @@
 
                                 <p class="mb-0">
 
-                                    {{ $studentCourse->batch->capacity ?? 0 }}
+                                    {{ $batch->capacity ?? 0 }}
 
                                 </p>
 
@@ -581,7 +564,6 @@
 
 
                             {{-- Current Students --}}
-
                             <div class="col-md-3 mb-3">
 
                                 <strong>
@@ -596,14 +578,9 @@
 
                             </div>
 
-                        </div>
-
-
-                        <div class="row">
 
                             {{-- Available Seats --}}
-
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
 
                                 <strong>
                                     Available Seats
@@ -617,36 +594,86 @@
 
                             </div>
 
+                        </div>
 
-                            {{-- Class Days --}}
 
-                            <div class="col-md-6 mb-3">
+                        {{-- =================================================
+                            WEEKLY CLASS SCHEDULE
+                        ================================================== --}}
+
+                        <div class="row">
+
+                            <div class="col-md-12 mb-3">
 
                                 <strong>
-                                    Class Days
+                                    Weekly Class Schedule
                                 </strong>
 
-                                <p class="mb-0">
+                                <div class="mt-2">
 
                                     @php
-                                        $classDays = $studentCourse->batch->class_days ?? [];
+                                        $hasSchedule = false;
                                     @endphp
 
-                                    @if(is_array($classDays) && count($classDays))
 
-                                        {{ implode(', ', $classDays) }}
+                                    @foreach($scheduleDays as $dayKey => $dayName)
 
-                                    @else
+                                        @php
 
-                                        N/A
+                                            $startTime =
+                                                $batch->{$dayKey . '_start_time'};
+
+                                            $endTime =
+                                                $batch->{$dayKey . '_end_time'};
+
+                                        @endphp
+
+
+                                        @if($startTime && $endTime)
+
+                                            @php
+                                                $hasSchedule = true;
+                                            @endphp
+
+                                            <div class="d-flex align-items-center mb-2">
+
+                                                <span class="badge bg-primary me-2">
+
+                                                    {{ $dayName }}
+
+                                                </span>
+
+                                                <span>
+
+                                                    {{ date('h:i A', strtotime($startTime)) }}
+
+                                                    -
+
+                                                    {{ date('h:i A', strtotime($endTime)) }}
+
+                                                </span>
+
+                                            </div>
+
+                                        @endif
+
+                                    @endforeach
+
+
+                                    @if(!$hasSchedule)
+
+                                        <span class="text-muted">
+                                            No class schedule available.
+                                        </span>
 
                                     @endif
 
-                                </p>
+                                </div>
 
                             </div>
 
                         </div>
+
 
                     @else
 

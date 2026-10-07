@@ -25,12 +25,61 @@ return new class extends Migration
 
             $table->string('batch_name',100);
 
-            // Example : Monday, Wednesday, Friday
-            $table->json('class_days');
+            /*
+            |--------------------------------------------------------------------------
+            | Monday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('monday_start_time')->nullable();
+            $table->time('monday_end_time')->nullable();
 
-            $table->time('start_time');
+            /*
+            |--------------------------------------------------------------------------
+            | Tuesday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('tuesday_start_time')->nullable();
+            $table->time('tuesday_end_time')->nullable();
 
-            $table->time('end_time');
+            /*
+            |--------------------------------------------------------------------------
+            | Wednesday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('wednesday_start_time')->nullable();
+            $table->time('wednesday_end_time')->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Thursday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('thursday_start_time')->nullable();
+            $table->time('thursday_end_time')->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Friday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('friday_start_time')->nullable();
+            $table->time('friday_end_time')->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Saturday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('saturday_start_time')->nullable();
+            $table->time('saturday_end_time')->nullable();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Sunday
+            |--------------------------------------------------------------------------
+            */
+            $table->time('sunday_start_time')->nullable();
+            $table->time('sunday_end_time')->nullable();
 
             // Maximum Student Capacity
             $table->unsignedSmallInteger('capacity');

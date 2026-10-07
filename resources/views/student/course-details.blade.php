@@ -349,21 +349,53 @@
 
                     <div class="p-8">
 
+                        @php
+                            $batch = $studentCourse->batch;
+
+                            $scheduleDays = [
+                                'monday' => 'Monday',
+                                'tuesday' => 'Tuesday',
+                                'wednesday' => 'Wednesday',
+                                'thursday' => 'Thursday',
+                                'friday' => 'Friday',
+                                'saturday' => 'Saturday',
+                                'sunday' => 'Sunday',
+                            ];
+                        @endphp
+
                         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                             <div>
                                 <p class="text-slate-400 text-sm">Batch Name</p>
                                 <h4 class="text-white font-semibold mt-1">
-                                    {{ optional($studentCourse->batch)->batch_name }}
+                                    {{ optional($batch)->batch_name ?? 'N/A' }}
                                 </h4>
                             </div>
 
-                            <div>
+
+                            <div class="md:col-span-2 lg:col-span-2">
                                 <p class="text-slate-400 text-sm">Class Days</p>
+
                                 <h4 class="text-white font-semibold mt-1">
 
-                                    @if($studentCourse->batch && is_array($studentCourse->batch->class_days))
-                                        {{ implode(', ', $studentCourse->batch->class_days) }}
+                                    @php
+                                        $classDays = [];
+
+                                        if ($batch) {
+                                            foreach ($scheduleDays as $dayKey => $dayName) {
+
+                                                $startTime = $batch->{$dayKey . '_start_time'};
+                                                $endTime = $batch->{$dayKey . '_end_time'};
+
+                                                if ($startTime && $endTime) {
+                                                    $classDays[] = $dayName;
+                                                }
+                                            }
+                                        }
+                                    @endphp
+
+                                    @if(count($classDays))
+                                        {{ implode(', ', $classDays) }}
                                     @else
                                         N/A
                                     @endif
@@ -371,16 +403,68 @@
                                 </h4>
                             </div>
 
-                            <div>
-                                <p class="text-slate-400 text-sm">Class Timing</p>
-                                <h4 class="text-white font-semibold mt-1">
 
-                                    {{ optional($studentCourse->batch)->start_time }}
-                                    -
-                                    {{ optional($studentCourse->batch)->end_time }}
+                            {{-- Weekly Class Schedule --}}
+                            <div class="md:col-span-2 lg:col-span-3">
 
-                                </h4>
+                                <p class="text-slate-400 text-sm">
+                                    Class Timing
+                                </p>
+
+                                <div class="mt-2 space-y-2">
+
+                                    @php
+                                        $hasSchedule = false;
+                                    @endphp
+
+                                    @foreach($scheduleDays as $dayKey => $dayName)
+
+                                        @php
+                                            $startTime = $batch
+                                                ? $batch->{$dayKey . '_start_time'}
+                                                : null;
+
+                                            $endTime = $batch
+                                                ? $batch->{$dayKey . '_end_time'}
+                                                : null;
+                                        @endphp
+
+                                        @if($startTime && $endTime)
+
+                                            @php
+                                                $hasSchedule = true;
+                                            @endphp
+
+                                            <div class="flex items-center gap-3">
+
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-semibold">
+                                                    {{ $dayName }}
+                                                </span>
+
+                                                <h4 class="text-white font-semibold">
+                                                    {{ date('h:i A', strtotime($startTime)) }}
+                                                    -
+                                                    {{ date('h:i A', strtotime($endTime)) }}
+                                                </h4>
+
+                                            </div>
+
+                                        @endif
+
+                                    @endforeach
+
+                                    @if(!$hasSchedule)
+
+                                        <h4 class="text-slate-500 font-semibold">
+                                            No class schedule available
+                                        </h4>
+
+                                    @endif
+
+                                </div>
+
                             </div>
+
 
                             {{-- <div>
                                 <p class="text-slate-400 text-sm">Batch Capacity</p>

@@ -3,6 +3,7 @@
     @include('component.banner')
     @include('component.pay-monthly-fee')
     @include('component.about-us')
+    @include('component.notice')
     @include('component.admission-box')
     @include('component.courses')
     @include('component.features')

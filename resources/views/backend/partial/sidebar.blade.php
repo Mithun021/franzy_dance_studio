@@ -232,6 +232,22 @@
                             </li>
 
                             <li>
+                                <a href="#event" data-bs-toggle="collapse">
+                                    <i data-feather="calendar"></i>
+                                    <span> Event </span>
+                                    <span class="menu-arrow"></span>
+                                </a>
+                                <div class="collapse" id="event">
+                                    <ul class="nav-second-level">
+                                        <li>
+                                            <a href="{{ route('events.index') }}" class="tp-link">Event List</a>
+                                            <a href="{{ route('events.create') }}" class="tp-link">Create Event</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+
+                            <li>
                                 <a href="#syllabus" data-bs-toggle="collapse">
                                     <i data-feather="calendar"></i>
                                     <span> Syllabus </span>
@@ -242,6 +258,22 @@
                                         <li>
                                             <a href="{{ route('syllabus.index') }}" class="tp-link">Syllabus List</a>
                                             <a href="{{ route('syllabus.create') }}" class="tp-link">Create Syllabus</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+
+                            <li>
+                                <a href="#notice" data-bs-toggle="collapse">
+                                    <i data-feather="calendar"></i>
+                                    <span> Notice </span>
+                                    <span class="menu-arrow"></span>
+                                </a>
+                                <div class="collapse" id="notice">
+                                    <ul class="nav-second-level">
+                                        <li>
+                                            <a href="{{ route('notice.index') }}" class="tp-link">Notice List</a>
+                                            <a href="{{ route('notice.create') }}" class="tp-link">Create Notice</a>
                                         </li>
                                     </ul>
                                 </div>

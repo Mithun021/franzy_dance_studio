@@ -9,10 +9,19 @@
     <div class="col-md-12">
 
         @if(session('success'))
+
             <div class="alert alert-success alert-dismissible fade show">
+
                 {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+                </button>
+
             </div>
+
         @endif
 
         <div class="card">
@@ -24,14 +33,18 @@
                 </h4>
 
                 <a href="{{ route('batches.create') }}" class="btn btn-primary">
+
                     <i class="fa fa-plus"></i> Add Batch
+
                 </a>
 
             </div>
 
             <div class="card-body table-responsive">
 
-                <table class="table table-bordered table-striped" id="responsive-datatable">
+                <table
+                    class="table table-bordered table-striped"
+                    id="responsive-datatable">
 
                     <thead>
 
@@ -45,9 +58,7 @@
 
                         <th>Batch Name</th>
 
-                        <th>Class Days</th>
-
-                        <th>Timing</th>
+                        <th>Class Schedule</th>
 
                         <th>Capacity</th>
 
@@ -63,59 +74,130 @@
 
                         <tr>
 
-                            <td>{{ $key+1 }}</td>
+                            {{-- SL --}}
+                            <td>
+                                {{ $key + 1 }}
+                            </td>
 
-                            <td>{{ $batch->course->course_name }}</td>
+                            {{-- Course --}}
+                            <td>
+                                {{ $batch->course->course_name }}
+                            </td>
 
-                            <td>{{ $batch->level->name }}</td>
+                            {{-- Level --}}
+                            <td>
+                                {{ $batch->level->name }}
+                            </td>
 
-                            <td>{{ $batch->batch_name }}</td>
+                            {{-- Batch Name --}}
+                            <td>
+                                {{ $batch->batch_name }}
+                            </td>
 
+                            {{-- Class Schedule --}}
                             <td>
 
-                                @foreach($batch->class_days as $day)
+                                @php
 
-                                    <span class="badge bg-primary">
+                                    $scheduleDays = [
+                                        'monday' => 'Mon',
+                                        'tuesday' => 'Tue',
+                                        'wednesday' => 'Wed',
+                                        'thursday' => 'Thu',
+                                        'friday' => 'Fri',
+                                        'saturday' => 'Sat',
+                                        'sunday' => 'Sun',
+                                    ];
 
-                                        {{ $day }}
+                                @endphp
 
-                                    </span>
+                                @foreach($scheduleDays as $dayKey => $dayName)
+
+                                    @php
+
+                                        $start = $batch->{$dayKey . '_start_time'};
+                                        $end = $batch->{$dayKey . '_end_time'};
+
+                                    @endphp
+
+                                    @if($start && $end)
+
+                                        <div class="mb-1">
+
+                                            <span class="badge bg-primary">
+                                                {{ $dayName }}
+                                            </span>
+
+                                            <span class="ms-1">
+
+                                                {{ date('h:i A', strtotime($start)) }}
+
+                                                -
+
+                                                {{ date('h:i A', strtotime($end)) }}
+
+                                            </span>
+
+                                        </div>
+
+                                    @endif
 
                                 @endforeach
 
+                                {{-- No schedule --}}
+                                @php
+
+                                    $hasSchedule = false;
+
+                                    foreach ($scheduleDays as $dayKey => $dayName) {
+
+                                        if (
+                                            $batch->{$dayKey . '_start_time'} &&
+                                            $batch->{$dayKey . '_end_time'}
+                                        ) {
+                                            $hasSchedule = true;
+                                            break;
+                                        }
+
+                                    }
+
+                                @endphp
+
+                                @if(!$hasSchedule)
+
+                                    <span class="text-muted">
+                                        No Schedule
+                                    </span>
+
+                                @endif
+
                             </td>
 
-                            <td>
-
-                                {{ date('h:i A', strtotime($batch->start_time)) }}
-
-                                -
-
-                                {{ date('h:i A', strtotime($batch->end_time)) }}
-
-                            </td>
-
+                            {{-- Capacity --}}
                             <td>
 
                                 {{ $batch->capacity }}
 
                             </td>
 
+                            {{-- Action --}}
                             <td>
 
-                                <a href="{{ route('batches.edit',$batch->id) }}"
-                                   class="btn btn-warning btn-sm">
+                                <a
+                                    href="{{ route('batches.edit', $batch->id) }}"
+                                    class="btn btn-warning btn-sm">
 
+                                    <i class="fa fa-edit"></i>
                                     Edit
 
                                 </a>
 
-                                <form action="{{ route('batches.destroy',$batch->id) }}"
-                                      method="POST"
-                                      class="d-inline">
+                                <form
+                                    action="{{ route('batches.destroy', $batch->id) }}"
+                                    method="POST"
+                                    class="d-inline">
 
                                     @csrf
-
                                     @method('DELETE')
 
                                     <button
@@ -123,6 +205,7 @@
                                         class="btn btn-danger btn-sm"
                                         onclick="return confirm('Delete this batch?')">
 
+                                        <i class="fa fa-trash"></i>
                                         Delete
 
                                     </button>
@@ -137,7 +220,9 @@
 
                         <tr>
 
-                            <td colspan="8" class="text-center text-danger">
+                            <td
+                                colspan="7"
+                                class="text-center text-danger">
 
                                 No Batch Found
 

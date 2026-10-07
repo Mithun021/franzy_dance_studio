@@ -1162,21 +1162,25 @@ $(document).ready(function () {
 
                                                 <div class="row text-center">
 
-                                                    <div class="col-md-3">
+                                                    {{-- Schedule --}}
+                                                    <div class="col-md-5">
 
                                                         <strong>
-                                                            Time
+                                                            Schedule
                                                         </strong>
 
                                                         <br>
 
-                                                        ${batch.start_time}
-                                                        -
-                                                        ${batch.end_time}
+                                                        <div class="mt-2 text-start">
+
+                                                            ${batch.schedule_html}
+
+                                                        </div>
 
                                                     </div>
 
 
+                                                    {{-- Days --}}
                                                     <div class="col-md-3">
 
                                                         <strong>
@@ -1190,7 +1194,8 @@ $(document).ready(function () {
                                                     </div>
 
 
-                                                    <div class="col-md-3">
+                                                    {{-- Capacity --}}
+                                                    <div class="col-md-2">
 
                                                         <strong>
                                                             Capacity
@@ -1205,7 +1210,8 @@ $(document).ready(function () {
                                                     </div>
 
 
-                                                    <div class="col-md-3">
+                                                    {{-- Status --}}
+                                                    <div class="col-md-2">
 
                                                         <strong>
                                                             Status

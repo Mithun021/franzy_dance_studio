@@ -6,7 +6,7 @@
 
 <div class="row justify-content-center">
 
-    <div class="col-lg-8">
+    <div class="col-lg-9">
 
         <div class="card">
 
@@ -52,7 +52,7 @@
                                 @foreach($courses as $course)
 
                                     <option value="{{ $course->id }}"
-                                        {{ old('course_id')==$course->id ? 'selected' : '' }}>
+                                        {{ old('course_id') == $course->id ? 'selected' : '' }}>
 
                                         {{ $course->course_name }}
 
@@ -78,7 +78,7 @@
                                 @foreach($levels as $level)
 
                                     <option value="{{ $level->id }}"
-                                        {{ old('level_id')==$level->id ? 'selected' : '' }}>
+                                        {{ old('level_id') == $level->id ? 'selected' : '' }}>
 
                                         {{ $level->name }}
 
@@ -91,7 +91,7 @@
                         </div>
 
                         {{-- Batch Name --}}
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-8 mb-3">
 
                             <label class="form-label">
                                 Batch Name <span class="text-danger">*</span>
@@ -103,79 +103,6 @@
                                 class="form-control"
                                 value="{{ old('batch_name') }}"
                                 placeholder="Example : Morning Batch"
-                                required>
-
-                        </div>
-
-                        {{-- Class Days --}}
-                        <div class="col-md-12 mb-3">
-
-                            <label class="form-label">
-                                Class Days <span class="text-danger">*</span>
-                            </label>
-
-                            <div class="row">
-
-                                @php
-                                    $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-                                @endphp
-
-                                @foreach($days as $day)
-
-                                    <div class="col-md-3 mb-2">
-
-                                        <div class="form-check">
-
-                                            <input
-                                                class="form-check-input"
-                                                type="checkbox"
-                                                name="class_days[]"
-                                                value="{{ $day }}"
-                                                id="{{ $day }}"
-                                                {{ is_array(old('class_days')) && in_array($day, old('class_days')) ? 'checked' : '' }}>
-
-                                            <label class="form-check-label" for="{{ $day }}">
-                                                {{ $day }}
-                                            </label>
-
-                                        </div>
-
-                                    </div>
-
-                                @endforeach
-
-                            </div>
-
-                        </div>
-
-                        {{-- Start Time --}}
-                        <div class="col-md-4 mb-3">
-
-                            <label class="form-label">
-                                Start Time <span class="text-danger">*</span>
-                            </label>
-
-                            <input
-                                type="time"
-                                name="start_time"
-                                class="form-control"
-                                value="{{ old('start_time') }}"
-                                required>
-
-                        </div>
-
-                        {{-- End Time --}}
-                        <div class="col-md-4 mb-3">
-
-                            <label class="form-label">
-                                End Time <span class="text-danger">*</span>
-                            </label>
-
-                            <input
-                                type="time"
-                                name="end_time"
-                                class="form-control"
-                                value="{{ old('end_time') }}"
                                 required>
 
                         </div>
@@ -195,6 +122,99 @@
                                 min="1"
                                 placeholder="30"
                                 required>
+
+                        </div>
+
+                        {{-- Weekly Class Schedule --}}
+                        <div class="col-md-12 mb-3">
+
+                            <label class="form-label fw-bold">
+                                Weekly Class Schedule
+                            </label>
+
+                            <div class="border rounded p-3 bg-light">
+
+                                {{-- Header --}}
+                                <div class="row fw-bold mb-2 d-none d-md-flex">
+
+                                    <div class="col-md-4">
+                                        Day
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        Start Time
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        End Time
+                                    </div>
+
+                                </div>
+
+                                @php
+                                    $days = [
+                                        'monday' => 'Monday',
+                                        'tuesday' => 'Tuesday',
+                                        'wednesday' => 'Wednesday',
+                                        'thursday' => 'Thursday',
+                                        'friday' => 'Friday',
+                                        'saturday' => 'Saturday',
+                                        'sunday' => 'Sunday',
+                                    ];
+                                @endphp
+
+                                @foreach($days as $key => $label)
+
+                                    <div class="row align-items-center border-bottom py-2">
+
+                                        {{-- Day --}}
+                                        <div class="col-md-4 mb-2 mb-md-0">
+
+                                            <label class="form-label mb-0 fw-semibold">
+                                                {{ $label }}
+                                            </label>
+
+                                        </div>
+
+                                        {{-- Start Time --}}
+                                        <div class="col-md-4 mb-2 mb-md-0">
+
+                                            <label class="form-label d-md-none">
+                                                Start Time
+                                            </label>
+
+                                            <input
+                                                type="time"
+                                                name="{{ $key }}_start_time"
+                                                class="form-control"
+                                                value="{{ old($key . '_start_time') }}">
+
+                                        </div>
+
+                                        {{-- End Time --}}
+                                        <div class="col-md-4">
+
+                                            <label class="form-label d-md-none">
+                                                End Time
+                                            </label>
+
+                                            <input
+                                                type="time"
+                                                name="{{ $key }}_end_time"
+                                                class="form-control"
+                                                value="{{ old($key . '_end_time') }}">
+
+                                        </div>
+
+                                    </div>
+
+                                @endforeach
+
+                            </div>
+
+                            <small class="text-muted">
+                                Leave the time fields blank for days when there is no class.
+                            </small>
 
                         </div>
 

@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\CourseMonthRecord;
 use App\Models\CoursePaymentRecord;
 use App\Models\Level;
+use App\Models\Notice;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -1914,6 +1915,14 @@ class WebsiteController extends Controller
             'bookingId',
             'phone'
         ));
+    }
+
+    public function noticeDetails($id)
+    {
+        $notice = Notice::where('status', 1)
+            ->findOrFail($id);
+
+        return view('pages.notice-details', compact('notice'));
     }
 
 }

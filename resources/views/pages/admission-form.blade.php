@@ -79,7 +79,7 @@
                         class="px-6 py-3 rounded-xl bg-pink-600 text-white font-semibold hover:bg-pink-700 transition">
 
                         Login Now
- 
+
                     </a>
 
                     <a href="{{ route('student.register') }}"
@@ -938,7 +938,8 @@ $(document).ready(function () {
 
                     $.each(response.batches, function (index, batch) {
 
-                        let days = batch.days_text || 'Flexible Days';
+                        let schedule = batch.schedule_html ||
+                            '<span class="text-slate-400">No class schedule available</span>';
 
                         let card = `
                             <label class="batch-card group cursor-pointer">
@@ -975,15 +976,17 @@ $(document).ready(function () {
 
                                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
 
-                                                <div class="flex items-center gap-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700">
-                                                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <div class="flex items-start gap-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700">
+                                                    <svg class="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                     </svg>
+
                                                     <div>
-                                                        <p class="text-xs text-slate-400">Timing</p>
-                                                        <p class="text-sm font-semibold text-white">
-                                                            ${batch.start_time} - ${batch.end_time}
-                                                        </p>
+                                                        <p class="text-xs text-slate-400">Weekly Schedule</p>
+
+                                                        <div class="text-sm font-semibold text-white mt-1">
+                                                            ${schedule}
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -991,10 +994,12 @@ $(document).ready(function () {
                                                     <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                                     </svg>
+
                                                     <div>
                                                         <p class="text-xs text-slate-400">Class Days</p>
+
                                                         <p class="text-sm font-semibold text-white">
-                                                            ${days}
+                                                            ${batch.days_text || 'Flexible Days'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1002,6 +1007,7 @@ $(document).ready(function () {
                                             </div>
 
                                             <div class="mt-4 flex items-center justify-between">
+
                                                ${batch.is_full ? `
 
                                                     <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-300 text-xs font-semibold">

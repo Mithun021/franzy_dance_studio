@@ -72,6 +72,11 @@ $menus = [
     ],
 
     [
+        'title' => 'Events',
+        'url'   => route('website.events'),
+    ],
+
+    [
         'title' => 'Courses',
         'url'   => '#courses',
     ],

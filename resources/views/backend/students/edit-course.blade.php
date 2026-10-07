@@ -893,33 +893,28 @@ $(function () {
 
                                                 <hr>
 
+
+                                                {{-- Weekly Schedule --}}
+
+                                                <div class="mb-3">
+
+                                                    <strong>Weekly Class Schedule</strong>
+
+                                                    <div class="mt-2">
+
+                                                        ${batch.schedule_html || '<span class="text-muted">No class schedule available.</span>'}
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                <hr>
+
+
                                                 <div class="row text-center">
 
-                                                    <div class="col-md-3">
-
-                                                        <strong>Time</strong>
-
-                                                        <br>
-
-                                                        ${batch.start_time}
-                                                        -
-                                                        ${batch.end_time}
-
-                                                    </div>
-
-
-                                                    <div class="col-md-3">
-
-                                                        <strong>Days</strong>
-
-                                                        <br>
-
-                                                        ${batch.days_text}
-
-                                                    </div>
-
-
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-4">
 
                                                         <strong>Capacity</strong>
 
@@ -930,7 +925,18 @@ $(function () {
                                                     </div>
 
 
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-4">
+
+                                                        <strong>Days</strong>
+
+                                                        <br>
+
+                                                        ${batch.days_text || 'N/A'}
+
+                                                    </div>
+
+
+                                                    <div class="col-md-4">
 
                                                         <strong>Status</strong>
 
