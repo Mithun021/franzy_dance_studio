@@ -10,8 +10,17 @@ Route::get('/notice-details/{id}', [WebsiteController::class, 'noticeDetails'])
 Route::get('/frenzy/events', [EventController::class, 'events'])
     ->name('website.events');
 
-Route::get('/frenzy/event-details/{slug}', [EventController::class, 'eventDetails'])
+Route::get('/frenzy/event-details/{slug}/{id}', [EventController::class, 'eventDetails'])
     ->name('website.event-details');
+
+Route::post('/frenzy/event-booking', [EventController::class, 'storeEventBooking'])
+    ->name('website.event-booking.store');
+
+Route::get('/frenzy/event-booking-payment/{booking_id}', [EventController::class, 'eventBookingPayment'])
+    ->name('website.event-booking-payment');
+
+Route::get('/frenzy/event-booking-success/{booking_id}', [EventController::class, 'eventBookingSuccess'])
+    ->name('website.event-booking-success');
 
 Route::get('/studio', [WebsiteController::class, 'studio_booking']) ->name('studio-booking');
 Route::get('/studio/{studio}/booking', [WebsiteController::class, 'studioBookingForm'])

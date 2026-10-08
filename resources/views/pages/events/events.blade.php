@@ -163,7 +163,7 @@
 
 
                                 {{-- Details Button --}}
-                                <a href="{{ route('website.event-details', $event->slug) }}"
+                                <a href="{{ route('website.event-details', [$event->slug, $event->id]) }}"
                                    class="inline-flex items-center gap-2
                                           px-4 py-2.5
                                           rounded-lg

@@ -248,6 +248,34 @@
                             </li>
 
                             <li>
+                                <a href="#exam" data-bs-toggle="collapse">
+                                    <i data-feather="calendar"></i>
+                                    <span> Exam </span>
+                                    <span class="menu-arrow"></span>
+                                </a>
+                                <div class="collapse" id="exam">
+                                    <ul class="nav-second-level">
+                                        <li>
+                                            <a href="{{ route('exam.index') }}" class="tp-link">Exam List</a>
+                                        </li>
+                                        <li><a href="{{ route('exam.student-amount') }}" class="tp-link">Assign Student Amount</a></li>
+                                    </ul>
+                                </div>
+                            </li>
+
+                            {{-- <li>
+                                    <ul class="nav-second-level">
+                                        <li>
+                                            <a href="{{ route('notice.index') }}" class="tp-link">Notice List</a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('notice.create') }}" class="tp-link">Create Notice</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li> --}}
+
+                            <li>
                                 <a href="#syllabus" data-bs-toggle="collapse">
                                     <i data-feather="calendar"></i>
                                     <span> Syllabus </span>

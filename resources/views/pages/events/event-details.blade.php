@@ -497,8 +497,10 @@
 
                     </div>
 
+                    <form action="{{ route('website.event-booking.store') }}" method="POST">
+                        @csrf
 
-                    <form action="#" method="POST">
+                         <input type="hidden" name="event_id" value="{{ $event->id }}">
 
                         {{-- Name --}}
                         <div class="mb-4">

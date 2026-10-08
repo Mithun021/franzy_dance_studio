@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventBooking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -294,12 +295,164 @@ class EventController extends Controller
         return view('pages.events.events', compact('events'));
     }
 
-    public function eventDetails($slug)
+    public function eventDetails($slug, $id)
     {
         $event = Event::where('status', 1)
             ->where('slug', $slug)
+            ->where('id', $id)
             ->firstOrFail();
 
         return view('pages.events.event-details', compact('event'));
     }
+
+    public function storeEventBooking(Request $request)
+    {
+        $request->validate([
+            'event_id' => 'required|integer|exists:events,id',
+
+            'name' => 'required|string|max:255',
+
+            'phone' => 'required|string|max:30',
+
+            'email' => 'nullable|email|max:255',
+
+            'father_name' => 'nullable|string|max:255',
+
+            'state' => 'nullable|string|max:255',
+
+            'city' => 'nullable|string|max:255',
+
+            'pincode' => 'nullable|string|max:10',
+
+            'address' => 'nullable|string|max:1000',
+        ]);
+
+        // Get only active event
+        $event = Event::where('status', 1)
+            ->where('id', $request->event_id)
+            ->firstOrFail();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Generate Unique Booking ID
+        |--------------------------------------------------------------------------
+        */
+
+        do {
+            $bookingId = 'EVT-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+        } while (
+            EventBooking::where('booking_id', $bookingId)->exists()
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Event Amount
+        |--------------------------------------------------------------------------
+        |
+        | Amount is always taken from database.
+        | Never trust amount coming from frontend.
+        |
+        */
+
+        $amount = $event->is_free
+            ? 0
+            : ($event->event_amount ?? 0);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Booking
+        |--------------------------------------------------------------------------
+        */
+
+        $booking = EventBooking::create([
+            'booking_id' => $bookingId,
+
+            'event_id' => $event->id,
+
+            'name' => $request->name,
+
+            'phone' => $request->phone,
+
+            'email' => $request->email,
+
+            'father_name' => $request->father_name,
+
+            'state' => $request->state,
+
+            'city' => $request->city,
+
+            'pincode' => $request->pincode,
+
+            'address' => $request->address,
+
+            'amount' => $amount,
+
+            'payment_status' => $event->is_free
+                ? 'paid'
+                : 'pending',
+
+            'booking_status' => $event->is_free
+                ? 'confirmed'
+                : 'pending',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | FREE EVENT
+        |--------------------------------------------------------------------------
+        */
+
+        if ($event->is_free) {
+
+            return redirect()
+                ->route('website.event-booking-success', $booking->booking_id)
+                ->with('success', 'Event booking completed successfully.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAID EVENT
+        |--------------------------------------------------------------------------
+        */
+
+        return redirect()
+            ->route(
+                'website.event-booking-payment',
+                $booking->booking_id
+            );
+    }
+
+    public function eventBookingSuccess($booking_id)
+    {
+        $booking = EventBooking::with('event')
+            ->where('booking_id', $booking_id)
+            ->firstOrFail();
+
+        return view(
+            'pages.events.event-booking-success',
+            compact('booking')
+        );
+    }
+
+    public function eventBookingPayment($booking_id)
+    {
+        $booking = EventBooking::with('event')
+            ->where('booking_id', $booking_id)
+            ->firstOrFail();
+
+        // Already paid booking should not come back to payment
+        if ($booking->payment_status === 'paid') {
+            return redirect()
+                ->route(
+                    'website.event-booking-success',
+                    $booking->booking_id
+                );
+        }
+
+        return view(
+            'pages.events.event-booking-payment',
+            compact('booking')
+        );
+    }
+
 }

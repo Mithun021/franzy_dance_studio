@@ -12,6 +12,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\ExamController;
 use App\Http\Controllers\FeeStructureController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LateFineController;
@@ -309,8 +310,28 @@ Route::middleware(['auth', 'admin'])->prefix('backend')->group(function () {
 
 
     Route::resource('notice', NoticeController::class);
-    Route::resource('events', EventController::class)
-    ->except(['show']);
+    Route::resource('events', EventController::class)->except(['show']);
+
+    Route::get('/exam', [ExamController::class, 'index'])
+    ->name('exam.index');
+
+    Route::post('/exam/store', [ExamController::class, 'store'])
+        ->name('exam.store');
+
+    Route::get('/exam/edit/{id}', [ExamController::class, 'edit'])
+        ->name('exam.edit');
+
+    Route::put('/exam/update/{id}', [ExamController::class, 'update'])
+        ->name('exam.update');
+
+    Route::delete('/exam/delete/{id}', [ExamController::class, 'destroy'])
+        ->name('exam.destroy');
+
+    Route::get('/exam-student-amount', [ExamController::class, 'studentAmount'])
+    ->name('exam.student-amount');
+
+    Route::post('/exam-student-amount/save', [ExamController::class, 'saveStudentAmount'])
+        ->name('exam.student-amount.save');
 
 });
 
